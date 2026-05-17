@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Announcements - Abyss Miner</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #050816, #0f172a, #1e1b4b);
+      color: white;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .background {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .orb1 {
+      width: 320px;
+      height: 320px;
+      background: #3b82f6;
+      top: 8%;
+      left: 6%;
+    }
+
+    .orb2 {
+      width: 360px;
+      height: 360px;
+      background: #8b5cf6;
+      bottom: 6%;
+      right: 8%;
+      animation-delay: 2s;
+    }
+
+    .orb3 {
+      width: 220px;
+      height: 220px;
+      background: #38bdf8;
+      top: 50%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-24px) translateX(14px) scale(1.06);
+      }
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      padding: 28px;
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .title-wrap p {
+      margin: 6px 0 0 0;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions a, .actions button {
+      padding: 11px 15px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .actions a:hover, .actions button:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.14);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+    }
+
+    .glass-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 24px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+    }
+
+    .section-title {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .section-subtitle {
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .user-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      color: #cbd5e1;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .announcement-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .announcement-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .announcement-item h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+
+    .announcement-item p {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .announcement-meta {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.18);
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .post-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .post-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(37,99,235,0.28);
+    }
+
+    #message {
+      margin-top: 14px;
+      min-height: 20px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .admin-note {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .empty-text {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        padding: 18px;
+      }
+
+      .title-wrap h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="page">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Announcements</h1>
+        <p>Stay updated with the latest system and game notices</p>
+      </div>
+
+      <div class="actions">
+        <a href="/game.html">Back to Game</a>
+        <button onclick="loadAnnouncements()">Refresh</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="glass-card">
+        <h2 class="section-title">Latest Announcements</h2>
+        <div class="section-subtitle">Recent updates posted by the admin</div>
+
+        <div class="user-info" id="userInfo"></div>
+
+        <div id="announcementList" class="announcement-list"></div>
+        <div class="empty-text" id="emptyText"></div>
+      </div>
+
+      <div class="glass-card" id="adminBox">
+        <h2 class="section-title">Post Announcement</h2>
+        <div class="section-subtitle">Admin tools for posting updates</div>
+
+        <input type="text" id="title" placeholder="Enter announcement title">
+        <textarea id="content" placeholder="Enter announcement content"></textarea>
+
+        <button class="post-btn" onclick="addAnnouncement()">Post Announcement</button>
+
+        <div class="admin-note">
+          Only admin users can post announcements. Normal players can view updates but cannot create them.
+        </div>
+
+        <div id="message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+
+    if (!userId) {
+      window.location.href = "/login.html";
+    }
+
+    document.getElementById("userInfo").innerText =
+      username ? "Logged in as: " + username + " (" + role + ")" : "Not logged in";
+
+    if (role !== "admin") {
+      document.getElementById("adminBox").classList.add("hidden");
+    }
+
+    async function loadAnnouncements() {
+      const res = await fetch("/api/announcement");
+      const data = await res.json();
+
+      const list = document.getElementById("announcementList");
+      const emptyText = document.getElementById("emptyText");
+      list.innerHTML = "";
+      emptyText.innerText = "";
+
+      if (!Array.isArray(data) || data.length === 0) {
+        emptyText.innerText = "No announcements available yet.";
+        return;
+      }
+
+      data.forEach(a => {
+  const item = document.createElement("div");
+  item.className = "announcement-item";
+
+  const createdText = a.createdAt
+    ? new Date(a.createdAt).toLocaleString()
+    : "No date";
+
+  const createdBy = a.createdBy || "admin";
+
+  item.innerHTML = `
+    <h3>${a.title || "-"}</h3>
+    <p>${a.content || ""}</p>
+    <div class="announcement-meta">
+      Posted by: ${createdBy} <br>
+      Posted at: ${createdText}
+    </div>
+  `;
+
+  list.appendChild(item);
+});
+    }
+
+    async function addAnnouncement() {
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const message = document.getElementById("message");
+
+      message.style.color = "#f87171";
+
+      if (!title || !content) {
+        message.innerText = "Please fill in title and content.";
+        return;
+      }
+
+      const res = await fetch("/api/announcement/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          userId
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("added")) {
+        message.style.color = "#4ade80";
+        message.innerText = data.message;
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
+        await loadAnnouncements();
+        return;
+      }
+
+      message.innerText = data.message || data.error || "Something went wrong.";
+    }
+
+    loadAnnouncements();
+  </script>
+</body>
+</html>

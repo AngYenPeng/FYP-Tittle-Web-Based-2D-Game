@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile - Abyss Miner</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: linear-gradient(135deg, #050816, #0f172a, #1e1b4b);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 28px;
+      position: relative;
+    }
+
+    .background {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.38;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .orb1 {
+      width: 320px;
+      height: 320px;
+      background: #3b82f6;
+      top: 8%;
+      left: 8%;
+    }
+
+    .orb2 {
+      width: 360px;
+      height: 360px;
+      background: #8b5cf6;
+      bottom: 10%;
+      right: 8%;
+      animation-delay: 2s;
+    }
+
+    .orb3 {
+      width: 220px;
+      height: 220px;
+      background: #38bdf8;
+      top: 55%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-24px) translateX(14px) scale(1.06);
+      }
+    }
+
+    .profile-card {
+      position: relative;
+      z-index: 1;
+      width: 460px;
+      padding: 32px 30px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+      backdrop-filter: blur(16px);
+    }
+
+    .top-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 18px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      font-size: 30px;
+      box-shadow: 0 10px 25px rgba(37,99,235,0.35);
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 22px;
+    }
+
+    .role-pill {
+      display: block;
+      width: fit-content;
+      margin: 0 auto 20px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      color: #c4b5fd;
+      font-size: 13px;
+    }
+
+    .section {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .section h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .label {
+      display: block;
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 7px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 14px 14px 42px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      color: white;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    input:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.18);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .toggle-row {
+      text-align: right;
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-top: 6px;
+    }
+
+    .toggle-row label {
+      cursor: pointer;
+    }
+
+    button, .back-link {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      text-align: center;
+      transition: 0.2s ease;
+    }
+
+    button:hover, .back-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(37,99,235,0.28);
+    }
+
+    .back-link {
+      background: rgba(255,255,255,0.08);
+      font-weight: normal;
+    }
+
+    .message {
+      text-align: center;
+      min-height: 20px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .footer-text {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 18px;
+        align-items: flex-start;
+      }
+
+      .profile-card {
+        width: 100%;
+        padding: 26px 20px;
+      }
+    }
+
+    .forgot-link {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  color: #c4b5fd;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.profile-picture-box {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.profile-img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.25);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+  margin-bottom: 12px;
+}
+
+.change-picture-btn {
+  width: auto;
+  padding: 10px 18px;
+  margin: 0 auto;
+  font-size: 14px;
+  border-radius: 999px;
+}
+
+  </style>
+</head>
+<body>
+  <div class="background">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="profile-card">
+    <div class="top-icon">👤</div>
+
+    <h2>My Profile</h2>
+    <div class="subtitle">Manage your Abyss Miner account settings</div>
+    <div class="role-pill" id="roleText">Role: -</div>
+    <div class="profile-picture-box">
+  <img id="profileImage" src="/uploads/default-profile.png" class="profile-img">
+
+  <input 
+    type="file" 
+    id="profilePicture" 
+    accept="image/*" 
+    style="display:none;" 
+    onchange="uploadProfilePicture()"
+  >
+
+  <button class="change-picture-btn" onclick="document.getElementById('profilePicture').click()">
+    Change Picture
+  </button>
+ </div>
+    <div class="section">
+  <h3>Player Summary</h3>
+  <p id="profileUsername">Username: -</p>
+  <p id="profileEmail">Email: -</p>
+  <p id="bestScore">Best Score: 0</p>
+  <p id="totalGames">Total Games Played: 0</p>
+</div>
+
+    <div class="section">
+      <h3>Account Details</h3>
+
+      <div class="field">
+        <label class="label">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" id="username" placeholder="Username">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Email</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="email" placeholder="Email">
+        </div>
+      </div>
+
+      <button onclick="updateProfile()">Save Profile</button>
+      <p class="message" id="message"></p>
+    </div>
+
+    <div class="section">
+      <h3>Change Password</h3>
+
+      <div class="field">
+        <label class="label">Current Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="currentPassword" placeholder="Current password">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">New Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🆕</span>
+          <input type="password" id="newPassword" placeholder="New password">
+        </div>
+        <div class="hint">Use at least 6 characters, with letters and numbers.</div>
+      </div>
+
+      <div class="field">
+        <label class="label">Confirm New Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">✅</span>
+          <input type="password" id="confirmPassword" placeholder="Confirm new password">
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label><input type="checkbox" onclick="togglePasswords()"> Show Passwords</label>
+      </div>
+
+      <button onclick="changePassword()">Change Password</button>
+<p class="message" id="passwordMessage"></p>
+
+<a class="forgot-link" href="/forgot-password.html">Forgot current password?</a>
+    </div>
+
+    <div class="section">
+  <h3>My Score History</h3>
+  <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:8px;">Score</th>
+        <th style="text-align:left; padding:8px;">Time</th>
+        <th style="text-align:left; padding:8px;">Mode</th>
+      </tr>
+    </thead>
+    <tbody id="scoreHistoryBody"></tbody>
+  </table>
+  <p class="message" id="scoreHistoryEmpty"></p>
+</div>
+
+    <a class="back-link" href="/game.html">Back to Game</a>
+    <div class="footer-text">Abyss Miner Web Portal</div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    const usernameStorage = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+
+    if (!userId) {
+      window.location.href = "/login.html";
+    }
+
+    document.getElementById("username").value = usernameStorage || "";
+    document.getElementById("roleText").innerText = "Role: " + (role || "-");
+
+   async function loadProfileFromDatabase() {
+  const res = await fetch(`/api/auth/profile/${userId}`);
+  const data = await res.json();
+
+  if (data.email) {
+    document.getElementById("username").value = data.username || "";
+    document.getElementById("email").value = data.email || "";
+    document.getElementById("roleText").innerText = "Role: " + (data.role || "-");
+
+    document.getElementById("profileUsername").innerText = "Username: " + (data.username || "-");
+    document.getElementById("profileEmail").innerText = "Email: " + (data.email || "-");
+
+    if (data.profilePicture) {
+  document.getElementById("profileImage").src = data.profilePicture;
+    }
+
+  }
+ }
+
+    async function loadMyScores() {
+  const res = await fetch(`/api/score/user/${userId}`);
+  const data = await res.json();
+
+  const body = document.getElementById("scoreHistoryBody");
+  const empty = document.getElementById("scoreHistoryEmpty");
+
+  body.innerHTML = "";
+  empty.innerText = "";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    document.getElementById("bestScore").innerText = "Best Score: 0";
+    document.getElementById("totalGames").innerText = "Total Games Played: 0";
+    empty.innerText = "No score history yet.";
+    return;
+  }
+
+  const best = Math.max(...data.map(s => s.score || 0));
+
+  document.getElementById("bestScore").innerText = "Best Score: " + best;
+  document.getElementById("totalGames").innerText = "Total Games Played: " + data.length;
+
+  data.forEach(score => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td style="padding:8px;">${score.score || 0}</td>
+      <td style="padding:8px;">${score.time || 0}</td>
+      <td style="padding:8px;">${score.mode || "-"}</td>
+    `;
+    body.appendChild(row);
+  });
+}
+
+    loadProfileFromDatabase();
+    loadMyScores();
+
+    function isValidPassword(password) {
+      return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(password);
+    }
+
+    function togglePasswords() {
+      const a = document.getElementById("currentPassword");
+      const b = document.getElementById("newPassword");
+      const c = document.getElementById("confirmPassword");
+
+      a.type = a.type === "password" ? "text" : "password";
+      b.type = b.type === "password" ? "text" : "password";
+      c.type = c.type === "password" ? "text" : "password";
+    }
+
+    async function updateProfile() {
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const message = document.getElementById("message");
+
+      message.style.color = "#f87171";
+
+      if (!username || !email) {
+        message.innerText = "Please fill in username and email.";
+        return;
+      }
+
+      const res = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          username,
+          email
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.user) {
+        localStorage.setItem("username", data.user.username);
+        localStorage.setItem("role", data.user.role);
+
+        message.style.color = "#4ade80";
+        message.innerText = data.message;
+        document.getElementById("profileUsername").innerText = "Username: " + data.user.username;
+        document.getElementById("profileEmail").innerText = "Email: " + data.user.email;
+        return;
+      }
+
+      message.innerText = data.message || data.error || "Something went wrong.";
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById("currentPassword").value.trim();
+      const newPassword = document.getElementById("newPassword").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+      const passwordMessage = document.getElementById("passwordMessage");
+
+      passwordMessage.style.color = "#f87171";
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        passwordMessage.innerText = "Please fill in all password fields.";
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        passwordMessage.innerText = "New passwords do not match.";
+        return;
+      }
+
+      if (!isValidPassword(newPassword)) {
+        passwordMessage.innerText = "Password must be at least 6 characters and include letters and numbers.";
+        return;
+      }
+
+      const res = await fetch("/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          currentPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("success")) {
+        passwordMessage.style.color = "#4ade80";
+        document.getElementById("currentPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("confirmPassword").value = "";
+      }
+
+      passwordMessage.innerText = data.message || data.error || "Something went wrong.";
+    }
+
+    async function uploadProfilePicture() {
+  const fileInput = document.getElementById("profilePicture");
+  const message = document.getElementById("message");
+
+  if (!fileInput.files[0]) {
+    message.style.color = "#f87171";
+    message.innerText = "Please choose an image first.";
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("profilePicture", fileInput.files[0]);
+  formData.append("userId", userId);
+
+  const res = await fetch("/api/auth/upload-profile-picture", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await res.json();
+
+  if (data.profilePicture) {
+    document.getElementById("profileImage").src = data.profilePicture;
+    message.style.color = "#4ade80";
+    message.innerText = data.message;
+  } else {
+    message.style.color = "#f87171";
+    message.innerText = data.message || data.error || "Upload failed.";
+  }
+ }
+  </script>
+</body>
+</html>

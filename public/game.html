@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Abyss Miner Portal</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: linear-gradient(135deg, #050816, #0f172a, #1e1b4b);
+      color: white;
+      position: relative;
+    }
+
+    .background {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.38;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .orb1 {
+      width: 320px;
+      height: 320px;
+      background: #3b82f6;
+      top: 5%;
+      left: 5%;
+    }
+
+    .orb2 {
+      width: 360px;
+      height: 360px;
+      background: #8b5cf6;
+      bottom: 8%;
+      right: 8%;
+      animation-delay: 2s;
+    }
+
+    .orb3 {
+      width: 220px;
+      height: 220px;
+      background: #38bdf8;
+      top: 55%;
+      left: 45%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-24px) translateX(14px) scale(1.06);
+      }
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      padding: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      font-size: 26px;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.4px;
+    }
+
+    .brand p {
+      margin: 4px 0 0 0;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a, .nav-links button {
+      padding: 11px 15px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links button:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.14);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr 0.9fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .glass-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 24px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+    }
+
+    .welcome-title {
+      font-size: 34px;
+      margin: 0 0 10px 0;
+      line-height: 1.15;
+    }
+
+    .welcome-text {
+      color: #cbd5e1;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.14);
+      color: #86efac;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .primary-btn, .secondary-btn {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255,255,255,0.14);
+    }
+
+    .profile-summary {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .profile-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,0.25);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+
+    .profile-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .profile-role {
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .info-box {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .score-box {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .score-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .score-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+    }
+
+    .section-title {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+}
+
+    .game-placeholder {
+      min-height: 360px;
+      border-radius: 20px;
+      border: 2px dashed rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .game-placeholder .icon {
+      font-size: 46px;
+      margin-bottom: 14px;
+    }
+
+    .game-placeholder p {
+      color: #cbd5e1;
+      max-width: 520px;
+      line-height: 1.7;
+      margin: 6px 0;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    .mini-table th, .mini-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .mini-table th {
+      background: #334155;
+    }
+
+    .mini-table tr:nth-child(even) {
+      background: #273449;
+    }
+
+    .mini-table tr:nth-child(odd) {
+      background: #1f2d40;
+    }
+
+    .empty-text {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .hero, .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        padding: 18px;
+      }
+
+      .welcome-title {
+        font-size: 28px;
+      }
+
+      .navbar {
+        padding: 16px;
+      }
+
+      .score-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .current-user-row {
+  background: rgba(96,165,250,0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(96,165,250,0.45);
+}
+
+.you-badge {
+  margin-left: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.announcement-preview-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.announcement-preview-item {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.announcement-preview-item h4 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+}
+
+.announcement-preview-item p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.announcement-preview-date {
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.badge-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  margin-bottom: 16px;
+  min-height: 40px;
+  border: 1px dashed rgba(255,255,255,0.2);
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+  </style>
+</head>
+<body>
+  <div class="background">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="page">
+    <div class="navbar">
+      <div class="brand">
+        <div class="brand-icon">⛏️</div>
+        <div>
+          <h1>Abyss Miner</h1>
+          <p>Game Portal</p>
+        </div>
+      </div>
+
+      <div class="nav-links">
+        <a href="/leaderboard.html">Leaderboard</a>
+        <a href="/announcement.html">Announcements</a>
+        <a href="/profile.html">Profile</a>
+        <a href="/admin.html" id="adminLink">Admin Dashboard</a>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="glass-card">
+        <div class="status-pill">● System Ready</div>
+        <h2 class="welcome-title" id="welcomeTitle">Welcome back, Miner.</h2>
+        <div class="welcome-text" id="welcomeText">
+          Enter the cavern, uncover hidden truths, and climb the leaderboard.
+          Your web portal is ready, your account is loaded, and your progress system is connected.
+        </div>
+
+        <div class="score-grid">
+          <div class="info-box">
+  <div class="info-label">Rank</div>
+  <div class="info-value" id="rankValue">-</div>
+</div>
+
+          <div class="score-box">
+            <div class="score-label">Best Score</div>
+            <div class="score-value" id="bestScoreValue">0</div>
+          </div>
+
+          <div class="score-box">
+            <div class="score-label">Last Score</div>
+            <div class="score-value" id="lastScoreValue">0</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+  <div style="font-size:13px; color:#94a3b8; margin-bottom:6px;">
+    🏅 Achievements Unlocked
+  </div>
+  <div class="badge-list" id="badgeList"></div>
+</div>
+
+        <div class="quick-actions">
+          <a href="/leaderboard.html" class="primary-btn">View Leaderboard</a>
+          <a href="/announcement.html" class="secondary-btn">Check Announcements</a>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="profile-summary">
+          <img id="profileAvatar" class="profile-avatar" src="/uploads/default-profile.png" onerror="this.src='/uploads/default-profile.png'">
+          <div>
+            <div class="profile-name" id="profileName">-</div>
+            <div class="profile-role" id="profileRole">Role: -</div>
+          </div>
+        </div>
+
+        <div class="info-list">
+          <div class="info-box">
+            <div class="info-label">Logged In As</div>
+            <div class="info-value" id="usernameValue">-</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">Role</div>
+            <div class="info-value" id="roleValue">-</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">User ID</div>
+            <div class="info-value" id="userIdValue">-</div>
+          </div>
+           <div class="info-box">
+  <div class="info-label">Current Login</div>
+  <div class="info-value" id="currentLoginValue">-</div>
+</div>
+
+<div class="info-box">
+  <div class="info-label">Previous Login</div>
+  <div class="info-value" id="previousLoginValue">-</div>
+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="glass-card">
+        <h3 class="section-title">Game Area</h3>
+        <div id="game-container" class="game-placeholder">
+          <div class="icon">🎮</div>
+          <p>The Phaser game will be placed here.</p>
+          <p>This page is ready to receive your teammate’s game file and connect it to your login, score API, and leaderboard system.</p>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <h3 class="section-title">Top 5 Leaderboard</h3>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>User</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="miniLeaderboardBody"></tbody>
+        </table>
+        <div class="empty-text" id="leaderboardEmpty"></div>
+        <div style="margin-top:24px;">
+  <h3 class="section-title">Recent Announcements</h3>
+  <div id="announcementPreviewList" class="announcement-preview-list"></div>
+  <div class="empty-text" id="announcementPreviewEmpty"></div>
+</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+    const currentLoginTime = new Date().toLocaleString();
+const previousLoginTime = localStorage.getItem("lastLoginTime");
+
+if (userId) {
+  const loginKey = "lastLoginTime_" + userId;
+
+  const currentLoginTime = new Date().toLocaleString();
+  const previousLoginTime = localStorage.getItem(loginKey);
+
+  document.getElementById("currentLoginValue").innerText = currentLoginTime;
+  document.getElementById("previousLoginValue").innerText =
+    previousLoginTime || "First login";
+
+  localStorage.setItem(loginKey, currentLoginTime);
+}
+
+    if (!userId) {
+      window.location.href = "/login.html";
+    }
+
+    document.getElementById("usernameValue").innerText = username || "-";
+    document.getElementById("roleValue").innerText = role || "-";
+    document.getElementById("userIdValue").innerText = userId || "-";
+
+    document.getElementById("welcomeTitle").innerText =
+      "Welcome back, " + (username || "Miner") + ".";
+
+    document.getElementById("profileName").innerText = username || "-";
+    document.getElementById("profileRole").innerText = "Role: " + (role || "-");
+
+    if (role !== "admin" && role !== "superadmin") {
+      const adminLink = document.getElementById("adminLink");
+      if (adminLink) {
+        adminLink.style.display = "none";
+      }
+    }
+
+   function logout() {
+  localStorage.removeItem("userId");
+  localStorage.removeItem("username");
+  localStorage.removeItem("role");
+  window.location.href = "/login.html";
+}
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`/api/auth/profile/${userId}`);
+        const data = await res.json();
+
+        if (data.username) {
+          document.getElementById("usernameValue").innerText = data.username || "-";
+          document.getElementById("roleValue").innerText = data.role || "-";
+          document.getElementById("profileName").innerText = data.username || "-";
+          document.getElementById("profileRole").innerText = "Role: " + (data.role || "-");
+          document.getElementById("welcomeTitle").innerText =
+            "Welcome back, " + (data.username || "Miner") + ".";
+
+          localStorage.setItem("username", data.username);
+          localStorage.setItem("role", data.role);
+
+          if (data.profilePicture) {
+            document.getElementById("profileAvatar").src = data.profilePicture;
+          }
+        }
+      } catch (err) {
+        console.log("Profile load failed:", err);
+      }
+    }
+
+    async function loadMyScores() {
+      try {
+        const res = await fetch(`/api/score/user/${userId}`);
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+  document.getElementById("rankValue").innerText = getRank(0);
+  document.getElementById("bestScoreValue").innerText = "0";
+  document.getElementById("lastScoreValue").innerText = "0";
+  loadAchievementBadges([], 0);
+  return;
+}
+
+        const bestScore = Math.max(...data.map(s => Number(s.score) || 0));
+        const lastScore = Number(data[0].score) || 0;
+
+        document.getElementById("rankValue").innerText = getRank(bestScore);
+        document.getElementById("bestScoreValue").innerText = bestScore;
+        document.getElementById("lastScoreValue").innerText = lastScore;
+        loadAchievementBadges(data, bestScore);
+      } catch (err) {
+  console.log("Score load failed:", err);
+  document.getElementById("rankValue").innerText = getRank(0);
+  document.getElementById("bestScoreValue").innerText = "0";
+  document.getElementById("lastScoreValue").innerText = "0";
+  loadAchievementBadges([], 0);
+}
+    }
+
+    async function loadMiniLeaderboard() {
+      const res = await fetch("/api/score/leaderboard");
+      const data = await res.json();
+
+      const body = document.getElementById("miniLeaderboardBody");
+      const empty = document.getElementById("leaderboardEmpty");
+      body.innerHTML = "";
+      empty.innerText = "";
+
+      if (!Array.isArray(data) || data.length === 0) {
+        empty.innerText = "No scores yet.";
+        return;
+      }
+
+      data.slice(0, 5).forEach((player, index) => {
+        const row = document.createElement("tr");
+
+if (player.userId === userId || player._id === userId) {
+  row.classList.add("current-user-row");
+}
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <img 
+                src="${player.profilePicture || "/uploads/default-profile.png"}"
+                onerror="this.src='/uploads/default-profile.png'"
+                style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.25);"
+              >
+              <span>
+  ${player.username || "-"}
+  ${(player.userId === userId || player._id === userId) ? '<span class="you-badge">You</span>' : ''}
+</span>
+            </div>
+          </td>
+          <td>${player.score || 0}</td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    async function loadAnnouncementPreview() {
+  try {
+    const res = await fetch("/api/announcement");
+    const data = await res.json();
+
+    const list = document.getElementById("announcementPreviewList");
+    const empty = document.getElementById("announcementPreviewEmpty");
+
+    list.innerHTML = "";
+    empty.innerText = "";
+
+    if (!Array.isArray(data) || data.length === 0) {
+      empty.innerText = "No announcements yet.";
+      return;
+    }
+
+    data.slice(0, 3).forEach(a => {
+      const item = document.createElement("div");
+      item.className = "announcement-preview-item";
+
+      const createdText = a.createdAt
+        ? new Date(a.createdAt).toLocaleString()
+        : "No date";
+
+      item.innerHTML = `
+        <h4>${a.title || "-"}</h4>
+        <p>${a.content || ""}</p>
+        <div class="announcement-preview-date">Posted: ${createdText}</div>
+      `;
+
+      list.appendChild(item);
+    });
+
+  } catch (err) {
+  console.log("Score load failed:", err);
+  document.getElementById("rankValue").innerText = getRank(0);
+}
+}
+
+function loadAchievementBadges(scoreData, bestScore) {
+  const badgeList = document.getElementById("badgeList");
+  badgeList.innerHTML = "";
+
+  const badges = [];
+
+  badges.push("🪨 New Miner");
+
+  if (Array.isArray(scoreData) && scoreData.length > 0) {
+    badges.push("🏆 First Score");
+  }
+
+  if (bestScore >= 100) {
+    badges.push("⛏️ Skilled Miner");
+  }
+
+  if (bestScore >= 500) {
+    badges.push("💎 Treasure Hunter");
+  }
+
+  if (bestScore >= 1000) {
+    badges.push("👑 Abyss Legend");
+  }
+
+  if (role === "admin" || role === "superadmin") {
+    badges.push("🛡️ Admin Access");
+  }
+
+  badges.forEach(badge => {
+    const item = document.createElement("div");
+    item.className = "achievement-badge";
+    item.innerText = badge;
+    badgeList.appendChild(item);
+  });
+}
+
+function getRank(score) {
+  if (score >= 1000) return "👑 Legend";
+  if (score >= 500) return "💎 Elite Miner";
+  if (score >= 100) return "⛏️ Miner";
+  return "🪨 Beginner";
+}
+
+const today = new Date().toDateString();
+const lastLoginDate = localStorage.getItem("loginDate");
+let streak = Number(localStorage.getItem("loginStreak")) || 1;
+
+if (lastLoginDate) {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (lastLoginDate === yesterday.toDateString()) {
+    streak++;
+  } else if (lastLoginDate !== today) {
+    streak = 1;
+  }
+}
+
+localStorage.setItem("loginDate", today);
+localStorage.setItem("loginStreak", streak);
+
+document.getElementById("welcomeText").innerText +=
+  `\n🔥 Login Streak: ${streak} days`;
+
+    loadAchievementBadges([], 0);
+    loadProfile();
+    loadMyScores();
+    loadMiniLeaderboard();
+    loadAnnouncementPreview();
+  </script>
+</body>
+</html>

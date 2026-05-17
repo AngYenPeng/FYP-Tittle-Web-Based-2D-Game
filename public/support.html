@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Contact Support - Abyss Miner</title>
+</head>
+<body>
+  <h2>Contact Support</h2>
+
+  <input type="text" id="username" placeholder="Your username"><br><br>
+  <input type="email" id="email" placeholder="Your email"><br><br>
+  <textarea id="messageText" placeholder="Explain your issue"></textarea><br><br>
+
+  <button onclick="submitTicket()">Submit Ticket</button>
+  <p id="message"></p>
+
+  <a href="/login.html">Back to Login</a>
+
+  <script>
+    async function submitTicket() {
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const messageText = document.getElementById("messageText").value.trim();
+      const message = document.getElementById("message");
+
+      if (!username || !email || !messageText) {
+        message.innerText = "Please fill in all fields.";
+        return;
+      }
+
+      const res = await fetch("/api/support/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          message: messageText
+        })
+      });
+
+      const data = await res.json();
+      message.innerText = data.message || data.error || "Something went wrong.";
+    }
+  </script>
+</body>
+</html>

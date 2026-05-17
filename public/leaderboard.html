@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaderboard - Abyss Miner</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #050816, #0f172a, #1e1b4b);
+      color: white;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .background {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .orb1 {
+      width: 320px;
+      height: 320px;
+      background: #3b82f6;
+      top: 8%;
+      left: 6%;
+    }
+
+    .orb2 {
+      width: 360px;
+      height: 360px;
+      background: #8b5cf6;
+      bottom: 6%;
+      right: 8%;
+      animation-delay: 2s;
+    }
+
+    .orb3 {
+      width: 220px;
+      height: 220px;
+      background: #38bdf8;
+      top: 50%;
+      left: 50%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) translateX(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-24px) translateX(14px) scale(1.06);
+      }
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      padding: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .title-wrap p {
+      margin: 6px 0 0 0;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions a, .actions button {
+      padding: 11px 15px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .actions a:hover, .actions button:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.14);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 20px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+    }
+
+    .card-label {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    .main-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 24px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+    }
+
+    .main-card h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .user-info {
+      color: #cbd5e1;
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 16px;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #334155;
+    }
+
+    tr:nth-child(even) {
+      background: #273449;
+    }
+
+    tr:nth-child(odd) {
+      background: #1f2d40;
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .player-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .player-img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.25);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    }
+
+    .empty-text {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        padding: 18px;
+      }
+
+      .title-wrap h1 {
+        font-size: 24px;
+      }
+
+      th, td {
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      .player-img {
+        width: 30px;
+        height: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="background">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="page">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Leaderboard</h1>
+        <p>Track the strongest miners and fastest runs</p>
+      </div>
+
+      <div class="actions">
+        <a href="/game.html">Back to Game</a>
+        <button onclick="loadLeaderboard()">Refresh</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <div class="card-label">Total Records</div>
+        <div class="card-value" id="totalRecords">0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Top Score</div>
+        <div class="card-value" id="topScore">0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Best Player</div>
+        <div class="card-value" id="bestPlayer">-</div>
+      </div>
+    </div>
+
+    <div class="main-card">
+      <h2>Global Ranking</h2>
+      <div class="user-info" id="userInfo"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Time</th>
+            <th>Mode</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+
+      <div class="empty-text" id="emptyText"></div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+
+    if (!userId) {
+      window.location.href = "/login.html";
+    }
+
+    document.getElementById("userInfo").innerText =
+      username ? "Logged in as: " + username : "Not logged in";
+
+    async function loadLeaderboard() {
+      const res = await fetch("/api/score/leaderboard");
+      const data = await res.json();
+
+      const body = document.getElementById("leaderboardBody");
+      const emptyText = document.getElementById("emptyText");
+
+      body.innerHTML = "";
+      emptyText.innerText = "";
+
+      if (!Array.isArray(data) || data.length === 0) {
+        document.getElementById("totalRecords").innerText = 0;
+        document.getElementById("topScore").innerText = 0;
+        document.getElementById("bestPlayer").innerText = "-";
+        emptyText.innerText = "No leaderboard data yet.";
+        return;
+      }
+
+      document.getElementById("totalRecords").innerText = data.length;
+      document.getElementById("topScore").innerText = data[0].score || 0;
+      document.getElementById("bestPlayer").innerText = data[0].username || "-";
+
+      data.forEach((player, index) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+
+          <td><span class="rank-badge">#${index + 1}</span></td>
+
+          <td>
+
+            <div class="player-cell">
+
+              <img 
+
+                class="player-img"
+
+                src="${player.profilePicture || "/uploads/default-profile.png"}"
+
+                onerror="this.src='/uploads/default-profile.png'"
+
+              >
+
+              <span>${player.username || "-"}</span>
+
+            </div>
+
+          </td>
+
+          <td>${player.score || 0}</td>
+
+          <td>${player.time || 0}</td>
+
+          <td>${player.mode || "-"}</td>
+
+        `;
+
+        body.appendChild(row);
+
+      });
+
+    }
+
+    loadLeaderboard();
+
+  </script>
+</body>
+</html>

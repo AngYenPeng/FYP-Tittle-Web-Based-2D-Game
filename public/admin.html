@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard - Abyss Miner</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      min-height: 100vh;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    .container {
+      max-width: 1250px;
+      margin: auto;
+      background: rgba(255,255,255,0.08);
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 15px 0;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    a, button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 2px;
+    }
+
+    a:hover, button:hover {
+      background: #2563eb;
+    }
+
+    .danger-btn {
+      background: #ef4444;
+    }
+
+    .danger-btn:hover {
+      background: #dc2626;
+    }
+
+    .small {
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card-box {
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+    }
+
+    .card-box h3 {
+      margin: 0;
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+
+    .card-number {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #ffffff;
+    }
+
+    .activity-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .activity-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .activity-label {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+
+    .activity-value {
+      font-size: 16px;
+      font-weight: bold;
+      word-break: break-word;
+    }
+
+    .section {
+      margin-top: 30px;
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #334155;
+    }
+
+    tr:nth-child(even) {
+      background: #273449;
+    }
+
+    tr:nth-child(odd) {
+      background: #1f2d40;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    #message {
+      margin-top: 12px;
+      min-height: 20px;
+      font-size: 14px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .refresh-btn {
+      background: #8b5cf6;
+    }
+
+    .refresh-btn:hover {
+      background: #7c3aed;
+    }
+
+    .search-box {
+      max-width: 320px;
+      margin-top: 8px;
+    }
+
+    .popup {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #22c55e;
+      color: white;
+      padding: 14px 18px;
+      border-radius: 10px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 1000;
+      font-size: 14px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+    }
+
+    .modal-content {
+      background: #1e293b;
+      color: white;
+      max-width: 500px;
+      margin: 8% auto;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+    }
+
+    .close-btn {
+      background: #64748b;
+      margin-top: 10px;
+    }
+
+    .close-btn:hover {
+      background: #475569;
+    }
+
+    .status-active {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .status-banned {
+      color: #ef4444;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <h1>Admin Dashboard</h1>
+        <div class="small" id="userInfo"></div>
+      </div>
+
+      <div class="buttons">
+        <a href="/game.html">Back to Game</a>
+        <button onclick="refreshDashboard()" class="refresh-btn">Refresh Dashboard</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card-box">
+        <h3>Total Users</h3>
+        <div class="card-number" id="totalUsers">0</div>
+      </div>
+
+      <div class="card-box">
+        <h3>Total Scores</h3>
+        <div class="card-number" id="totalScores">0</div>
+      </div>
+
+      <div class="card-box">
+        <h3>Total Announcements</h3>
+        <div class="card-number" id="totalAnnouncements">0</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Latest Activity</h2>
+      <div class="activity-grid">
+        <div class="activity-card">
+          <div class="activity-label">Latest Registered User</div>
+          <div class="activity-value" id="latestUser">No data</div>
+        </div>
+
+        <div class="activity-card">
+          <div class="activity-label">Latest Score Submission</div>
+          <div class="activity-value" id="latestScore">No data</div>
+        </div>
+
+        <div class="activity-card">
+          <div class="activity-label">Latest Announcement</div>
+          <div class="activity-value" id="latestAnnouncement">No data</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Post Announcement</h2>
+      </div>
+
+      <input type="text" id="title" placeholder="Announcement title">
+      <textarea id="content" placeholder="Announcement content"></textarea>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+        <button onclick="saveAnnouncement()" id="announcementBtn">Post Announcement</button>
+        <button onclick="cancelEdit()" id="cancelEditBtn" style="display:none; background:#64748b;">Cancel Edit</button>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>All Users</h2>
+      </div>
+
+      <input class="search-box" type="text" id="userSearch" placeholder="Search users..." oninput="renderUsers()">
+
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>All Scores</h2>
+      </div>
+
+      <input class="search-box" type="text" id="scoreSearch" placeholder="Search scores..." oninput="renderScores()">
+
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Score</th>
+            <th>Time</th>
+            <th>Mode</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="scoresBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>All Announcements</h2>
+      </div>
+
+      <input class="search-box" type="text" id="announcementSearch" placeholder="Search announcements..." oninput="renderAnnouncements()">
+
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Content</th>
+            <th>Last Edited</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="announcementsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="successPopup" class="popup"></div>
+
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit Announcement</h2>
+      <input type="text" id="editTitle" placeholder="Announcement title">
+      <textarea id="editContent" placeholder="Announcement content"></textarea>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button onclick="updateAnnouncement()">Save Changes</button>
+        <button class="close-btn" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit User</h2>
+      <input type="text" id="editUsername" placeholder="Username">
+      <input type="email" id="editEmail" placeholder="Email">
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button onclick="updateUser()">Save User</button>
+        <button class="close-btn" onclick="closeUserModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="scoreModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit Score</h2>
+      <input type="number" id="editScoreValue" placeholder="Score">
+      <input type="number" id="editScoreTime" placeholder="Time">
+      <input type="text" id="editScoreMode" placeholder="Mode">
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <button onclick="updateScore()">Save Score</button>
+        <button class="close-btn" onclick="closeScoreModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+  <div class="section-header">
+    <h2>Support Tickets</h2>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Message</th>
+        <th>Status</th>
+        <th>Reply</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="ticketsBody"></tbody>
+  </table>
+
+  <div id="replyTicketModal" class="modal">
+  <div class="modal-content">
+    <h2>Reply Support Ticket</h2>
+    <textarea id="ticketReplyText" placeholder="Enter your reply"></textarea>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+      <button onclick="sendTicketReply()">Send Reply</button>
+      <button class="close-btn" onclick="closeReplyTicket()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Activity Logs</h2>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Action</th>
+        <th>Performed By</th>
+        <th>Target</th>
+        <th>Details</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="activityLogsBody"></tbody>
+  </table>
+</div>
+
+    <script>
+    const userId = localStorage.getItem("userId");
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+
+    let usersData = [];
+    let scoresData = [];
+    let announcementsData = [];
+    let editingAnnouncementId = null;
+    let editingUserId = null;
+    let editingScoreId = null;
+    let ticketsData = [];
+    let replyingTicketId = null;
+    let activityLogsData = [];
+
+    if (!userId) {
+      window.location.href = "/login.html";
+    }
+
+    if (role !== "admin" && role !== "superadmin") {
+      alert("Access denied. Admin only.");
+      window.location.href = "/game.html";
+    }
+
+    document.getElementById("userInfo").innerText =
+      "Logged in as: " + username + " (" + role + ")";
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "/login.html";
+    }
+
+    function showPopup(text) {
+      const popup = document.getElementById("successPopup");
+      popup.innerText = text;
+      popup.style.display = "block";
+
+      setTimeout(() => {
+        popup.style.display = "none";
+      }, 2500);
+    }
+
+    function updateLatestActivity() {
+      document.getElementById("latestUser").innerText =
+        usersData.length > 0
+          ? usersData[0].username + " (" + (usersData[0].email || "No email") + ")"
+          : "No data";
+
+      document.getElementById("latestScore").innerText =
+        scoresData.length > 0
+          ? scoresData[0].username + " - " + scoresData[0].score + " points"
+          : "No data";
+
+      document.getElementById("latestAnnouncement").innerText =
+        announcementsData.length > 0 ? announcementsData[0].title : "No data";
+    }
+
+    function renderUsers() {
+      const body = document.getElementById("usersBody");
+      const keyword = document.getElementById("userSearch").value.toLowerCase().trim();
+      body.innerHTML = "";
+
+      const filtered = usersData.filter(user =>
+        (user.username || "").toLowerCase().includes(keyword) ||
+        (user.email || "").toLowerCase().includes(keyword) ||
+        (user.role || "").toLowerCase().includes(keyword) ||
+        (user.isBanned ? "banned" : "active").includes(keyword)
+      );
+
+      if (filtered.length === 0) {
+        body.innerHTML = `<tr><td colspan="5">No matching users found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(user => {
+        const statusText = user.isBanned ? "Banned" : "Active";
+        const statusClass = user.isBanned ? "status-banned" : "status-active";
+
+        const roleButtons =
+          role === "superadmin" && user.role !== "superadmin"
+            ? `
+              <button onclick="changeUserRole('${user._id}', 'admin')" style="background:#22c55e; margin-top:8px;">Make Admin</button>
+              <button onclick="changeUserRole('${user._id}', 'player')" style="background:#64748b; margin-top:8px;">Make Player</button>
+            `
+            : "";
+
+        const banButton =
+          user.role === "superadmin"
+            ? ""
+            : user.isBanned
+              ? `<button onclick="unbanUser('${user._id}')" style="background:#22c55e; margin-top:8px;">Unban</button>`
+              : `<button onclick="banUser('${user._id}')" style="background:#ef4444; margin-top:8px;">Ban</button>`;
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${user.username || ""}</td>
+          <td>${user.email || ""}</td>
+          <td>${user.role || ""}</td>
+          <td><span class="${statusClass}">${statusText}</span></td>
+          <td>
+            <button onclick="editUser('${user._id}')" style="background:#f59e0b; margin-right:8px;">Edit</button>
+            <button class="danger-btn" onclick="deleteUser('${user._id}')">Delete</button>
+            ${banButton}
+            ${roleButtons}
+          </td>
+        `;
+
+        body.appendChild(row);
+      });
+    }
+
+    function renderScores() {
+      const body = document.getElementById("scoresBody");
+      const keyword = document.getElementById("scoreSearch").value.toLowerCase().trim();
+      body.innerHTML = "";
+
+      const filtered = scoresData.filter(score =>
+        (score.username || "").toLowerCase().includes(keyword) ||
+        String(score.score || "").includes(keyword) ||
+        String(score.time || "").includes(keyword) ||
+        (score.mode || "").toLowerCase().includes(keyword)
+      );
+
+      if (filtered.length === 0) {
+        body.innerHTML = `<tr><td colspan="5">No matching scores found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(score => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${score.username || ""}</td>
+          <td>${score.score || 0}</td>
+          <td>${score.time || 0}</td>
+          <td>${score.mode || ""}</td>
+          <td>
+            <button onclick="editScore('${score._id}')" style="background:#f59e0b; margin-right:8px;">Edit</button>
+            <button class="danger-btn" onclick="deleteScore('${score._id}')">Delete</button>
+          </td>
+        `;
+
+        body.appendChild(row);
+      });
+    }
+
+    function renderAnnouncements() {
+      const body = document.getElementById("announcementsBody");
+      const keyword = document.getElementById("announcementSearch").value.toLowerCase().trim();
+      body.innerHTML = "";
+
+      const filtered = announcementsData.filter(a =>
+        (a.title || "").toLowerCase().includes(keyword) ||
+        (a.content || "").toLowerCase().includes(keyword)
+      );
+
+      if (filtered.length === 0) {
+        body.innerHTML = `<tr><td colspan="4">No matching announcements found</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(a => {
+        const editedText = a.updatedAt
+          ? new Date(a.updatedAt).toLocaleString()
+          : "Not edited";
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${a.title || ""}</td>
+          <td>${a.content || ""}</td>
+          <td>${editedText}</td>
+          <td>
+            <button onclick="openEditModal('${a._id}')" style="margin-right:8px; background:#f59e0b;">Edit</button>
+            <button class="danger-btn" onclick="deleteAnnouncement('${a._id}')">Delete</button>
+          </td>
+        `;
+
+        body.appendChild(row);
+      });
+    }
+
+    async function loadUsers() {
+      const res = await fetch("/api/admin/users", {
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        document.getElementById("usersBody").innerHTML =
+          `<tr><td colspan="5">${data.message || data.error}</td></tr>`;
+        usersData = [];
+        return;
+      }
+
+      usersData = data;
+      document.getElementById("totalUsers").innerText = data.length;
+      renderUsers();
+    }
+
+    async function loadScores() {
+      const res = await fetch("/api/admin/scores", {
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        document.getElementById("scoresBody").innerHTML =
+          `<tr><td colspan="5">${data.message || data.error}</td></tr>`;
+        scoresData = [];
+        return;
+      }
+
+      scoresData = data;
+      document.getElementById("totalScores").innerText = data.length;
+      renderScores();
+    }
+
+    async function loadAnnouncements() {
+      const res = await fetch("/api/admin/announcements", {
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        document.getElementById("announcementsBody").innerHTML =
+          `<tr><td colspan="4">${data.message || data.error}</td></tr>`;
+        announcementsData = [];
+        return;
+      }
+
+      announcementsData = data;
+      document.getElementById("totalAnnouncements").innerText = data.length;
+      renderAnnouncements();
+    }
+
+    function startEditAnnouncement(id) {
+      const announcement = announcementsData.find(a => a._id === id);
+      if (!announcement) return;
+
+      editingAnnouncementId = id;
+
+      document.getElementById("title").value = announcement.title || "";
+      document.getElementById("content").value = announcement.content || "";
+      document.getElementById("announcementBtn").innerText = "Update Announcement";
+      document.getElementById("cancelEditBtn").style.display = "inline-block";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function cancelEdit() {
+      editingAnnouncementId = null;
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      document.getElementById("announcementBtn").innerText = "Post Announcement";
+      document.getElementById("cancelEditBtn").style.display = "none";
+      document.getElementById("message").innerText = "";
+    }
+
+    async function saveAnnouncement() {
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const message = document.getElementById("message");
+
+      message.style.color = "#ef4444";
+
+      if (!title || !content) {
+        message.innerText = "Please fill in title and content.";
+        return;
+      }
+
+      let res;
+
+      if (editingAnnouncementId) {
+        res = await fetch(`/api/admin/announcements/${editingAnnouncementId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            userId: userId
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            userId
+          })
+        });
+      } else {
+        res = await fetch("/api/announcement/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            userId
+          })
+        });
+      }
+
+      const data = await res.json();
+
+      if (data.message && (
+        data.message.toLowerCase().includes("added") ||
+        data.message.toLowerCase().includes("updated")
+      )) {
+        message.style.color = "#22c55e";
+        cancelEdit();
+        await refreshDashboard();
+        message.innerText = data.message;
+        showPopup(data.message);
+        return;
+      }
+
+      message.innerText = data.message || data.error || "Something went wrong.";
+    }
+
+    async function deleteAnnouncement(id) {
+      const confirmDelete = confirm("Are you sure you want to delete this announcement?");
+      if (!confirmDelete) return;
+
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: "DELETE",
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("deleted")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    function openEditModal(id) {
+      const announcement = announcementsData.find(a => a._id === id);
+      if (!announcement) return;
+
+      editingAnnouncementId = id;
+      document.getElementById("editTitle").value = announcement.title || "";
+      document.getElementById("editContent").value = announcement.content || "";
+      document.getElementById("editModal").style.display = "block";
+    }
+
+    function closeEditModal() {
+      editingAnnouncementId = null;
+      document.getElementById("editTitle").value = "";
+      document.getElementById("editContent").value = "";
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    async function updateAnnouncement() {
+      const title = document.getElementById("editTitle").value.trim();
+      const content = document.getElementById("editContent").value.trim();
+
+      if (!title || !content) {
+        alert("Please fill in title and content.");
+        return;
+      }
+
+      const res = await fetch(`/api/admin/announcements/${editingAnnouncementId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          userId
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("updated")) {
+        closeEditModal();
+        await refreshDashboard();
+        showPopup(data.message);
+        return;
+      }
+
+      alert(data.message || data.error || "Something went wrong.");
+    }
+
+    function editUser(id) {
+      const user = usersData.find(u => u._id === id);
+      if (!user) return;
+
+      editingUserId = id;
+      document.getElementById("editUsername").value = user.username || "";
+      document.getElementById("editEmail").value = user.email || "";
+      document.getElementById("userModal").style.display = "block";
+    }
+
+    function closeUserModal() {
+      editingUserId = null;
+      document.getElementById("editUsername").value = "";
+      document.getElementById("editEmail").value = "";
+      document.getElementById("userModal").style.display = "none";
+    }
+
+    async function updateUser() {
+      const username = document.getElementById("editUsername").value.trim();
+      const email = document.getElementById("editEmail").value.trim();
+
+      if (!username || !email) {
+        alert("Please fill in username and email.");
+        return;
+      }
+
+      const res = await fetch(`/api/admin/users/${editingUserId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          userId
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("updated")) {
+        closeUserModal();
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function deleteUser(id) {
+      const confirmDelete = confirm("Delete this user? This will also delete their scores.");
+      if (!confirmDelete) return;
+
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("deleted")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    function editScore(id) {
+      const score = scoresData.find(s => s._id === id);
+      if (!score) return;
+
+      editingScoreId = id;
+      document.getElementById("editScoreValue").value = score.score || 0;
+      document.getElementById("editScoreTime").value = score.time || 0;
+      document.getElementById("editScoreMode").value = score.mode || "";
+      document.getElementById("scoreModal").style.display = "block";
+    }
+
+    function closeScoreModal() {
+      editingScoreId = null;
+      document.getElementById("editScoreValue").value = "";
+      document.getElementById("editScoreTime").value = "";
+      document.getElementById("editScoreMode").value = "";
+      document.getElementById("scoreModal").style.display = "none";
+    }
+
+    async function updateScore() {
+      const score = document.getElementById("editScoreValue").value.trim();
+      const time = document.getElementById("editScoreTime").value.trim();
+      const mode = document.getElementById("editScoreMode").value.trim();
+
+      if (!score || !time || !mode) {
+        alert("Please fill in score, time, and mode.");
+        return;
+      }
+
+      const res = await fetch(`/api/admin/scores/${editingScoreId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId
+        },
+        body: JSON.stringify({
+          score,
+          time,
+          mode,
+          userId
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("updated")) {
+        closeScoreModal();
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function deleteScore(id) {
+      const confirmDelete = confirm("Delete this score record?");
+      if (!confirmDelete) return;
+
+      const res = await fetch(`/api/admin/scores/${id}`, {
+        method: "DELETE",
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("deleted")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function changeUserRole(id, newRole) {
+      const confirmChange = confirm("Change this user's role to " + newRole + "?");
+      if (!confirmChange) return;
+
+      const res = await fetch(`/api/admin/users/${id}/role`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          userId: userId
+        },
+        body: JSON.stringify({
+          role: newRole
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("updated")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function banUser(id) {
+      const confirmBan = confirm("Ban this user?");
+      if (!confirmBan) return;
+
+      const res = await fetch(`/api/admin/users/${id}/ban`, {
+        method: "PUT",
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("banned")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function unbanUser(id) {
+      const confirmUnban = confirm("Unban this user?");
+      if (!confirmUnban) return;
+
+      const res = await fetch(`/api/admin/users/${id}/unban`, {
+        method: "PUT",
+        headers: { userId: userId }
+      });
+
+      const data = await res.json();
+
+      if (data.message && data.message.toLowerCase().includes("unbanned")) {
+        await refreshDashboard();
+        showPopup(data.message);
+      } else {
+        alert(data.message || data.error || "Something went wrong.");
+      }
+    }
+
+    async function refreshDashboard() {
+      await loadUsers();
+      await loadScores();
+      await loadAnnouncements();
+      updateLatestActivity();
+    }
+
+    async function loadSupportTickets() {
+  const res = await fetch("/api/admin/support-tickets", {
+    headers: { userId: userId }
+  });
+
+  const data = await res.json();
+  const body = document.getElementById("ticketsBody");
+  body.innerHTML = "";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    body.innerHTML = `<tr><td colspan="5">No support tickets found</td></tr>`;
+    return;
+  }
+
+  ticketsData = data;
+
+  data.forEach(ticket => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+  <td>${ticket.username || "-"}</td>
+  <td>${ticket.email || "-"}</td>
+  <td>${ticket.message || "-"}</td>
+  <td>${ticket.status || "pending"}</td>
+  <td>${ticket.reply || "No reply yet"}</td>
+  <td>
+    ${
+      ticket.status === "resolved"
+        ? "Resolved"
+        : `<button onclick="openReplyTicket('${ticket._id}')" style="background:#22c55e;">Reply</button>`
+    }
+  </td>
+`;
+
+    body.appendChild(row);
+  });
+}
+
+async function resolveTicket(id) {
+  const res = await fetch(`/api/admin/support-tickets/${id}/resolve`, {
+    method: "PUT",
+    headers: { userId: userId }
+  });
+
+  const data = await res.json();
+
+  if (data.message && data.message.toLowerCase().includes("resolved")) {
+    await loadSupportTickets();
+    showPopup(data.message);
+  } else {
+    alert(data.message || data.error || "Something went wrong.");
+  }
+}
+
+async function refreshDashboard() {
+  await loadUsers();
+  await loadScores();
+  await loadAnnouncements();
+  await loadSupportTickets();
+  await loadActivityLogs();
+  updateLatestActivity();
+}
+
+function openReplyTicket(id) {
+  replyingTicketId = id;
+  document.getElementById("ticketReplyText").value = "";
+  document.getElementById("replyTicketModal").style.display = "block";
+}
+
+function closeReplyTicket() {
+  replyingTicketId = null;
+  document.getElementById("ticketReplyText").value = "";
+  document.getElementById("replyTicketModal").style.display = "none";
+}
+
+async function sendTicketReply() {
+  const reply = document.getElementById("ticketReplyText").value.trim();
+
+  if (!reply) {
+    alert("Please enter a reply.");
+    return;
+  }
+
+  const res = await fetch(`/api/admin/support-tickets/${replyingTicketId}/reply`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      userId: userId
+    },
+    body: JSON.stringify({ reply })
+  });
+
+  const data = await res.json();
+
+  if (data.message && data.message.toLowerCase().includes("reply")) {
+    closeReplyTicket();
+    await loadSupportTickets();
+    showPopup(data.message);
+  } else {
+    alert(data.message || data.error || "Something went wrong.");
+  }
+}
+
+async function loadActivityLogs() {
+  const res = await fetch("/api/admin/activity-logs", {
+    headers: { userId: userId }
+  });
+
+  const data = await res.json();
+  const body = document.getElementById("activityLogsBody");
+
+  body.innerHTML = "";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    body.innerHTML = `<tr><td colspan="5">No activity logs found</td></tr>`;
+    return;
+  }
+
+  activityLogsData = data;
+
+  data.forEach(log => {
+    const timeText = log.createdAt
+      ? new Date(log.createdAt).toLocaleString()
+      : "-";
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${log.action || "-"}</td>
+      <td>${log.performedBy || "-"}</td>
+      <td>${log.target || "-"}</td>
+      <td>${log.details || "-"}</td>
+      <td>${timeText}</td>
+    `;
+
+    body.appendChild(row);
+  });
+}
+
+  </script>
+</body>
+</html>
