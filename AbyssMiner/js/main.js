@@ -26,6 +26,30 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+// (用户) GroundShaking: 任意场景主镜头在震动 → 循环播放; 震动一停 → 立即停止 (哪怕没播完)
+//   挂游戏级 POST_STEP, 一处覆盖所有场景 (剧情震屏 / boss 咆哮 / golem 砸地全都响)
+if (game && game.events) {
+    let _gsSnd = null;
+    game.events.on(Phaser.Core.Events.POST_STEP, () => {
+        try {
+            let shaking = false;
+            const scs = game.scene.getScenes(true);
+            for (let i = 0; i < scs.length; i++) {
+                const cam = scs[i].cameras && scs[i].cameras.main;
+                if (cam && cam.shakeEffect && cam.shakeEffect.isRunning) { shaking = true; break; }
+            }
+            if (shaking) {
+                if (!_gsSnd && game.cache.audio.exists('GroundShaking')) {
+                    _gsSnd = game.sound.add('GroundShaking', { loop: true, volume: 0.7 });
+                }
+                if (_gsSnd && !_gsSnd.isPlaying) _gsSnd.play();
+            } else if (_gsSnd && _gsSnd.isPlaying) {
+                _gsSnd.stop();
+            }
+        } catch (e) {}
+    });
+}
 // (用户) Game.step 包裹 — window.onerror 对跨域脚本(CDN phaser)抛的错只给 "Script error.",
 // 但同源 try/catch 拿到的 Error 对象不受脱敏: 任何 update/render 期崩溃这里必出完整栈
 if (typeof Phaser !== 'undefined' && Phaser.Game && !Phaser.Game.prototype.__stepWrapped) {

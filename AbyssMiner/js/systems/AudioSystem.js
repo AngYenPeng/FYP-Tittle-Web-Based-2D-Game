@@ -180,6 +180,7 @@ AudioSystem.MANIFEST = {
     'CheckpointActivation': 'Object/CheckpointActivation.wav',
     'ChestOpen':            'Object/ChestOpen.wav',
     'CrystalBreak':         'Object/CrystalBreak.wav',
+    'GroundShaking':        'Mobs/GroundShaking.wav',   // (用户) 荧幕震动音效 (main.js 全局钩子驱动)
     'CrystalDoorOpen':      'Object/CrystalDoorOpen.wav',
     'StoneDoorBreak':       'Object/StoneDoorBreak.wav',
     'UnlockWoodenDoor':     'Object/UnlockWoodenDoor.wav',

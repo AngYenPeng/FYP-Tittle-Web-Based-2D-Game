@@ -743,8 +743,11 @@ class SafeZone2Scene extends MainGameScene {
         if (this._crystalNpcs) this._crystalNpcs.forEach(n => n.update());
 
         // === Boss intro cinematic + 房间空气墙触发 (玩家镜头切到 zone2 时) ===
-        if (!this._sz2BossWallsBuilt && !this._golemDead && this._golem &&
-            this._currentChunkId === 'zone2') {
+        const _inZone2Now = (this._currentChunkId === 'zone2');
+        // (用户) 边沿触发: 只在"房外→zone2"的瞬间建墙 (旧版是"只要在 zone2 就建" —
+        //   死亡期间和上面拆墙块每帧互搏, 还每帧重复注册稿子阻挡器; 复活点若在 zone2 内会秒重建)
+        if (!this._sz2BossWallsBuilt && !this._golemDead && this._golem && !this.isDead &&
+            _inZone2Now && !this._sz2WasInZone2) {
             this._sz2BossWallsBuilt = true;
             const G = 32;
             // 左墙: col 7-8, row 12-19 (2 格宽 × 8 格高), 不可见
@@ -764,12 +767,13 @@ class SafeZone2Scene extends MainGameScene {
             this._startBossIntro();
         }
 
-        // 玩家死后清掉 boss 房空气墙 (复活点在外面，重新进 boss 房会触发上面 rebuild)
+        // 玩家死后清掉 boss 房空气墙 (复活后要等"重新走进 zone2"那一瞬才重建)
         if (this.isDead && this._sz2BossWallsBuilt && !this._golemDead) {
             if (this._sz2WallLeft) { this._sz2WallLeft.destroy(); this._sz2WallLeft = null; }
             if (this._sz2WallRight) { this._sz2WallRight.destroy(); this._sz2WallRight = null; }
             this._sz2BossWallsBuilt = false;
         }
+        if (!this.isDead) this._sz2WasInZone2 = _inZone2Now;   // (用户) 死亡期间冻结追踪, 复活在房内也不秒建
 
         // === 玩家离开 boss 房 → 中止 boss 攻击 + 重置到 floating idle ===
         // 检测 zone2 → 非 zone2 的转换边沿，只触发一次

@@ -51,12 +51,21 @@ class BatNest {
         this._hpBar = scene.add.rectangle(this.x - HB_W / 2, hbY, HB_W, 5, 0xcc3344, 1).setOrigin(0, 0.5).setDepth(58);
         this._hpBarW = HB_W;
         if (scene.uiCam) { try { scene.uiCam.ignore([this._hpBg, this._hpBar]); } catch (e) {} }
+        // (用户) 剧情期间不显示血条 — 默认隐藏, startSummoning (开打) / 挨打时才显示
+        this.setHpBarVisible(false);
 
         scene._batNests = scene._batNests || [];
         scene._batNests.push(this);
     }
 
+    /** (用户) 血条显隐 (剧情期间隐藏, 开打/挨打显示) */
+    setHpBarVisible(v) {
+        if (this._hpBg)  this._hpBg.setVisible(v);
+        if (this._hpBar) this._hpBar.setVisible(v);
+    }
+
     startSummoning() {
+        this.setHpBarVisible(true);   // (用户) 开打 → 显示血条
         if (this._dead || (this.hp != null && this.hp <= 0)) return;   // (用户) 已打烂的巢不再生蝙蝠
         if (this._active) return;
         this._active = true;
@@ -133,6 +142,7 @@ class BatNest {
 
     // 被攻击 (近战/丢稿子) — hp<=0 时破坏
     takeDamage(dmg) {
+        this.setHpBarVisible(true);   // (用户) 挨打 → 显示血条
         if (this.hp == null || this.hp <= 0) return;
         this.hp -= (dmg || 0);
         if (this._hpBar) this._hpBar.scaleX = Math.max(0, this.hp / this.maxHp);

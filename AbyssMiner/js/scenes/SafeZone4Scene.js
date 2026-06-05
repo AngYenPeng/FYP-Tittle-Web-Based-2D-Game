@@ -821,6 +821,13 @@ class SafeZone4Scene extends MainGameScene {
             }
         }
 
+        // (用户) 每帧追踪玩家是否在 boss 房内 (玩家墙边沿重建用)
+        {
+            const _pr4 = this.player, _Gt = 32;
+            this._sz4InBossRoomNow = (_pr4 && _pr4.body)
+                ? !(_pr4.x < -10 * _Gt || _pr4.x > 13 * _Gt || _pr4.y < -3 * _Gt || _pr4.y > 24 * _Gt)
+                : false;
+        }
         // === SZ4 boss 房封门 (玩家越过 x=-10 = col -10 触发, 镜像 SZ2 boss 房) ===
         // 怪物墙: 首次触发即建并永久保留 (挡 BatBoss + 所有怪物群); 玩家墙: 死亡移除, 复活重新经过 x=-10 重建
         if (this.player && this.player.body && this.player.x >= -10 * 32 && !this._batBossDead) {
@@ -837,7 +844,10 @@ class SafeZone4Scene extends MainGameScene {
                 this._sz4MobWall = mw;
                 this._registerPickBlocker(mw);  // 稿子对空气墙 = 真墙 (CCD + 碰撞器)
             }
-            if (!this._sz4PlayerWall) {  // 玩家墙 (死亡移除, 重新经过 x=-10 时重建)
+            // (用户) 玩家墙只在"房外→房内"的瞬间重建 — 旧版条件"只要 x>=-10 就建",
+            //   而复活点 (19.5,17) 满足 x>=-10, 复活当帧墙秒回来 = 看起来根本没消失.
+            //   房界沿用 zone2 出界判定: x -10..13, y -3..24 (格).
+            if (!this._sz4PlayerWall && !this.isDead && this._sz4InBossRoomNow && !this._sz4WasInBossRoom) {
                 const pw = this.add.rectangle(bx, by, bw, bh, 0x000000, 0);
                 this.physics.add.existing(pw, true);
                 this.physics.add.collider(this.player, pw);
@@ -867,7 +877,8 @@ class SafeZone4Scene extends MainGameScene {
                 if (this._sz4BatNests) this._sz4BatNests.forEach(n => { if (n.startSummoning) n.startSummoning(); });
             }
         }
-        // 玩家死亡 → 移除玩家墙 (保留永久怪物墙) + 停 zone2 攻击 + boss 回 idle; 复活后重新经过 x=-10 会重建玩家墙
+        if (!this.isDead) this._sz4WasInBossRoom = this._sz4InBossRoomNow;   // (用户) 死亡期间冻结, 复活在线内也不秒建
+        // 玩家死亡 → 移除玩家墙 (保留永久怪物墙) + 停 zone2 攻击 + boss 回 idle; 复活后重新走进 boss 房才重建玩家墙
         if (this.isDead) {
             if (this._sz4BossActive && typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone4');  // 死亡 → 退回区域 BGM
             if (this._sz4PlayerWall) {
