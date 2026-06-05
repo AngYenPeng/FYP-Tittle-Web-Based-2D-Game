@@ -184,7 +184,7 @@ class SafeZone2Scene extends MainGameScene {
         // L1/L3 贴世界 1:1 (sf 1,1); 只有 L2 会动: X 视差 0.5, Y 1:1; L2 跟 SZ1 同款左移 20 格
         // depth: L1 最前 (-101), L2 中 (-102), L3 最深 (-103); 初始锚点 = 基础地图中心 (640, 360), 待按格微调
         {
-            const bgX = 640 + 23 * 32, bgY = 360 - 11 * 32;   // (用户) 净偏移: 右 23, 上 11 → (1376, 8)
+            const bgX = 640 + 17 * 32, bgY = 360 - 11 * 32;   // (用户) 净偏移: 右 17, 上 11 → (1184, 8)
             if (this.textures.exists('sz2_bg_L3')) {
                 this.bgL3 = this.add.image(bgX, bgY, 'sz2_bg_L3').setScrollFactor(1, 1).setDepth(-103);
             }
