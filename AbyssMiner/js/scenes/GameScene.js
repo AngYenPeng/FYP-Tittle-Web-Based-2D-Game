@@ -48,6 +48,7 @@ class MainGameScene extends Phaser.Scene {
         this._pickExtraWalls = null; this._thorns = null;
         this._crystalOres = null; this._deathFragments = null;
         this._currentCamBoundsKey = null;   // (用户) 重进场景必须清 — 否则 _updateChunkCamera 以为边界没变, 跳过 setBounds, 新摄像机永远无界
+        this._cpSnapDone = null;   // (用户) checkpoint 快照集合 — 每次 create 重置 (每个 checkpoint 每局首次进圈记一次)
         this.uiCam = null; this.pick1 = null; this.pick2 = null;
         this.mobWalls = null; this.playerWalls = null;   // (用户) 懒建组字段 — 死组残留是重进崩溃的元凶 (MobWall children.set)   // (用户) uiCam 在 create 末段才重建, 早段读到旧轮死相机; pick 同理 (墙注册早于稿子重建时拿死稿子挂碰撞器)
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频

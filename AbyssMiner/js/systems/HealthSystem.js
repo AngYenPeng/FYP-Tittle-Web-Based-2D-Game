@@ -400,14 +400,24 @@ class HealthSystem {
 
     /** 每帧调用 — 处理 5 秒死亡倒计时 */
     update(delta) {
-        // (用户) Shrine 回血 (guide caption 一直这么写但从未实现): 激活的 checkpoint 5 格 (160px) 内
-        //   每秒 +1 HP / -1% 腐蚀; Extreme 难度关闭此效果
-        const _cpd = (window.AbyssDiff ? AbyssDiff.get() : null);
-        if ((!_cpd || _cpd.cpRegen) && !this.isDead) {
+        // (用户) Shrine 区: 激活的 checkpoint 5 格 (160px) 内
+        //   1) 快照: 每个 checkpoint 第一次进圈记录一次当前状态 (Save&Exit 后恢复到这份快照; 离开再回来不重记)
+        //   2) 回血: 每秒 +1 HP / -1% 腐蚀 (Extreme 关闭回血, 快照不受影响)
+        if (!this.isDead) {
             const _s = this.scene, _cp = _s._activeCheckpoint;
             if (_cp && _s.player && _s.player.body) {
                 const _dx = _s.player.x - _cp.x, _dy = _s.player.y - _cp.y;
-                if (_dx * _dx + _dy * _dy <= 160 * 160) {
+                const _inCp = (_dx * _dx + _dy * _dy <= 160 * 160);
+                if (_inCp) {
+                    const _ck = Math.round(_cp.x) + ',' + Math.round(_cp.y);
+                    if (!_s._cpSnapDone) _s._cpSnapDone = new Set();
+                    if (!_s._cpSnapDone.has(_ck)) {
+                        _s._cpSnapDone.add(_ck);
+                        try { if (typeof SaveSystem !== 'undefined' && SaveSystem.autoSave) SaveSystem.autoSave(_s); } catch (e) {}
+                    }
+                }
+                const _cpd = (window.AbyssDiff ? AbyssDiff.get() : null);
+                if (_inCp && (!_cpd || _cpd.cpRegen)) {
                     this._cpRegenAcc = (this._cpRegenAcc || 0) + delta;
                     if (this._cpRegenAcc >= 1000) {
                         this._cpRegenAcc -= 1000;
