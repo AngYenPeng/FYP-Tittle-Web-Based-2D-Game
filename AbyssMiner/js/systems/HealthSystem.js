@@ -13,8 +13,9 @@ class HealthSystem {
         // === 新系统 ===
         this.maxHp = 100;
         this.hp = 100;
-        this.maxHearts = 5;
-        this.hearts = 5;
+        const _dh = (window.AbyssDiff ? AbyssDiff.get().hearts : 5);   // (用户) 难度: easy5 / normal3 / hard,extreme1
+        this.maxHearts = _dh;
+        this.hearts = _dh;
         this.isDead = false;
 
         // === 旧 API 兼容 (保留属性, 别处可能引用) ===
@@ -342,6 +343,26 @@ class HealthSystem {
 
     /** 每帧调用 — 处理 5 秒死亡倒计时 */
     update(delta) {
+        // (用户) Shrine 回血 (guide caption 一直这么写但从未实现): 激活的 checkpoint 5 格 (160px) 内
+        //   每秒 +1 HP / -1% 腐蚀; Extreme 难度关闭此效果
+        const _cpd = (window.AbyssDiff ? AbyssDiff.get() : null);
+        if ((!_cpd || _cpd.cpRegen) && !this.isDead) {
+            const _s = this.scene, _cp = _s._activeCheckpoint;
+            if (_cp && _s.player && _s.player.body) {
+                const _dx = _s.player.x - _cp.x, _dy = _s.player.y - _cp.y;
+                if (_dx * _dx + _dy * _dy <= 160 * 160) {
+                    this._cpRegenAcc = (this._cpRegenAcc || 0) + delta;
+                    if (this._cpRegenAcc >= 1000) {
+                        this._cpRegenAcc -= 1000;
+                        if (this.hp < this.maxHp) this.heal(1);
+                        if (_s.diseaseSystem && _s.diseaseSystem.corrosionPct > 0) {
+                            _s.diseaseSystem.corrosionPct = Math.max(0, _s.diseaseSystem.corrosionPct - 1);
+                            if (_s.diseaseSystem._updateUI) _s.diseaseSystem._updateUI();
+                        }
+                    }
+                } else this._cpRegenAcc = 0;
+            }
+        }
         if (!this.isDead) return;
         if (this.returningToHub) return;  // 永久死亡走的是 delayedCall
         if (this._deathAnimPlaying) return;  // 黑屏爱心动画期间不走倒计时 (动画完自己复活)

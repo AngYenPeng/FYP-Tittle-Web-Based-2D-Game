@@ -322,6 +322,7 @@ class BackpackSystem {
         if (this.quickCooldowns[qi] > 0) return;
         const qs = this.quickSlots[qi];
         if (!qs) return;
+        this._activeQuickIdx = qi;   // (用户修复) startCooldown 靠这个标记定位槽位 — 旧底部物品栏路径才设它, C/X 路径漏设 → CD 从来没生效过
         // 阶段 6: 同步最新数量 (避免 stale count)
         this.refreshQuick();
         if (qs.count <= 0) return;  // 没东西不能用
@@ -335,10 +336,10 @@ class BackpackSystem {
                 s.healthSystem.heal(1);
                 this._consumeFromInventory(qs.type, 1);
                 this.refreshQuick();
-                this.startCooldown(60000);
+                this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000);
             } else {
                 s.hudSystem.showConfirm('You are already at full HP — no effect.', (yes) => {
-                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(60000); }
+                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000); }
                 });
             }
         } else if (qs.type === 'health_potion') {
@@ -346,14 +347,14 @@ class BackpackSystem {
             const immuneUntil = s._diseaseImmuneUntil || 0;
             if (immuneUntil > now) {
                 s.hudSystem.showConfirm('Already immune (no stacking) — no effect.', (yes) => {
-                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(60000); }
+                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000); }
                 });
             } else {
-                s._diseaseImmuneUntil = now + 60000;
+                s._diseaseImmuneUntil = now + 30000;   // (用户) 健康药水免疫 60s → 30s
                 if (s.diseaseSystem && s.diseaseSystem.cure) s.diseaseSystem.cure();
                 this._consumeFromInventory(qs.type, 1);
                 this.refreshQuick();
-                this.startCooldown(60000);
+                this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000);
             }
         } else if (qs.type === 'key') {
             // 钥匙不能在这里用 — 走到 KeyDoor interact 自动消耗

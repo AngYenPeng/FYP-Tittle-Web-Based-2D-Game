@@ -93,7 +93,7 @@ class DiseaseSystem {
 
     /**
      * 健康药水 — 减 50% 侵蚀度 (不是清零) + 重置对话 flag.
-     * 60s 免疫由 scene._diseaseImmuneUntil 控制 (BackpackSystem 用药时设).
+     * 30s 免疫由 scene._diseaseImmuneUntil 控制 (BackpackSystem 用药时设).
      */
     cure() {
         this.corrosionPct = Math.max(0, this.corrosionPct - 50);
@@ -193,7 +193,7 @@ class DiseaseSystem {
         const hadCount = s._clingingSpiderCount || 0;
         s._clingingSpiderCount = 0;
         this._updateUI();
-        console.log('[死亡清理] DoT/侵蚀/减速已清, 蜘蛛松手×' + detached + ' (趴身计数 ' + hadCount + '→0)');   // 验证用, 确认稳定后可删
+        // console.log('[死亡清理] DoT/侵蚀/减速已清, 蜘蛛松手×' + detached + ' (趴身计数 ' + hadCount + '→0)');   // (用户) 验证完毕, 静默
     }
 
     /** 临时减速 — N% × T 秒, 不叠加 (取最长持续时间 + 最大值) */
@@ -258,7 +258,7 @@ class DiseaseSystem {
                 this.nextNaturalTickAt = now + interval;
             }
             if (now >= this.nextNaturalTickAt && this.corrosionPct < this.maxCorrosion) {
-                this.addCorrosion(1);  // +1% / interval
+                this.addCorrosion(window.AbyssDiff ? AbyssDiff.get().corrTick : 1);  // (用户) 难度: +1/2/3/4% per interval
                 this.nextNaturalTickAt = now + interval;
             }
         } else {
@@ -299,7 +299,7 @@ class DiseaseSystem {
             if (!this.clingDamageTickAt) this.clingDamageTickAt = now + 1000;
             if (now >= this.clingDamageTickAt) {
                 if (s.healthSystem && s.healthSystem.takeDamage) {
-                    s.healthSystem.takeDamage(clingCount, { ignoreIframe: true, triggerIframe: false });
+                    s.healthSystem.takeDamage(clingCount * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1), { ignoreIframe: true, triggerIframe: false });
                 }
                 this.clingDamageTickAt = now + 1000;
             }

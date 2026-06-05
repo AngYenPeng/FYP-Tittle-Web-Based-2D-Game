@@ -67,21 +67,8 @@ class Checkpoint {
     }
 
     setHintVisible(visible) {
-        if (!this.eIcon) return;
-        if (visible && !this._hintVisible) {
-            this._hintVisible = true;
-            this.eIcon.setVisible(true);
-            this.eIcon.y = this.y - this.h / 2 - 20;
-            this._eIconTween = this.scene.tweens.add({
-                targets: this.eIcon,
-                y: '-=10', duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
-            });
-        } else if (!visible && this._hintVisible) {
-            this._hintVisible = false;
-            this.eIcon.setVisible(false);
-            this.scene.tweens.killTweensOf(this.eIcon);
-            this._eIconTween = null;
-        }
+        // (用户) checkpoint 的 E 漂浮图标已废弃 — 激活时不再显示任何悬浮提示
+        return;
     }
 
     interact(player) {
@@ -141,7 +128,7 @@ class Checkpoint {
                 id: 'checkpoint',
                 title: 'Shrine',
                 animType: 'checkpoint',
-                captionText: 'Walk near a shrine to activate it. Stand within 5 cells to heal +1 HP and reduce corrosion -1% every second.'
+                captionText: 'Walk near a shrine to activate it. Stand within 5 cells to heal +1 HP and reduce corrosion -1% every second. (Except in Extreme mode.)'
             });
         }
         if (scene.anims.exists('checkpoint_activating')) {

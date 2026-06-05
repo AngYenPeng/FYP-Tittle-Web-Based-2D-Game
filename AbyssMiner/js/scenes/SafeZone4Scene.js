@@ -438,6 +438,7 @@ class SafeZone4Scene extends MainGameScene {
         this.inventorySystem = new BackpackSystem(this);  this.inventorySystem.init();
         this.backpackSystem  = this.inventorySystem;
         this.hudSystem       = new HUDSystem(this);       this.hudSystem.init();
+        this.diseaseSystem   = new DiseaseSystem(this);   this.diseaseSystem.init();   // (用户) SZ4 漏建 — 腐蚀条/蜘蛛毒/boss侵蚀在本区全部静默失效
         this.settingsSystem  = new SettingsSystem(this);  this.settingsSystem.init();
         if (typeof CreativeSystem !== 'undefined') {
             this.creativeSystem  = new CreativeSystem(this);  this.creativeSystem.init();
@@ -725,6 +726,12 @@ class SafeZone4Scene extends MainGameScene {
             this.diseaseSystem.corrosionPct = data.corrosionPct;
             if (this.diseaseSystem._updateUI) this.diseaseSystem._updateUI();
         }
+        // (用户) 黄水晶继承 — 修换场景丢计数/丢显示
+        if (typeof data.yellowCrystalCount === 'number' && this.hudSystem) {
+            this.hudSystem.yellowCrystalCount = data.yellowCrystalCount;
+            if (data.yellowCrystalShown) this.hudSystem.yellowCrystalShown = false;   // 让 addYellowCrystal(0) 走显示路径
+            if (this.hudSystem.addYellowCrystal) this.hudSystem.addYellowCrystal(0);
+        }
     }
 
     _registerAnims() {
@@ -919,6 +926,7 @@ class SafeZone4Scene extends MainGameScene {
         if (paused && this.crosshair) this.crosshair.setVisible(false);
 
         if (this.healthSystem) this.healthSystem.update(delta);
+        if (this.diseaseSystem) this.diseaseSystem.update(delta);
         // Chest update — 必须放在 interactSystem.update 之前 (Phaser.JustDown 一帧一次)
         if (this._chests) this._chests.forEach(c => c.update());
         if (this.interactSystem) this.interactSystem.update();

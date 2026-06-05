@@ -19,7 +19,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(false); this.body.setImmovable(true);
         // 不用 setDisplaySize — 帧本来就 32×32, 尺寸由 anim 帧驱动
 
-        this.state = 'idle'; this.hp = 3;   // (用户) 3 击打死 → dead 动画 (melee 对水晶是无参 takeDamage, 一击一滴)
+        this.state = 'idle'; this.hp = Math.ceil(3 * (window.AbyssDiff ? AbyssDiff.get().hpMul : 1));   // (用户) 3 击打死 → dead 动画 (melee 对水晶是无参 takeDamage, 一击一滴)
         this.triggerRadius = 110; this.explodeRadius = 140;
         this.blinkTimer = 0; this.fuseTime = 2000;
         this.fuseTimer = 0; this.hasExploded = false;

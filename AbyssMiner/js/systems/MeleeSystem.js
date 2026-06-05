@@ -11,7 +11,7 @@
 class MeleeSystem {
     constructor(scene) {
         this.scene = scene;
-        this.DAMAGE = 3.5;
+        this.DAMAGE = 3.5 / (window.AbyssDiff ? AbyssDiff.get().hpMul : 1);   // (用户) 难度: 输出除以血量倍率 = 怪物等效更肉
         this.RANGE = 100;       // 半径
         this.COOLDOWN = 200;    // ms
         this.ATTACK_DURATION = 150; // 动画时长 = isMeleeAttacking 时长

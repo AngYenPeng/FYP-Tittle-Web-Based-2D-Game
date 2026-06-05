@@ -562,7 +562,6 @@ class SafeZone2Scene extends MainGameScene {
 
         // pointerdown
         this.input.on('pointerdown', (pointer) => {
-            console.log('[矿诊断] 点击: stunned=' + !!this.isPlayerStunned + ' dead=' + !!this.isDead + ' cine=' + !!this._cinematicLock + ' suppress=' + !!this._suppressNextClick + ' guide开=' + !!(this.guideSystem && this.guideSystem.isOpen));   // 修完删
             if (!this.player.body || this.isPlayerStunned || this.isDead) return;
             if (this._cinematicLock) return;
             if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
@@ -587,9 +586,7 @@ class SafeZone2Scene extends MainGameScene {
                 if (holdingPickaxe && pick.state === 'attached' && this._pickaxeUpgraded) {
                     this.grappleSystem.startZip(pick);
                 } else {
-                    const _exOK = this.meleeSystem.execute();
-                    console.log('[矿诊断] 近战分支: execute=' + _exOK + ' cooldown=' + Math.round(this.meleeCooldown || 0) + ' 矿石数组=' + (this._crystalOres ? this._crystalOres.length : 'null'));   // 修完删
-                    if (_exOK) {
+                    if (this.meleeSystem.execute()) {
                         this._checkMeleeOnCrystalOres();
                     }
                 }
@@ -658,6 +655,12 @@ class SafeZone2Scene extends MainGameScene {
         if (typeof data.corrosionPct === 'number' && this.diseaseSystem) {
             this.diseaseSystem.corrosionPct = data.corrosionPct;
             if (this.diseaseSystem._updateUI) this.diseaseSystem._updateUI();
+        }
+        // (用户) 黄水晶继承 — 修换场景丢计数/丢显示
+        if (typeof data.yellowCrystalCount === 'number' && this.hudSystem) {
+            this.hudSystem.yellowCrystalCount = data.yellowCrystalCount;
+            if (data.yellowCrystalShown) this.hudSystem.yellowCrystalShown = false;   // 让 addYellowCrystal(0) 走显示路径
+            if (this.hudSystem.addYellowCrystal) this.hudSystem.addYellowCrystal(0);
         }
     }
 
@@ -847,6 +850,8 @@ class SafeZone2Scene extends MainGameScene {
                 maxHp: this.healthSystem?.maxHp,
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
+                yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null
             };
@@ -870,6 +875,8 @@ class SafeZone2Scene extends MainGameScene {
                 maxHp: this.healthSystem?.maxHp,
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
+                yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null
             };
@@ -1268,24 +1275,17 @@ class SafeZone2Scene extends MainGameScene {
 
     /** 玩家近战时检查是否打中水晶矿 */
     _checkMeleeOnCrystalOres() {
-        if (!this._crystalOres || !this.player) { console.log('[矿诊断] 检查跳过: 数组=' + !!this._crystalOres + ' player=' + !!this.player); return; }   // 修完删
+        if (!this._crystalOres || !this.player) return;
         // 前方半圆 RANGE=100 + 后方 BACK=32 (半身+0.5格), Y 自然受半圆约束
         const RANGE_SQ = 100 * 100, BACK = 40;
         const px = this.player.x, py = this.player.y;
         const facingRight = !this.player.flipX;
-        { // [矿诊断] 最近矿石一览 — 修完删
-            let _nd = Infinity, _no = null;
-            this._crystalOres.forEach(o => { if (!o.destroyed) { const d = (o.x-px)*(o.x-px)+(o.y-py)*(o.y-py); if (d < _nd) { _nd = d; _no = o; } } });
-            if (_no) console.log('[矿诊断] 活矿' + this._crystalOres.filter(o=>!o.destroyed).length + '颗 | 最近距离=' + Math.round(Math.sqrt(_nd)) + 'px(上限100) dx=' + Math.round(_no.x-px) + ' dy=' + Math.round(_no.y-py) + ' | 面朝=' + (facingRight ? '右' : '左') + ' | 该矿hp=' + _no.hp);
-            else console.log('[矿诊断] 数组有' + this._crystalOres.length + '项但全是destroyed');
-        }
         this._crystalOres.forEach(ore => {
             if (ore.destroyed) return;
             const dx = ore.x - px, dy = ore.y - py;
             if (dx * dx + dy * dy > RANGE_SQ) return;
             if (facingRight && dx < -BACK) return;
             if (!facingRight && dx > BACK) return;
-            console.log('[矿诊断] ✔ 命中 (' + Math.floor(ore.x/32) + ',' + Math.floor(ore.y/32) + ') → takeHit');   // 修完删
             ore.takeHit(3.5);
             if (typeof MeleeSystem !== 'undefined') {
                 MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);

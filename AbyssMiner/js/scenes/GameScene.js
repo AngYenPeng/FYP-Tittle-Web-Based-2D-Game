@@ -47,6 +47,7 @@ class MainGameScene extends Phaser.Scene {
         this.ropeGraphics = null; this._gridCoordText = null;
         this._pickExtraWalls = null; this._thorns = null;
         this._crystalOres = null; this._deathFragments = null;
+        this._currentCamBoundsKey = null;   // (用户) 重进场景必须清 — 否则 _updateChunkCamera 以为边界没变, 跳过 setBounds, 新摄像机永远无界
         this.uiCam = null; this.pick1 = null; this.pick2 = null;
         this.mobWalls = null; this.playerWalls = null;   // (用户) 懒建组字段 — 死组残留是重进崩溃的元凶 (MobWall children.set)   // (用户) uiCam 在 create 末段才重建, 早段读到旧轮死相机; pick 同理 (墙注册早于稿子重建时拿死稿子挂碰撞器)
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
@@ -535,7 +536,7 @@ class MainGameScene extends Phaser.Scene {
         const pickHit = (pick, monster, immuneToPickaxe=false) => {
             if (!monster || !monster.scene) return;
             if (pick.state !== 'flying_max') return;
-            if (!immuneToPickaxe) monster.takeDamage(2, this.player.x, this.player.y);
+            if (!immuneToPickaxe) monster.takeDamage(2 / (window.AbyssDiff ? AbyssDiff.get().hpMul : 1), this.player.x, this.player.y);
             this.recallSystem.startRecall(pick, true);
         };
         this.physics.add.overlap([this.pick1,this.pick2], this.spiders,       (pk,m) => pickHit(pk,m));
@@ -744,13 +745,14 @@ class MainGameScene extends Phaser.Scene {
 
         // 怪物类型 → 伤害量 + 副作用 spec
         const spec = this._getMobDamageSpec(monster);
-        const wasEffective = this.healthSystem.takeDamage(spec.hp);
+        const _dmul = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);   // (用户) 难度: 怪物伤害倍率
+        const wasEffective = this.healthSystem.takeDamage(spec.hp * _dmul);
 
         // 副作用只在"有效命中"时附加 (玩家不在无敌帧才算)
         if (wasEffective && this.diseaseSystem) {
             if (spec.corrosionInstant) this.diseaseSystem.addCorrosion(spec.corrosionInstant);
             if (spec.corrosionDoT)     this.diseaseSystem.addCorrosionDoT(spec.corrosionDoT[0], spec.corrosionDoT[1]);
-            if (spec.hpDoT)            this.diseaseSystem.addHpDoT(spec.hpDoT[0], spec.hpDoT[1]);
+            if (spec.hpDoT)            this.diseaseSystem.addHpDoT(spec.hpDoT[0] * _dmul, spec.hpDoT[1]);
             if (spec.tempSlow)         this.diseaseSystem.addTempSlow(spec.tempSlow[0], spec.tempSlow[1]);
         }
 

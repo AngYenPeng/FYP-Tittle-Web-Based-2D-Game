@@ -150,8 +150,8 @@ class Chest {
         for (let i = 0; i < crystalCount; i++) items.push({ kind: 'crystal' });
         for (let i = 0; i < potionCount; i++) {
             const r = Math.random();
+            // (用户) 加命药水移出宝箱掉落 — 只出 回血60% / 健康40%
             if (r < 0.60)       items.push({ kind: 'potion', type: 'healing_potion' });
-            else if (r < 0.70)  items.push({ kind: 'potion', type: 'life_potion' });
             else                items.push({ kind: 'potion', type: 'health_potion' });
         }
 

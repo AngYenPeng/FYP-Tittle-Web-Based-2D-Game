@@ -449,7 +449,7 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                             const hH = (hand.displayHeight || 112) / 2;
                             if (Math.abs(p.x - hand.x) < hW && Math.abs(p.y - hand.y) < hH) {
                                 if (!sc.isDashing && sc.healthSystem && sc.healthSystem.takeDamage) {
-                                    const eff = sc.healthSystem.takeDamage(18);  // Golem: 18 HP
+                                    const eff = sc.healthSystem.takeDamage(18 * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1));  // Golem: 18 HP × 难度
                                     // 有效命中 → +3% 侵蚀度
                                     if (eff && sc.diseaseSystem && sc.diseaseSystem.addCorrosion) sc.diseaseSystem.addCorrosion(3);
                                 }
@@ -536,7 +536,7 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                             const hH = (hand.displayHeight || 120) / 2;
                             if (Math.abs(p.x - hand.x) < hW && Math.abs(p.y - hand.y) < hH) {
                                 if (!sc.isDashing && sc.healthSystem && sc.healthSystem.takeDamage) {
-                                    const eff = sc.healthSystem.takeDamage(18);
+                                    const eff = sc.healthSystem.takeDamage(18 * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1));
                                     if (eff && sc.diseaseSystem && sc.diseaseSystem.addCorrosion) sc.diseaseSystem.addCorrosion(3);
                                 }
                                 hit = true;

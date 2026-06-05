@@ -602,7 +602,8 @@ class SafeZone3Scene extends MainGameScene {
             { id: 'zone3', x1: -75,  y1: 58,  x2: -45, y2: 70, camBounds: { x1: -75, y1: 32, x2: -24, y2: 70 } },
             { id: 'zone4', x1: -93,  y1: 32,  x2: -75, y2: 67  },
             { id: 'zone5', x1: -45,  y1: 59,  x2: -8,  y2: 111 },
-            { id: 'zone6', x1: -92,  y1: 70,  x2: -45, y2: 116 },
+            { id: 'zone6', x1: -92,  y1: 70,  x2: -45, y2: 116,
+              camBounds: { x1: -92, y1: 70, x2: -45, y2: 119 } },   // (用户) 仅镜头下界 +3 格 (chunk 判定/怪物围墙不动)
             { id: 'zone7', x1: -110, y1: 57,  x2: -92, y2: 116 },
             { id: 'zone8', x1: -45,  y1: 108, x2: -26, y2: 119 }
         ];
@@ -1617,8 +1618,8 @@ class SafeZone3Scene extends MainGameScene {
                 { speaker: 'You', text: '...' },
                 { speaker: 'You', text: 'Citrine?' }
             ], () => {
-                // 主角面向左
-                s.player.flipX = false;
+                // 主角面向左 (本作约定: flipX=true=朝左 — 原来写 false 其实在朝右)
+                s.player.flipX = true;
                 s._sz3CitrineCutscenePhase3();
             });
         });
@@ -1628,10 +1629,10 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         const G = 32;
         const cam = s.cameras.main;
-        // 镜头往左 3 格 (96 px), 然后回玩家
+        // (用户) 镜头平移到格 (-37,54) 中心再回玩家 (原"往左3格"贴边界看不出动)
         const px = s.player.x, py = s.player.y;
         cam.stopFollow();
-        cam.pan(px - 3 * G, py, 800, 'Quad.easeInOut');
+        cam.pan(-37 * G + G / 2, 54 * G + G / 2, 800, 'Quad.easeInOut');
         s.time.delayedCall(900, () => {
             cam.pan(px, py, 600, 'Quad.easeInOut');
             s.time.delayedCall(700, () => {
@@ -1655,7 +1656,7 @@ class SafeZone3Scene extends MainGameScene {
         s.time.delayedCall(700, () => {
             s._cinematicLock = false;
             s._citrinePhase = 'fled';
-            if (s._sz3Citrine) s._sz3Citrine.setFear(true);   // 逃跑后/被找到 → 恐惧表情
+            // (用户) 不再永久恐惧 — update 里按距离切换: 5 格内哭, 远离回普通站立, 道歉完成后永不哭
         });
     }
 
@@ -2081,6 +2082,12 @@ class SafeZone3Scene extends MainGameScene {
             this.diseaseSystem.corrosionPct = data.corrosionPct;
             if (this.diseaseSystem._updateUI) this.diseaseSystem._updateUI();
         }
+        // (用户) 黄水晶继承 — 修换场景丢计数/丢显示
+        if (typeof data.yellowCrystalCount === 'number' && this.hudSystem) {
+            this.hudSystem.yellowCrystalCount = data.yellowCrystalCount;
+            if (data.yellowCrystalShown) this.hudSystem.yellowCrystalShown = false;   // 让 addYellowCrystal(0) 走显示路径
+            if (this.hudSystem.addYellowCrystal) this.hudSystem.addYellowCrystal(0);
+        }
     }
 
     _registerAnims() {
@@ -2166,6 +2173,17 @@ class SafeZone3Scene extends MainGameScene {
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 
+        // (用户) Citrine 哭动画: 仅 fled 阶段且玩家 5 格 (160px) 内才哭; 远离/道歉完成 → 普通站立
+        if (this._sz3Citrine && this._sz3Citrine.sprite && this._sz3Citrine.sprite.active) {
+            if (this._citrinePhase === 'fled') {
+                const _csp = this._sz3Citrine.sprite;
+                const _cdx = _csp.x - this.player.x, _cdy = _csp.y - this.player.y;
+                this._sz3Citrine.setFear(_cdx * _cdx + _cdy * _cdy <= 160 * 160);
+            } else if (this._citrinePhase === 'apologized' || this._citrinePhase === 'done') {
+                this._sz3Citrine.setFear(false);
+            }
+        }
+
         // Sign update
         if (this._storySigns) {
             this._storySigns.forEach(s => s.update());
@@ -2217,6 +2235,8 @@ class SafeZone3Scene extends MainGameScene {
                 maxHp: this.healthSystem?.maxHp,
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
+                yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null
             };
@@ -4161,7 +4181,7 @@ class SafeZone3Scene extends MainGameScene {
                 { col: -87, row: 80, variant: 'corpse3', lines: [
                     { speaker: 'You', text: "A skeleton, clutching the dead one's book of last words. It's huge... terrifying..." }
                 ] },
-                { col: -27, row: 88, variant: 'corpse1', toy: true, lines: [
+                { col: -27, row: 88, dy: 0.5, variant: 'corpse1', toy: true, lines: [   // (用户) dy=0.5 格 = 视觉下移 16px
                     { speaker: 'You', text: "A long-dead skeleton, hands still gripping a toy, refusing to let go." },
                     { speaker: 'You', text: '* Toy +1 *' }
                 ] },
@@ -4171,8 +4191,8 @@ class SafeZone3Scene extends MainGameScene {
             ];
             _skel.forEach(sp => {
                 airRange(sp.col, sp.row, sp.col, sp.row);
-                new Corpse(this, sp.col, sp.row, sp.variant);
-                new Hint(this, sp.col, sp.row, {
+                new Corpse(this, sp.col, sp.row + (sp.dy || 0), sp.variant);
+                new Hint(this, sp.col, sp.row + (sp.dy || 0), {
                     onInteract: (firstTime) => {
                         if (!this.dialogSystem) return;
                         if (firstTime) {

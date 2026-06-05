@@ -647,6 +647,8 @@ class SafeZone25Scene extends SafeZone3Scene {
             maxHp: this.healthSystem?.maxHp,
             hearts: this.healthSystem?.hearts,
             hasHealthDetector: !!this._hasHealthDetector,
+                yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
             corrosionPct: this.diseaseSystem?.corrosionPct,
             inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null
         };

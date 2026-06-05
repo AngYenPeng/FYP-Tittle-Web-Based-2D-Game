@@ -246,7 +246,7 @@ class GuideSystem {
         }).setOrigin(0, 1);  // 左下原点：x 对齐左、y 在动画框上方
 
         // === 字幕 — 动画区下方 ===
-        this._caption = s.add.text(rightX + rightW / 2, animTop + animH + 30, '', {
+        this._caption = s.add.text(rightX + rightW / 2, animTop + animH + 30 + 24, '', {   // (用户) 说明文字下移 24px
             fontSize: '24px', color: '#ffffff', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 3,
             wordWrap: { width: rightW },

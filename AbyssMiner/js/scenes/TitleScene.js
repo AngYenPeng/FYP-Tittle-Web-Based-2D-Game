@@ -16,6 +16,7 @@ class TitleScene extends Phaser.Scene {
         // 复位状态 — 场景重启 (Save&Exit 回主页) 时实例属性会残留, 不清会卡死所有按钮
         this._fading = false;
         this._modalOpen = false;
+        this.settingsSystem = null;   // (用户修复) 旧实例的显示对象随上轮场景销毁, 复用会 open 无效且卡死 _modalOpen → options/credits 全哑
         if (this.cameras && this.cameras.main) this.cameras.main.resetFX();
         if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_TitleScene');  // BGM
         // 等 VT323 字体加载好再渲染（避免 fallback 字体显示尺寸不一致）
@@ -269,13 +270,62 @@ class TitleScene extends Phaser.Scene {
     }
 
     _newGameSlot(n) {
+        this._showDifficultySelect(n);   // (用户) 空档先选难度
+    }
+
+    _startNewGameWithDifficulty(n, mode) {
+        if (window.AbyssDiff) AbyssDiff.set(mode);
         SaveSystem.deleteSlot(n);          // 清空旧数据 (新游戏)
         SaveSystem.setCurrentSlot(n);      // deleteSlot 可能清 current, 重设
         this._fadeAndStart('StartIntroScene', null, true);   // 新游戏 → 重置 guide 已读
     }
 
+    /** (用户) 难度选择面板: easy / normal / hard / extreme */
+    _showDifficultySelect(n) {
+        if (this._modalOpen) return;
+        this._modalOpen = true;
+        const W = this.scale.width, H = this.scale.height;
+        const items = [];
+        const ov = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88).setDepth(5000).setInteractive();
+        items.push(ov);
+        items.push(this.add.text(W / 2, H / 2 - 190, 'SELECT DIFFICULTY', {
+            fontSize: '42px', color: '#ffdd66', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 5
+        }).setOrigin(0.5).setDepth(5001));
+        const defs = [
+            { mode: 'easy',    label: 'EASY',    desc: 'The intended experience.',                          color: '#88ff88' },
+            { mode: 'normal',  label: 'NORMAL',  desc: '3 hearts, tougher foes, faster corrosion.',         color: '#ffee88' },
+            { mode: 'hard',    label: 'HARD',    desc: '1 heart, brutal foes, pricier shop.',               color: '#ffaa66' },
+            { mode: 'extreme', label: 'EXTREME', desc: '1 heart, deadliest foes, shrines no longer heal.',  color: '#ff6666' }
+        ];
+        defs.forEach((d, i) => {
+            const y = H / 2 - 110 + i * 64;
+            const t = this.add.text(W / 2, y, d.label, {
+                fontSize: '34px', color: d.color, fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
+            }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
+            const sub = this.add.text(W / 2, y + 22, d.desc, {
+                fontSize: '17px', color: '#bbbbbb', fontFamily: '"VT323", monospace'
+            }).setOrigin(0.5).setDepth(5001);
+            t.on('pointerover', () => t.setScale(1.12));
+            t.on('pointerout',  () => t.setScale(1));
+            t.on('pointerdown', () => {
+                items.forEach(o => o.destroy());
+                this._modalOpen = false;
+                this._startNewGameWithDifficulty(n, d.mode);
+            });
+            items.push(t, sub);
+        });
+        const back = this.add.text(W / 2, H / 2 + 175, '< BACK', {
+            fontSize: '26px', color: '#999999', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
+        back.on('pointerover', () => back.setColor('#ffffff'));
+        back.on('pointerout',  () => back.setColor('#999999'));
+        back.on('pointerdown', () => { items.forEach(o => o.destroy()); back.destroy(); this._modalOpen = false; });
+        items.push(back);
+    }
+
     _resumeSlot(n, data) {
         SaveSystem.setCurrentSlot(n);
+        if (window.AbyssDiff) AbyssDiff.set((data && data.difficulty) || 'easy');   // (用户) 读档恢复难度
         // 恢复需要在 registry 里的标志 (跨场景持久)
         try { this.registry.set('pickaxeUpgraded', !!data.pickaxeUpgraded); } catch (e) {}
         this._fadeAndStart(data.scene || 'SafeZone1Scene', data, false);   // resume → 保留 guide

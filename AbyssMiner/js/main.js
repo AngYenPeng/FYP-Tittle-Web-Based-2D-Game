@@ -25,6 +25,19 @@ const config = {
     scene: [BootScene, OpeningScene, TitleScene, StartIntroScene, MainGameScene, TutorialScene, HubScene, SafeZone1Scene, SafeZone2Scene, SafeZone3Scene, SafeZone25Scene, SafeZone4Scene, SafeZone5Scene]
 };
 
+// (用户) 难度系统 — 中央配置. 存档记 difficulty 字段; easy = 现状不变
+window.AbyssDiff = {
+    mode: 'easy',
+    TABLE: {
+        easy:    { hearts: 5, corrTick: 1, potionCd: 0    , hpMul: 1,   dmgMul: 1,   shopLife: true,  priceMul: 1, cpRegen: true  },
+        normal:  { hearts: 3, corrTick: 2, potionCd: 15000, hpMul: 1.5, dmgMul: 1,   shopLife: true,  priceMul: 1, cpRegen: true  },
+        hard:    { hearts: 1, corrTick: 3, potionCd: 30000, hpMul: 2,   dmgMul: 1.5, shopLife: false, priceMul: 2, cpRegen: true  },
+        extreme: { hearts: 1, corrTick: 4, potionCd: 45000, hpMul: 3,   dmgMul: 2,   shopLife: false, priceMul: 2, cpRegen: false }
+    },
+    get() { return this.TABLE[this.mode] || this.TABLE.easy; },
+    set(m) { this.mode = this.TABLE[m] ? m : 'easy'; }
+};
+
 const game = new Phaser.Game(config);
 
 // (用户) GroundShaking: 任意场景主镜头在震动 → 循环播放; 震动一停 → 立即停止 (哪怕没播完)

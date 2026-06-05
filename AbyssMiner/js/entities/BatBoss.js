@@ -449,7 +449,7 @@ class BatBoss {
         // 撞玩家
         if (!this._dashHit && this._overlapsPlayer(p, 12)) {
             this._dashHit = true;
-            if (this.scene.healthSystem && this.scene.healthSystem.takeDamage) this.scene.healthSystem.takeDamage(this.DASH_DMG);
+            if (this.scene.healthSystem && this.scene.healthSystem.takeDamage) this.scene.healthSystem.takeDamage(this.DASH_DMG * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1));
             if (this.scene.diseaseSystem && this.scene.diseaseSystem.addCorrosion) this.scene.diseaseSystem.addCorrosion(5);   // (用户) boss 撞击玩家 +5 腐蚀度
         }
         const traveled = Math.hypot(this.x - this._dashFromX, this.y - this._dashFromY);

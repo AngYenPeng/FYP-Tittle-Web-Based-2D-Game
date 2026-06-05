@@ -12,10 +12,16 @@ class ShopSystem {
         this.items = [
             { id: 'healing_potion',  name: 'Healing Potion',  price: 5,  desc: 'Restore 50% HP',                 tex: 'potion_heal_img' },
             { id: 'life_potion',     name: 'Life+ Potion',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },
-            { id: 'health_potion',   name: 'Health Potion',   price: 10, desc: '-50% Corrosion + 60s immunity',  tex: 'potion_health_img' },
+            { id: 'health_potion',   name: 'Health Potion',   price: 10, desc: '-50% Corrosion + 30s immunity',  tex: 'potion_health_img' },
             { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Adds corrosion bar (limit 1)',   tex: 'health_detector_img' }
             // 黄钥匙不卖 — tutorial 任务专用, 平常掉落/任务奖励获得
         ];
+        // (用户) 难度: hard/extreme 不卖加爱心药水, 其余 3 件价格 ×priceMul
+        const _sd = (window.AbyssDiff ? AbyssDiff.get() : null);
+        if (_sd) {
+            if (!_sd.shopLife) this.items = this.items.filter(it => it.id !== 'life_potion');
+            if (_sd.priceMul !== 1) this.items.forEach(it => { it.price = Math.round(it.price * _sd.priceMul); });
+        }
     }
 
     init() {
