@@ -4,10 +4,10 @@
 class HUDSystem {
     constructor(scene) {
         this.scene = scene;
-        this.crystalCount = 1000; // 开局水晶
+        this.crystalCount = 0; // 开局水晶
         this.crystalIcon = null;
         this.crystalText = null;
-        this.yellowCrystalCount = 100;  // 黄水晶 (任务货币) — 暂时开局给 100 测试用
+        this.yellowCrystalCount = 0;  // 黄水晶 (任务货币) — 暂时开局给 100 测试用
         this.yellowCrystalIcon = null;
         this.yellowCrystalText = null;
         this.yellowCrystalShown = false;  // 首次获得后才显示
