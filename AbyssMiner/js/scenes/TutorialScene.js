@@ -321,6 +321,19 @@ class TutorialScene extends MainGameScene {
         this.dialogSystem    = new DialogSystem(this);    this.dialogSystem.init();
         this.questSystem     = new QuestSystem(this);     this.questSystem.init();
         this.guideSystem     = new GuideSystem(this);     this.guideSystem.init();
+        // (用户) 攻击 + 冲刺 guide 开局即有 (原本走到 38 格才解锁) — 跟 move/jump 一样
+        this.guideSystem.registerGuide({
+            id: 'attack',
+            title: 'Attack',
+            animType: 'attack',
+            captionText: 'Left Click to attack. Defeat enemies in your path.'
+        });
+        this.guideSystem.registerGuide({
+            id: 'dash',
+            title: 'Dash',
+            animType: 'dash',
+            captionText: 'Hold SHIFT to dash forward. Use it to dodge enemy attacks.'
+        });
         this.openingCinematic = new OpeningCinematicSystem(this);
         this.shopSystem    = new ShopSystem(this);
         // Tutorial 1: 商人只卖钥匙（在 init 前覆盖商品列表，让 init 显示正确商品）
@@ -1322,24 +1335,7 @@ class TutorialScene extends MainGameScene {
             }
         }
 
-        // 3. 玩家 x 到达 38 格 → 解锁战斗 guide（攻击 + 冲刺）
-        if (!this._combatGuidesUnlocked && this.player.x >= 38 * G) {
-            this._combatGuidesUnlocked = true;
-            if (this.guideSystem && this.guideSystem.registerGuide) {
-                this.guideSystem.registerGuide({
-                    id: 'attack',
-                    title: 'Attack',
-                    animType: 'attack',
-                    captionText: 'Left Click to attack. Defeat enemies in your path.'
-                });
-                this.guideSystem.registerGuide({
-                    id: 'dash',
-                    title: 'Dash',
-                    animType: 'dash',
-                    captionText: 'Hold SHIFT to dash forward. Use it to dodge enemy attacks.'
-                });
-            }
-        }
+        // (用户) 战斗 guide (攻击+冲刺) 已改为开局注册 — 见 create() 里 guideSystem.init() 后
 
         // 4. 玩家靠近石门 5 格内 → 解锁石门 guide
         if (!this._stoneGuideUnlocked && this._stoneRubble && !this._stoneRubble.opened) {

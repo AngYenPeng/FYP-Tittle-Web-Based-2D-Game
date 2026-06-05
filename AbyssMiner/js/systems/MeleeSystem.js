@@ -94,7 +94,7 @@ class MeleeSystem {
         this._forwardLunge(facingRight);
 
         // 半圆视觉特效
-        this._drawArcEffect(facingRight);   // (用户) 临时恢复白色范围显示 — 调试跑位用, 确认后再注释
+        // (用户) 白色范围特效已停用 (测试辅助, 不再需要; 要恢复解开本行): this._drawArcEffect(facingRight);
 
         // 命中判定 + 伤害
         this._swingHit = false;
