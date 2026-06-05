@@ -155,6 +155,10 @@ class SafeZone2Scene extends MainGameScene {
 
     preload() {
         if (typeof super.preload === 'function') super.preload();
+        // (用户) SZ2 3 层背景 4416×2720
+        this.load.image('sz2_bg_L1', 'assets/images/sz2_bg_L1.png');
+        this.load.image('sz2_bg_L2', 'assets/images/sz2_bg_L2.png');
+        this.load.image('sz2_bg_L3', 'assets/images/sz2_bg_L3.png');
     }
 
     create() {
@@ -175,6 +179,22 @@ class SafeZone2Scene extends MainGameScene {
         const H = 720;
 
         this.physics.world.setBounds(0, 0, W, H);
+
+        // === SZ2 3 层背景 (SZ1 同款管线: 原生尺寸 4416×2720, 不缩放) ===
+        // L1/L3 贴世界 1:1 (sf 1,1); 只有 L2 会动: X 视差 0.5, Y 1:1; L2 跟 SZ1 同款左移 20 格
+        // depth: L1 最前 (-101), L2 中 (-102), L3 最深 (-103); 初始锚点 = 基础地图中心 (640, 360), 待按格微调
+        {
+            const bgX = 640, bgY = 360;
+            if (this.textures.exists('sz2_bg_L3')) {
+                this.bgL3 = this.add.image(bgX, bgY, 'sz2_bg_L3').setScrollFactor(1, 1).setDepth(-103);
+            }
+            if (this.textures.exists('sz2_bg_L2')) {
+                this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz2_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
+            }
+            if (this.textures.exists('sz2_bg_L1')) {
+                this.bgL1 = this.add.image(bgX, bgY, 'sz2_bg_L1').setScrollFactor(1, 1).setDepth(-101);
+            }
+        }
 
         // 背景
         if (this.textures.exists('Tutorial_scene_background_image')) {
