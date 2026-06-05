@@ -21,7 +21,13 @@ class ThrowSystem {
             if (s.crosshair.texture && s.crosshair.texture.key !== wantTex) s.crosshair.setTexture(wantTex);
             s.crosshair.setScale(1).setAlpha(alpha).clearTint();   // (用户) 带 L/R 字母的光标用原色
         } else {
-            s.crosshair.setScale(1).setAlpha(alpha).setTint(0xffff00);
+            // (用户修复) 升级前用默认 Mouse_cursor 原色 (蓝) — 黄色 tint 只属于 crosshair_custom 回退贴图
+            if (s.textures.exists('Mouse_cursor')) {
+                if (s.crosshair.texture && s.crosshair.texture.key !== 'Mouse_cursor') s.crosshair.setTexture('Mouse_cursor');
+                s.crosshair.setScale(1).setAlpha(alpha).clearTint();
+            } else {
+                s.crosshair.setScale(1).setAlpha(alpha).setTint(0xffff00);
+            }
         }
     }
 

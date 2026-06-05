@@ -133,10 +133,8 @@ class StartIntroScene extends Phaser.Scene {
             this._askSkip();
         });
 
-        // 鼠标光标
-        if (this.game && this.game.canvas) {
-            this.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
-        }
+        // 鼠标光标 — 局内同尺寸 (动态密度)
+        this._applyGameCursor();
 
         // 推进交互: click / SPACE / ENTER
         // 打字中按一下 → 立刻把整行字补完; 打完后再按一下 → 推进到下一行/下一张
@@ -246,14 +244,23 @@ class StartIntroScene extends Phaser.Scene {
         }
     }
 
+    // (用户) 局内同尺寸 CSS 光标 — 动态密度 (显示 = 64 × 画布缩放, 与游戏内精灵同公式); 不支持 image-set 的浏览器回退 64px
+    _applyGameCursor() {
+        try {
+            const cv = this.game.canvas;
+            const sc = cv && cv.clientWidth ? (cv.clientWidth / cv.width) : 1;
+            const hot = Math.round(32 * sc);
+            cv.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+            cv.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / sc).toFixed(3) + 'x) ' + hot + ' ' + hot + ', default';
+        } catch (e) {}
+    }
+
     _askSkip() {
         if (this._confirmOpen || this._finishing) return;
         this._confirmOpen = true;
         const W = this.scale.width, H = this.scale.height;
-        // 防御性 — 重新设置 game 鼠标 (确保弹窗里也是游戏内置鼠标)
-        if (this.game && this.game.canvas) {
-            this.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
-        }
+        // 防御性 — 重新设置 game 鼠标 (确保弹窗里也是游戏内置鼠标; 与 create 同值, 重复设置不闪)
+        this._applyGameCursor();
         // 半透明遮罩
         const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(20);
         // 弹窗

@@ -392,7 +392,7 @@ class BackpackSystem {
         this.refreshBackpack();
         // 暂停游戏
         this.scene.physics.pause();
-        this.scene.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+        this.scene.game.canvas.style.cursor = 'none';   // (用户修复) 统一精灵光标
         if (this.scene.crosshair) this.scene.crosshair.setVisible(false);
     }
 

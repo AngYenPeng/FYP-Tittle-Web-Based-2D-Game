@@ -10,6 +10,7 @@ class TitleScene extends Phaser.Scene {
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
         // 标题页背景图（洞穴）
         this.load.image('Tittle_scene_background_image', 'assets/images/Tittle_scene_background_image.png');
+        this.load.image('Mouse_cursor', 'assets/images/Mouse_cursor.png');   // (用户) Title 精灵光标用
     }
 
     create() {
@@ -125,8 +126,19 @@ class TitleScene extends Phaser.Scene {
             fontFamily: '"VT323", monospace'
         }).setOrigin(1, 1);
 
-        // 显示鼠标
-        this.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+        // (用户修复) Title 改用局内同款精灵光标 — CSS 光标按屏幕原生 64px 显示, 不随画布缩放, 比局内大
+        this.game.canvas.style.cursor = 'none';
+        if (this.textures.exists('Mouse_cursor')) {
+            const _p0 = this.input && this.input.activePointer;
+            this.crosshair = this.add.sprite(_p0 ? _p0.x : 0, _p0 ? _p0.y : 0, 'Mouse_cursor')
+                .setDepth(99999).setScrollFactor(0);
+            this.input.on('pointermove', (pointer) => {
+                if (this.crosshair && this.crosshair.active) this.crosshair.setPosition(pointer.x, pointer.y);
+            });
+        } else {
+            // 贴图缺失回退 CSS
+            this.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+        }
     }
 
     _fadeAndStart(sceneKey, data, resetGuides = true) {
@@ -136,6 +148,15 @@ class TitleScene extends Phaser.Scene {
         if (resetGuides) {
             try { localStorage.removeItem('abyssMinerGuidesRead'); } catch {}
         }
+        // (用户修复) 渐暗是主相机 fadeOut, 会把同相机的精灵光标一起压黑 — 渐暗期间切像素同尺寸的 CSS 光标顶上
+        try {
+            const _cv = this.game.canvas;
+            const _sc = _cv && _cv.clientWidth ? (_cv.clientWidth / _cv.width) : 1;
+            const _hot = Math.round(32 * _sc);
+            _cv.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';   // 兜底
+            _cv.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / _sc).toFixed(3) + 'x) ' + _hot + ' ' + _hot + ', default';
+            if (this.crosshair) this.crosshair.setVisible(false);
+        } catch (e) {}
         this.cameras.main.fadeOut(1000, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             // (用户) 大场景 create 同步重建几千墙体+皮肤, 主线程冻结几秒 — 黑屏像卡死.
@@ -145,16 +166,46 @@ class TitleScene extends Phaser.Scene {
             if (!div) {
                 div = document.createElement('div');
                 div.id = 'azm-scene-loading';
-                div.style.cssText = 'position:fixed;inset:0;background:#000;color:#cfcfcf;display:flex;align-items:center;justify-content:center;font:20px monospace;z-index:9999;letter-spacing:2px;';
+                div.style.cssText = 'position:fixed;inset:0;background:#000;color:#cfcfcf;display:flex;align-items:center;justify-content:center;font:20px monospace;z-index:9999;letter-spacing:2px;cursor:url(assets/images/Mouse_cursor.png) 32 32, default;';   // (用户修复) 过场鼠标可见
+                try {
+                    // (用户修复) 动态密度: 局内精灵 = 64 游戏px × 画布缩放; 这里按同公式算 CSS 显示尺寸, 逐像素一致
+                    const _cv = this.game.canvas;
+                    const _sc = _cv && _cv.clientWidth ? (_cv.clientWidth / _cv.width) : 1;
+                    const _hot = Math.round(32 * _sc);
+                    div.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / _sc).toFixed(3) + 'x) ' + _hot + ' ' + _hot + ', default';
+                } catch (e) {}
                 div.textContent = 'Loading...';
                 document.body.appendChild(div);
             }
-            const removeDiv = () => { const d = document.getElementById('azm-scene-loading'); if (d) d.remove(); };
+            const removeDiv = () => {
+                const d = document.getElementById('azm-scene-loading'); if (d) d.remove();
+                // (用户修复) 开关式交接: 重叠期精灵让位 (场景每帧可见性尊重 _cssCursorOverlap), CSS 独挑;
+                //   300ms 后翻标志让精灵先上屏一帧, 再撤 CSS → 既不消失也不双鼠标
+                try {
+                    const _live = this.game.scene.getScenes(true)[0];
+                    if (_live) { _live._cssCursorOverlap = true; if (_live.crosshair) _live.crosshair.setVisible(false); }
+                    const _cv = this.game.canvas;
+                    const _sc = _cv && _cv.clientWidth ? (_cv.clientWidth / _cv.width) : 1;
+                    const _hot = Math.round(32 * _sc);
+                    _cv.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+                    _cv.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / _sc).toFixed(3) + 'x) ' + _hot + ' ' + _hot + ', default';
+                    setTimeout(() => {
+                        try {
+                            if (_live) _live._cssCursorOverlap = false;   // 精灵下一帧恢复
+                            if (_live && _live.crosshair) {
+                                setTimeout(() => { try { _cv.style.cursor = 'none'; } catch (e) {} }, 60);   // 等含精灵的帧上屏再撤 CSS
+                            }
+                            // (用户修复) 无精灵光标的场景 (StartIntro/Opening) → 保留 CSS 光标, 不切 none
+                        } catch (e) {}
+                    }, 300);
+                } catch (e) {}
+            };
             const iv = setInterval(() => {
                 const scs = this.game.scene.getScenes(true);
                 const sc = scs && scs[0];
                 if (sc && sc.scene.key !== 'TitleScene' && sc.sys.settings.status === Phaser.Scenes.RUNNING) {
-                    removeDiv(); clearInterval(iv);
+                    clearInterval(iv);
+                    setTimeout(removeDiv, 150);   // (用户修复) 等新场景先渲染几帧精灵光标再摘层 — 否则摘层瞬间 canvas 是 none 而精灵还没画出来, 鼠标消失一下
                 }
             }, 100);
             setTimeout(() => { removeDiv(); clearInterval(iv); }, 15000);   // 兜底

@@ -19,6 +19,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 1750 },
+            fps: 120,   // (用户修复) 冲刺 1600px/s 在 60Hz 下单步 26.7px, 贴近 32px 墙厚 → 斜穿墙角偶发隧穿; 120Hz 单步 13.3px 根治
             debug: false   // (用户) 全局关闭物理 hitbox 显示; SZ5 在场景内单独开启
         }
     },

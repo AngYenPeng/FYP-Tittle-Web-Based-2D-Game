@@ -75,15 +75,7 @@ class Checkpoint {
         const scene = this.scene;
         if (this._activating) return;
 
-        if (this._locked) {
-            if (scene.dialogSystem && scene.dialogSystem.show) {
-                scene.dialogSystem.show({
-                    speaker: '???',
-                    text: this._lockedMsg || 'Something blocks the shrine. Defeat the threat first.'
-                });
-            }
-            return;
-        }
+        // (用户) 取消"附近有怪/剧情未清 → shrine 不能交互"判定 — _locked 不再拦截 (SZ2 等处的设锁代码自然失效)
 
         if (this.activated) {
             if (scene.dialogSystem && scene.dialogSystem.show) {

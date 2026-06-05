@@ -40,8 +40,8 @@ class MainGameScene extends Phaser.Scene {
             if (this.tweens && this.tweens.resumeAll) this.tweens.resumeAll();
             if (this.anims && this.anims.resumeAll) this.anims.resumeAll();
         } catch (e) {}
-        // (用户) 游戏内隐藏 OS 光标 (此前从未隐藏 — 硬件光标零延迟压着软件准星/手图, 造成"图片慢半拍"拖尾感)
-        try { this.game.canvas.style.cursor = 'none'; } catch (e) {}
+        // (用户修复) 'none' 从 init 挪到 create 末尾精灵就位时 — init 就切掉的话, create 冻结黑屏期 (StartIntro→Tutorial
+        //   这种没有 Loading 层兜底的路径) 鼠标会整段消失; 冻结期沿用上个场景留下的 CSS 光标
         // (用户) 清掉上一轮残留的显示对象/数组缓存 — lazy 守卫 (if (!this.x)) 第二轮判真跳过重建,
         // 拿已销毁对象继续用 = 重进崩溃; 数组里囤的死对象同理
         this.ropeGraphics = null; this._gridCoordText = null;
@@ -598,6 +598,8 @@ class MainGameScene extends Phaser.Scene {
         this._gridGraphics.setVisible(false);  // 默认关闭，按 R 打开
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
         this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
+        { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
+        try { this.game.canvas.style.cursor = 'none'; } catch (e) {}   // (用户) 精灵就位, 此刻才隐藏 OS 光标
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
         this.leftHandIndicator  = this.add.sprite(0,0,'left_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
         this.rightHandIndicator = this.add.sprite(0,0,'right_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);

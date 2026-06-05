@@ -18,26 +18,7 @@ class InteractSystem {
         this.keyE = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     }
 
-    /** 周围 10 格 (320px) 内有活的怪物吗 */
-    _hasMonsterNearby() {
-        const s = this.scene;
-        if (!s.player) return false;
-        const RANGE = 320;
-        const RANGE_SQ = RANGE * RANGE;
-        const px = s.player.x, py = s.player.y;
-        const groups = [s.spiders, s.bungeeSpiders, s.bats, s.earthworms,
-                        s.slimes, s.miniSlimes, s.beetles];
-        for (const grp of groups) {
-            if (!grp) continue;
-            const list = grp.getChildren ? grp.getChildren() : [];
-            for (const m of list) {
-                if (m.hp === undefined || m.hp <= 0) continue;
-                const dx = m.x - px, dy = m.y - py;
-                if (dx * dx + dy * dy <= RANGE_SQ) return true;
-            }
-        }
-        return false;
-    }
+    // (用户) "周围 320px 有怪禁止交互" 判定已全链路移除 — 原 _hasMonsterNearby 删除 (早已是无调用孤儿)
 
     update() {
         const s = this.scene;
@@ -77,24 +58,16 @@ class InteractSystem {
             }
         }
 
-        // 水晶门 — 144px 范围，怪物附近时显示底部小提示而非阻断
+        // 水晶门 — 144px 范围 (用户: 取消怪物附近限制)
         if (s._crystalDoor && !s._crystalDoor.opened) {
             const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, s._crystalDoor.x, s._crystalDoor.y);
             if (dist <= 144) {
-                if (this._hasMonsterNearby()) {
-                    this._showBottomHint('Monsters nearby. Defeat them first.');
-                    return;
-                }
                 this._tryOpenCrystalDoor();
                 return;
             }
         }
 
-        // 怪物附近禁止其他交互（商人/SecretDoor/Signpost）
-        if (this._hasMonsterNearby()) {
-            this._showHint('Cannot interact: monsters nearby!', '#ff4444');
-            return;
-        }
+        // (用户) 取消"怪物附近禁止交互"限制 — 商人/SecretDoor/Signpost 不再受怪物影响
 
         // 3) 商人
         if (s.moleTrader && s.moleTrader.active) {

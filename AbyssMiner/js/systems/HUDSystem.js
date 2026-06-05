@@ -4,10 +4,10 @@
 class HUDSystem {
     constructor(scene) {
         this.scene = scene;
-        this.crystalCount = 0; // 开局水晶
+        this.crystalCount = 0; // (用户) 开局水晶归零 (测试期曾给 1000)
         this.crystalIcon = null;
         this.crystalText = null;
-        this.yellowCrystalCount = 0;  // 黄水晶 (任务货币)
+        this.yellowCrystalCount = 0;  // (用户) 黄水晶归零 (测试期曾给 100)
         this.yellowCrystalIcon = null;
         this.yellowCrystalText = null;
         this.yellowCrystalShown = false;  // 首次获得后才显示
@@ -326,8 +326,8 @@ class HUDSystem {
         this.scene.physics.pause();
         // 显示系统鼠标 + 隐藏游戏内准星
         const s = this.scene;
-        s.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
-        if (s.crosshair) s.crosshair.setVisible(false);
+        s.game.canvas.style.cursor = 'none';   // (用户修复) 继续用精灵光标 — CSS 原生尺寸不随画布缩放会忽大
+        if (s.crosshair) s.crosshair.setVisible(true);
         if (s.leftHandIndicator) s.leftHandIndicator.setVisible(false);
         if (s.rightHandIndicator) s.rightHandIndicator.setVisible(false);
     }

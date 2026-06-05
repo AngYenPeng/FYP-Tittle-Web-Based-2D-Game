@@ -40,6 +40,37 @@ class DashSystem {
         s.player.body.setAllowGravity(false);
         s.player.setVelocityY(0);
 
+        // (用户修复) 冲刺 CCD 保险 — 下落沿阶梯缝嵌角后, 冲刺高速会把嵌入态从墙里弹出去 (Arcade 分离歧义).
+        //   每个物理步结束后校验: body 嵌进墙 → 沿冲刺反方向 2px 回推到贴墙 + 提前终止冲刺. 物理上不可能再穿.
+        const world = s.physics && s.physics.world;
+        if (this._dashGuard && world) { world.off('worldstep', this._dashGuard); this._dashGuard = null; }
+        if (world && s.wallRects && s.wallRects.length) {
+            const dashDir = (direction === 'left') ? -1 : 1;
+            this._dashGuard = () => {
+                const b = s.player && s.player.body;
+                if (!b || !s.isDashing) { if (this._dashGuard) { world.off('worldstep', this._dashGuard); this._dashGuard = null; } return; }
+                const hit = () => {
+                    const r = new Phaser.Geom.Rectangle(b.position.x + 1, b.position.y + 1, b.width - 2, b.height - 2);
+                    for (let w of s.wallRects) { if (Phaser.Geom.Intersects.RectangleToRectangle(r, w)) return true; }
+                    return false;
+                };
+                if (!hit()) return;
+                // 嵌墙: 回推 (最多 48px), 玩家精灵与 body 同步平移 (origin 偏移期间线性关系不变)
+                let pushed = 0;
+                while (pushed < 48 && hit()) {
+                    b.position.x -= dashDir * 2;
+                    s.player.x -= dashDir * 2;
+                    pushed += 2;
+                }
+                b.updateCenter();
+                b.stop();
+                s.isDashing = false;
+                if (!s.isGrappling && !s.isHanging) b.setAllowGravity(true);
+                world.off('worldstep', this._dashGuard); this._dashGuard = null;
+            };
+            world.on('worldstep', this._dashGuard);
+        }
+
         // 播 dash 动画 — sprite 居中显示在 body 上，hitbox 不变
         const dashAnim = s.anims.exists('dash') ? s.anims.get('dash') : null;
         const hasValidDash = dashAnim && dashAnim.frames && dashAnim.frames.length > 0
@@ -74,6 +105,7 @@ class DashSystem {
 
         // dashDuration 后恢复
         s.time.delayedCall(s.dashDuration, () => {
+            if (this._dashGuard && s.physics && s.physics.world) { s.physics.world.off('worldstep', this._dashGuard); this._dashGuard = null; }
             if (s.player && s.player.body) {
                 s.isDashing = false;
                 if (!s.isGrappling && !s.isHanging) s.player.body.setAllowGravity(true);

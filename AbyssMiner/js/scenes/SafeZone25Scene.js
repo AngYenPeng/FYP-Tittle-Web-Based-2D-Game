@@ -379,6 +379,7 @@ class SafeZone25Scene extends SafeZone3Scene {
         // 鼠标
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
         this.crosshair = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
+        { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
         this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
         this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
@@ -691,7 +692,7 @@ class SafeZone25Scene extends SafeZone3Scene {
         if (this.crosshair) this.crosshair.setPosition(pointer.x, pointer.y);
         if (this.leftHandIndicator) this.leftHandIndicator.setPosition(pointer.x - 22, pointer.y);
         if (this.rightHandIndicator) this.rightHandIndicator.setPosition(pointer.x + 22, pointer.y);
-        if (paused && this.crosshair) this.crosshair.setVisible(false);
+        if (this.crosshair) this.crosshair.setVisible(!this._cssCursorOverlap);   // (用户修复) 暂停也用精灵光标; 过场交接重叠期 (CSS 顶上时) 让位防双鼠标
 
         if (this.healthSystem) this.healthSystem.update(delta);
         if (this.diseaseSystem) this.diseaseSystem.update(delta);

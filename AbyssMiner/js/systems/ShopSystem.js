@@ -136,8 +136,8 @@ class ShopSystem {
         this._refreshBuyButtons();   // 灰化已购买/已拥有的商品
         s.physics.pause();
         // 显示系统鼠标（取消 canvas 的 cursor: none），隐藏游戏内准星避免双指针
-        s.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
-        if (s.crosshair) s.crosshair.setVisible(false);
+        s.game.canvas.style.cursor = 'none';   // (用户修复) 商店也用精灵光标 — 否则和场景每帧的强制可见打架, 出现双鼠标
+        if (s.crosshair) s.crosshair.setVisible(true);
         if (s.leftHandIndicator) s.leftHandIndicator.setVisible(false);
         if (s.rightHandIndicator) s.rightHandIndicator.setVisible(false);
     }

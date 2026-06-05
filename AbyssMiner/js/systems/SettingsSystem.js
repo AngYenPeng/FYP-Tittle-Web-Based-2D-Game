@@ -528,8 +528,8 @@ class SettingsSystem {
         this.isOpen = true;
         this.panel.setVisible(true);
         if (this.scene._setUIPause) this.scene._setUIPause(true); else this.scene.physics.pause();   // (用户) 全场景暂停 (剧情/计时器/补间一并冻结)
-        this.scene.game.canvas.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';
-        if (this.scene.crosshair) this.scene.crosshair.setVisible(false);
+        this.scene.game.canvas.style.cursor = 'none';   // (用户修复) Title 和游戏内统一精灵光标
+        if (this.scene.crosshair) this.scene.crosshair.setVisible(true);   // (用户修复) 精灵光标就是鼠标, 面板期间保持可见 (Title 同款)
     }
 
     close() {
@@ -540,7 +540,7 @@ class SettingsSystem {
         this.panel.setVisible(false);
         if (this.scene._setUIPause) this.scene._setUIPause(false); else this.scene.physics.resume();
         // (用户) 标题界面没有准星 — 关闭后恢复自定义光标; 游戏内才隐藏(交给准星)
-        this.scene.game.canvas.style.cursor = this.titleMode ? 'url(assets/images/Mouse_cursor.png) 32 32, default' : 'none';
+        this.scene.game.canvas.style.cursor = 'none';
         if (this.scene.crosshair) this.scene.crosshair.setVisible(true);
     }
 
