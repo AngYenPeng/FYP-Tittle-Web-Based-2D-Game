@@ -103,6 +103,7 @@ class DiseaseSystem {
          this.corrosionLine20, this.corrosionLine50, this.corrosionText].forEach(o => {
             if (o) o.setVisible(visible);
         });
+        if (this._imgCorBar && this.corrosionText) this.corrosionText.setVisible(false);   // (用户) 图片腐蚀条不显示 % 文本
     }
 
     /**

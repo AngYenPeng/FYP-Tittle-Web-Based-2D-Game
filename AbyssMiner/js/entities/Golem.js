@@ -22,7 +22,7 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(false);
         this.setDepth(10);
 
-        this.hp = 300;
+        this.hp = 3;
         this.maxHp = 300;
         // 双手 HP (各 100), 死亡标记
         this._handLHp = 100;

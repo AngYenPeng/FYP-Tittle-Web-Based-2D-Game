@@ -67,21 +67,21 @@ class HealthSystem {
                 .setStrokeStyle(2, 0xffffff).setFillStyle();
         }
 
-        this.hpText = s.add.text(barX + barW / 2, barY, '100 / 100', {
+        this.hpText = s.add.text(this._imgHpBar ? (barX + 108) : (barX + barW / 2), barY, '100 / 100', {   // (用户) 图片条中心 = barX+108 (216 宽), 旧条 = barX+120
             fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
             fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
         }).setOrigin(0.5).setDepth(203).setScrollFactor(0);
 
         // === 爱心数 (右侧 "x5") — (用户) 有 Heart 贴图: 图标 + xN; 缺图回退旧 ❤ 文本 ===
         if (s.textures.exists('Heart')) {
-            this.heartIcon = s.add.image(barX + barW + 14, barY, 'Heart')
+            this.heartIcon = s.add.image(barX + barW + 6, barY, 'Heart')   // (用户) 左移 8px
                 .setDisplaySize(26, 26).setOrigin(0, 0.5).setDepth(203).setScrollFactor(0);
-            this.heartsText = s.add.text(barX + barW + 14 + 30, barY, 'x' + this.hearts, {
+            this.heartsText = s.add.text(barX + barW + 6 + 30, barY, 'x' + this.hearts, {   // (用户) 跟图标一起左移 8px
                 fontSize: '26px', color: '#ff5577', fontStyle: 'bold',
                 fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
             }).setOrigin(0, 0.5).setDepth(203).setScrollFactor(0);
         } else {
-            this.heartsText = s.add.text(barX + barW + 12, barY, '❤x' + this.hearts, {
+            this.heartsText = s.add.text(barX + barW + 4, barY, '❤x' + this.hearts, {   // (用户) 左移 8px (回退文本版)
                 fontSize: '26px', color: '#ff5577', fontStyle: 'bold',
                 fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
             }).setOrigin(0, 0.5).setDepth(203).setScrollFactor(0);
