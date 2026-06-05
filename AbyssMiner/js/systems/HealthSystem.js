@@ -273,6 +273,22 @@ class HealthSystem {
         this.deathPanel.setVisible(false);
         if (s._deathClearOverlay) s._deathClearOverlay();   // 淡出死亡黑屏爱心覆盖层
 
+        // (用户修复) 死亡打断剧情/对话的残局清理 — 否则复活后:
+        //   - 卡住的隐形对话每帧吞掉 E 的 JustDown → 商人等交互全部失灵
+        //   - _cinematicLock 残留 → 剧情机器/图标全卡
+        //   - 剧情 stopFollow+zoom 残留 → 要跨 chunk 让镜头逻辑重设才恢复 (用户报告的"自愈"现象)
+        if (s.dialogSystem && s.dialogSystem.isOpen && s.dialogSystem.close) { try { s.dialogSystem.close(); } catch (e) {} }
+        s._cinematicLock = false;
+        s._sz1MerchantPending = false;
+        if (!s._sz1MerchantCutsceneDone) s._sz1MerchantCutsceneStarted = false;   // 死亡打断 → 允许剧情重播
+        if (s._savedCameraZoom != null && s.cameras && s.cameras.main) {
+            try {
+                s.cameras.main.setZoom(s._savedCameraZoom);
+                s._savedCameraZoom = null;
+                if (s.player) s.cameras.main.startFollow(s.player, true, 0.08, 0.08);
+            } catch (e) {}
+        }
+
         // 复活后短暂无敌 1 秒
         this._triggerInvincibility(1000);
         this.updateUI();
@@ -421,7 +437,12 @@ class HealthSystem {
                     this._cpRegenAcc = (this._cpRegenAcc || 0) + delta;
                     if (this._cpRegenAcc >= 1000) {
                         this._cpRegenAcc -= 1000;
-                        if (this.hp < this.maxHp) this.heal(1);
+                        if (this.hp < this.maxHp) {
+                            // (用户修复) 每秒 +1 滴血 — 不能用 heal(): 那是药水语义, heal(1) = 50% maxHp (≈50滴/秒)
+                            this.hp = Math.min(this.maxHp, this.hp + 1);
+                            this.playerHp = this.hp;
+                            this.updateUI();
+                        }
                         if (_s.diseaseSystem && _s.diseaseSystem.corrosionPct > 0) {
                             _s.diseaseSystem.corrosionPct = Math.max(0, _s.diseaseSystem.corrosionPct - 1);
                             if (_s.diseaseSystem._updateUI) _s.diseaseSystem._updateUI();
