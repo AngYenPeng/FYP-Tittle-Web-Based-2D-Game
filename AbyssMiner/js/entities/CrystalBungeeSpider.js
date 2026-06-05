@@ -235,7 +235,8 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
             this.body.setAllowGravity(false);
             this.setFlipY(false);  // 爬玩家身上不颠倒
 
-            if (!touchingPlayer && distToPlayer > 80) {
+            // (用户) 玩家死亡 → 立即松手 (否则趴尸体上, 复活后接着咬)
+            if (this.scene.isDead || (!touchingPlayer && distToPlayer > 80)) {
                 this.state = 'chase';
                 this.body.setAllowGravity(true);
                 this.setFlipY(false);
@@ -276,7 +277,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
         }
 
         // 撞玩家 → 进 cling_prepare
-        if (touchingPlayer && this.state !== 'pounce' && this.state !== 'prepare' &&
+        if (touchingPlayer && !this.scene.isDead && this.state !== 'pounce' && this.state !== 'prepare' &&
             this.state !== 'cling_prepare' && this.state !== 'cling_attack' && this.state !== 'cling_idle') {
             this.state = 'cling_prepare';
             this.timer = 400;

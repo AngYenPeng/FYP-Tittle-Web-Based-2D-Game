@@ -182,6 +182,7 @@ class HealthSystem {
         s.isDead = true;
         s.isPlayerStunned = true;
         s.isPlayerInvincible = true;
+        if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 死亡清侵蚀/中毒 — 修复复活后无限扣血
 
         if (s.player) {
             s.player.setTint(0x555555);
@@ -259,6 +260,7 @@ class HealthSystem {
         const s = this.scene;
         s.isDead = true;
         s.isPlayerStunned = true;
+        if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 永久死亡同样清侵蚀/中毒
 
         if (s.player) {
             s.player.setTint(0x555555);

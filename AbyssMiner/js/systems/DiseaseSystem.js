@@ -158,6 +158,44 @@ class DiseaseSystem {
         });
     }
 
+    /** (用户) 死亡全清 — 侵蚀度/所有 DoT/减速/计时器归零.
+     *  修复: 侵蚀 100% 死亡后带进下一条命 → "满侵蚀每秒 1 HP (绕无敌帧)" 复活继续跑 = 无限扣血. */
+    resetOnDeath() {
+        const s = this.scene;
+        this.corrosionPct = 0;
+        this._activeDots = [];
+        this.tempSlowPct = 0;
+        this.tempSlowUntil = 0;
+        this.nextNaturalTickAt = 0;
+        this.damageTickAt = 0;
+        this.clingDamageTickAt = 0;
+        this.shownDialog10 = this.shownDialog25 = this.shownDialog50 = false;
+        // (用户) 蜘蛛趴身计数强制归零 + 卡在 cling 的蜘蛛全部重置.
+        //   根因: 计数只能由蜘蛛自己的 update 减, 而死亡传送后蜘蛛离屏被 AI 距离门控冻结,
+        //   松手代码永远不跑 → 计数永久卡住 = "每秒 clingCount HP (绕无敌帧)" + 减速 debuff 永久.
+        let detached = 0;
+        ['spiders', 'bungeeSpiders', 'hunterSpiders', 'crystalSpiders'].forEach(k => {
+            const g = s[k];
+            if (g && g.children && g.children.iterate) {
+                g.children.iterate(m => {
+                    if (m && m.state && String(m.state).indexOf('cling') === 0) {
+                        m.state = 'chase';
+                        if (m.body && m.body.setAllowGravity) m.body.setAllowGravity(true);
+                        if (m.setFlipY) m.setFlipY(false);
+                        if (m.clearTint) m.clearTint();
+                        m.isClimbing = false;
+                        m._isCounted = false;
+                        detached++;
+                    }
+                });
+            }
+        });
+        const hadCount = s._clingingSpiderCount || 0;
+        s._clingingSpiderCount = 0;
+        this._updateUI();
+        console.log('[死亡清理] DoT/侵蚀/减速已清, 蜘蛛松手×' + detached + ' (趴身计数 ' + hadCount + '→0)');   // 验证用, 确认稳定后可删
+    }
+
     /** 临时减速 — N% × T 秒, 不叠加 (取最长持续时间 + 最大值) */
     addTempSlow(pct, durationSeconds) {
         const now = this.scene.time.now;
