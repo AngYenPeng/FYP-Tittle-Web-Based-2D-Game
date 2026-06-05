@@ -1,0 +1,49 @@
+const config = {
+    type: Phaser.AUTO,
+    pixelArt: true,        // 像素图用 NEAREST 过滤: 消除图片边缘那圈细黑线 (LINEAR 过滤的纹理边缘渗色), 同时让像素图更清晰
+    roundPixels: true,     // 相机/精灵坐标取整, 避免亚像素采样再产生黑边
+    backgroundColor: '#000000', // 纯黑 — 消除转场时露出的浅色闪屏 (与相机淡入淡出的黑一致)
+
+    // 【新增这里】：全新的 Scale 缩放配置
+    scale: {
+        // FIT 模式：保持 1600x900 的比例，自动缩小或放大以填满整个浏览器窗口（不会变形）
+        mode: Phaser.Scale.FIT, 
+        // 自动将画布在网页中水平和垂直居中
+        autoCenter: Phaser.Scale.CENTER_BOTH, 
+        // 你的游戏原生逻辑分辨率
+        width: 1600,
+        height: 900
+    },
+
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 1750 },
+            debug: false   // (用户) 全局关闭物理 hitbox 显示; SZ5 在场景内单独开启
+        }
+    },
+    scene: [BootScene, OpeningScene, TitleScene, StartIntroScene, MainGameScene, TutorialScene, HubScene, SafeZone1Scene, SafeZone2Scene, SafeZone3Scene, SafeZone25Scene, SafeZone4Scene, SafeZone5Scene]
+};
+
+const game = new Phaser.Game(config);
+// (用户) Game.step 包裹 — window.onerror 对跨域脚本(CDN phaser)抛的错只给 "Script error.",
+// 但同源 try/catch 拿到的 Error 对象不受脱敏: 任何 update/render 期崩溃这里必出完整栈
+if (typeof Phaser !== 'undefined' && Phaser.Game && !Phaser.Game.prototype.__stepWrapped) {
+    Phaser.Game.prototype.__stepWrapped = true;
+    const _origStep = Phaser.Game.prototype.step;
+    Phaser.Game.prototype.step = function (t, d) {
+        try { _origStep.call(this, t, d); }
+        catch (err) {
+            try { console.error('[AbyssMiner STEP ERROR]', (err && err.stack) || err); } catch (_) {}
+            throw err;
+        }
+    };
+}
+
+// (用户) 全局错误钩子 — 未捕获异常打完整调用栈 (压缩版 phaser 报错靠这个才能定位到游戏文件行号)
+window.addEventListener('error', (e) => {
+    try { console.error('[AbyssMiner ERROR]', (e.error && e.error.stack) || e.message); } catch (_) {}
+});
+window.addEventListener('unhandledrejection', (e) => {
+    try { console.error('[AbyssMiner PROMISE ERROR]', (e.reason && e.reason.stack) || e.reason); } catch (_) {}
+});
