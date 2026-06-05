@@ -1334,29 +1334,42 @@ class SafeZone4Scene extends MainGameScene {
     _sz4CutWakeBoss() {
         const boss = this._batBoss;
         if (!boss || !boss.sprite) { this._sz4CutBanner(); return; }
-        // (用户) 新 boss 皮优先 bat_boss_fly (在 144×112 皮上播小蝙蝠 bat_fly 会把 boss 缩成小只)
-        if (this.anims.exists('bat_boss_fly') && boss.sprite.texture && String(boss.sprite.texture.key).startsWith('Bat_boss')) {
-            boss.sprite.play('bat_boss_fly', true);
-        } else if (this.anims.exists('bat_fly')) boss.sprite.play('bat_fly', true);
         const G = 32;
         this.cameras.main.shake(600, 0.006);
         // 动态 body 会每帧把 sprite 拉回 → tween 期间关 body, 完成后同步 + 重开
         if (boss.sprite.body) boss.sprite.body.enable = false;
-        this.tweens.add({
-            targets: boss.sprite,
-            x: 1 * G + G / 2, y: 1 * G + G / 2,
-            duration: 1200,
-            ease: 'Cubic.easeInOut',
-            onComplete: () => {
-                if (boss.sprite.body) {
-                    boss.sprite.body.enable = true;
-                    if (boss.sprite.body.reset) boss.sprite.body.reset(boss.sprite.x, boss.sprite.y);
-                    boss.sprite.body.setVelocity(0, 0);
-                    if (boss.sprite.body.setAllowGravity) boss.sprite.body.setAllowGravity(false);
+        // (用户) 先播 Bat_boss_wakes_up 苏醒动画 (15帧 ~1.25s), 播完才起飞; 缺动画直接起飞
+        let _flyStarted = false;
+        const _startFly = () => {
+            if (_flyStarted || !boss.sprite || !boss.sprite.active) return;
+            _flyStarted = true;
+            // (用户) 新 boss 皮优先 bat_boss_fly (在 144×112 皮上播小蝙蝠 bat_fly 会把 boss 缩成小只)
+            if (this.anims.exists('bat_boss_fly') && boss.sprite.texture && String(boss.sprite.texture.key).startsWith('Bat_boss')) {
+                boss.sprite.play('bat_boss_fly', true);
+            } else if (this.anims.exists('bat_fly')) boss.sprite.play('bat_fly', true);
+            this.tweens.add({
+                targets: boss.sprite,
+                x: 1 * G + G / 2, y: 1 * G + G / 2,
+                duration: 1200,
+                ease: 'Cubic.easeInOut',
+                onComplete: () => {
+                    if (boss.sprite.body) {
+                        boss.sprite.body.enable = true;
+                        if (boss.sprite.body.reset) boss.sprite.body.reset(boss.sprite.x, boss.sprite.y);
+                        boss.sprite.body.setVelocity(0, 0);
+                        if (boss.sprite.body.setAllowGravity) boss.sprite.body.setAllowGravity(false);
+                    }
+                    this._sz4CutShockwave(() => this._sz4CutBanner());
                 }
-                this._sz4CutShockwave(() => this._sz4CutBanner());
-            }
-        });
+            });
+        };
+        if (this.anims.exists('bat_boss_wakes_up') && boss.sprite.texture && String(boss.sprite.texture.key).startsWith('Bat_boss')) {
+            boss.sprite.play('bat_boss_wakes_up');
+            boss.sprite.once('animationcomplete-bat_boss_wakes_up', _startFly);
+            this.time.delayedCall(2000, _startFly);   // 兜底 (切后台等动画事件丢失时)
+        } else {
+            _startFly();
+        }
     }
 
     // (用户) 飞到 (1,1) 后释放冲击波咆哮: 3 个风环 (每秒 1 个, 与实战 wind 同款视觉, 纯展示无击退)
@@ -1494,12 +1507,19 @@ class SafeZone4Scene extends MainGameScene {
         for (let i = 0; i < 15; i++) {
             try { this.events.emit('monster_killed', lx, ly, 1.0); } catch (e) {}
         }
-        // boss 残骸渐隐
+        // (用户) 落地瞬间播 Bat_boss_dead (31帧), 播完即消失; 缺动画回退渐隐
         if (boss && boss.sprite) {
-            this.tweens.add({
-                targets: boss.sprite, alpha: 0, duration: 1200, delay: 400,
-                onComplete: () => { try { boss.sprite.destroy(); } catch (e) {} }
-            });
+            if (boss.sprite.body) { try { boss.sprite.body.setVelocity(0, 0); boss.sprite.body.setAllowGravity(false); } catch (e) {} }
+            if (this.anims.exists('bat_boss_dead')) {
+                boss.sprite.play('bat_boss_dead');
+                boss.sprite.once('animationcomplete-bat_boss_dead', () => { try { boss.sprite.destroy(); } catch (e) {} });
+                this.time.delayedCall(3200, () => { try { if (boss.sprite && boss.sprite.active) boss.sprite.destroy(); } catch (e) {} });   // 兜底
+            } else {
+                this.tweens.add({
+                    targets: boss.sprite, alpha: 0, duration: 1200, delay: 400,
+                    onComplete: () => { try { boss.sprite.destroy(); } catch (e) {} }
+                });
+            }
         }
         // 落地点 3 格半径 cavetilewall 边 (上/左/右, 不含下) 从中心扩散生成 crystalblock
         this._sz4SpreadDeathCrystals(lx, ly);

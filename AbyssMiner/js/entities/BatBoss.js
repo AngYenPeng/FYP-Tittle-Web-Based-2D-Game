@@ -568,6 +568,8 @@ BatBoss._registerAnims = function (scene) {
     mk('Bat_boss_fly', 'bat_boss_fly', 10, -1);
     mk('Bat_boss_dash', 'bat_boss_dash', 14, -1);
     mk('Bat_boss_roar', 'bat_boss_roar', 10, 0);
+    mk('Bat_boss_wakes_up', 'bat_boss_wakes_up', 12, 0);   // (用户) 苏醒 15 帧 (~1.25s)
+    mk('Bat_boss_dead', 'bat_boss_dead', 14, 0);           // (用户) 坠地死亡 31 帧 (~2.2s)
 };
 
 if (typeof window !== 'undefined') window.BatBoss = BatBoss;

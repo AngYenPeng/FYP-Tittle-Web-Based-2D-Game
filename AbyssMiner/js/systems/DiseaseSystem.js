@@ -53,21 +53,35 @@ class DiseaseSystem {
         const barW = 240;
         const barH = 22;
 
-        this.corrosionBg = s.add.rectangle(barX, barY, barW, barH, 0x222222, 0.85)
-            .setOrigin(0, 0.5).setDepth(200).setScrollFactor(0);
-        this.corrosionFill = s.add.rectangle(barX + 2, barY, 0, barH - 4, 0x884466, 1)
-            .setOrigin(0, 0.5).setDepth(201).setScrollFactor(0);
-        this.corrosionBorder = s.add.rectangle(barX, barY, barW, barH)
-            .setOrigin(0, 0.5).setDepth(202).setScrollFactor(0)
-            .setStrokeStyle(2, 0xaa6688).setFillStyle();
-        // 标线 20% 侵蚀度 = 10% 减速
-        const line20X = barX + (barW - 4) * 0.20 + 2;
-        this.corrosionLine20 = s.add.rectangle(line20X, barY, 2, barH - 4, 0xffff00, 1)
-            .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
-        // 标线 50% 侵蚀度 = 25% 减速
-        const line50X = barX + (barW - 4) * 0.50 + 2;
-        this.corrosionLine50 = s.add.rectangle(line50X, barY, 2, barH - 4, 0xff6622, 1)
-            .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
+        // (用户) 图片腐蚀条: Corrosion 框 + Corrosion_Fill 填充 (×2, 中心对齐, 框压填充); 标线按填充实宽 200px 重算; 缺图回退旧矩形
+        this._imgCorBar = s.textures.exists('Corrosion') && s.textures.exists('Corrosion_Fill');
+        if (this._imgCorBar) {
+            const cxBar = barX + 108;
+            this.corrosionBg = null;
+            this.corrosionFill = s.add.image(cxBar, barY, 'Corrosion_Fill').setScale(2).setDepth(201).setScrollFactor(0);
+            this.corrosionBorder = s.add.image(cxBar, barY, 'Corrosion').setScale(2).setDepth(202).setScrollFactor(0);
+            const fillLeft = cxBar - 100;
+            this.corrosionLine20 = s.add.rectangle(fillLeft + 200 * 0.20, barY, 2, 10, 0xffff00, 1)
+                .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
+            this.corrosionLine50 = s.add.rectangle(fillLeft + 200 * 0.50, barY, 2, 10, 0xff6622, 1)
+                .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
+        } else {
+            this.corrosionBg = s.add.rectangle(barX, barY, barW, barH, 0x222222, 0.85)
+                .setOrigin(0, 0.5).setDepth(200).setScrollFactor(0);
+            this.corrosionFill = s.add.rectangle(barX + 2, barY, 0, barH - 4, 0x884466, 1)
+                .setOrigin(0, 0.5).setDepth(201).setScrollFactor(0);
+            this.corrosionBorder = s.add.rectangle(barX, barY, barW, barH)
+                .setOrigin(0, 0.5).setDepth(202).setScrollFactor(0)
+                .setStrokeStyle(2, 0xaa6688).setFillStyle();
+            // 标线 20% 侵蚀度 = 10% 减速
+            const line20X = barX + (barW - 4) * 0.20 + 2;
+            this.corrosionLine20 = s.add.rectangle(line20X, barY, 2, barH - 4, 0xffff00, 1)
+                .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
+            // 标线 50% 侵蚀度 = 25% 减速
+            const line50X = barX + (barW - 4) * 0.50 + 2;
+            this.corrosionLine50 = s.add.rectangle(line50X, barY, 2, barH - 4, 0xff6622, 1)
+                .setOrigin(0.5, 0.5).setDepth(203).setScrollFactor(0);
+        }
         this.corrosionText = s.add.text(barX + barW / 2, barY, '0%', {
             fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
             fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
@@ -318,12 +332,17 @@ class DiseaseSystem {
 
     _updateUI() {
         if (!this.corrosionFill) return;
-        const barW = 240;
         const pct = this.corrosionPct / this.maxCorrosion;
-        this.corrosionFill.width = (barW - 4) * pct;
-        if (pct < 0.2)      this.corrosionFill.fillColor = 0x884466;
-        else if (pct < 0.5) this.corrosionFill.fillColor = 0xcc4477;
-        else                this.corrosionFill.fillColor = 0xff3366;
+        if (this._imgCorBar) {
+            // (用户) 图片填充按腐蚀度从右往左裁: 纹理 100px = 100%
+            this.corrosionFill.setCrop(0, 0, Math.round(100 * pct), 5);
+        } else {
+            const barW = 240;
+            this.corrosionFill.width = (barW - 4) * pct;
+            if (pct < 0.2)      this.corrosionFill.fillColor = 0x884466;
+            else if (pct < 0.5) this.corrosionFill.fillColor = 0xcc4477;
+            else                this.corrosionFill.fillColor = 0xff3366;
+        }
         this.corrosionText.setText(Math.round(this.corrosionPct) + '%');
     }
 

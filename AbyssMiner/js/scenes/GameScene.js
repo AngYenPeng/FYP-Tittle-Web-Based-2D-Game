@@ -218,7 +218,14 @@ class MainGameScene extends Phaser.Scene {
         this.load.image('BatNest', 'assets/images/Bat_nest.png');                   // (用户) 蝙蝠巢 60×24 (BatNest.js 用原生尺寸, 血条/打击随 displaySize 自适应)
         this.load.spritesheet('Bat_boss_fly', 'assets/images/Bat_boss_fly.png', { frameWidth: 144, frameHeight: 112 });    // (用户) 1008×112 / 7 帧
         this.load.spritesheet('Bat_boss_dash', 'assets/images/Bat_boss_dash.png', { frameWidth: 144, frameHeight: 112 });  // (用户) 1008×112 / 7 帧
-        this.load.spritesheet('Bat_boss_roar', 'assets/images/Bat_boss_roar.png', { frameWidth: 144, frameHeight: 112 });  // (用户) 1440×112 — 按 144 切, 帧数运行时 frameTotal 自适应
+        this.load.spritesheet('Bat_boss_roar', 'assets/images/Bat_boss_roar.png', { frameWidth: 144, frameHeight: 112 });  // (用户) 新版 2160×112 / 15 帧 — 帧数 frameTotal 自适应, 换图即生效
+        this.load.spritesheet('Bat_boss_wakes_up', 'assets/images/Bat_boss_wakes_up.png', { frameWidth: 144, frameHeight: 112 });  // (用户) 2160×112 / 15 帧 — 剧情苏醒
+        this.load.spritesheet('Bat_boss_dead', 'assets/images/Bat_boss_dead.png', { frameWidth: 144, frameHeight: 112 });          // (用户) 4464×112 / 31 帧 — 坠地死亡, 播完消失
+        this.load.spritesheet('Miner_dead', 'assets/images/Miner_dead.png', { frameWidth: 128, frameHeight: 128 });                // (用户) 896×128 / 7 帧 — 玩家死亡
+        this.load.image('Corrosion', 'assets/images/Corrosion.png');             // (用户) 腐蚀条框 108×14
+        this.load.image('Corrosion_Fill', 'assets/images/Corrosion_Fill.png');   // (用户) 腐蚀条填充 100×5
+        this.load.image('HpBar', 'assets/images/HpBar.png');                     // (用户) 血条框 108×14
+        this.load.image('HpBar_Fill', 'assets/images/HpBar_Fill.png');           // (用户) 血条填充 100×5
         this.load.image('Setting',  'assets/images/Setting.png');    // 32×32
         // 稿子 (替换黄块)
         this.load.image('Pickaxe',  'assets/images/Pickaxe.png');    // 32×32

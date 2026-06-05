@@ -169,10 +169,10 @@ class TitleScene extends Phaser.Scene {
         const W = this.cameras.main.width;
         const H = this.cameras.main.height;
 
-        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78).setDepth(900);
+        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78).setDepth(900).setInteractive();   // (用户修复) 吃掉点击, 防止穿透到标题按钮
         const panel = this.add.container(W / 2, H / 2).setDepth(901);
         const PW = 660, PH = 470;
-        const bg = this.add.rectangle(0, 0, PW, PH, 0x0a0a18, 0.97).setStrokeStyle(3, 0x6688aa);
+        const bg = this.add.rectangle(0, 0, PW, PH, 0x0a0a18, 0.97).setStrokeStyle(3, 0x6688aa).setInteractive();   // (用户修复) 面板缝隙也不能穿透
         const title = this.add.text(0, -PH / 2 + 30, 'SELECT SAVE', {
             fontSize: '34px', color: '#ffcc55', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 4
@@ -203,9 +203,11 @@ class TitleScene extends Phaser.Scene {
 
                 if (data) {
                     const zone = SaveSystem.zoneName(data.scene);
+                    // (用户) 阵亡存档: 红色 FALLEN 标记, 不可继续 (只能删除)
                     const info = this.add.text(-PW / 2 + 60, y + 14,
-                        zone + '    \u25C6 ' + (data.crystalCount || 0) + '    \u2665 ' + (data.hearts || 0), {
-                        fontSize: '18px', color: '#dddddd', fontFamily: '"VT323", monospace'
+                        data.dead ? (zone + '    \u2620 FALLEN') :
+                        (zone + '    \u25C6 ' + (data.crystalCount || 0) + '    \u2665 ' + (data.hearts || 0)), {
+                        fontSize: '18px', color: data.dead ? '#ff6666' : '#dddddd', fontFamily: '"VT323", monospace'
                     }).setOrigin(0, 0.5);
                     const tstamp = this.add.text(PW / 2 - 90, y - 16, SaveSystem.savedAgo(data.savedAt), {
                         fontSize: '13px', color: '#777788', fontFamily: '"VT323", monospace'
@@ -234,6 +236,7 @@ class TitleScene extends Phaser.Scene {
                     });
 
                     rowBg.on('pointerdown', () => {
+                        if (data.dead) return;   // (用户) 阵亡档不可继续 (用 ✕ 删除后可重开)
                         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
                         this._resumeSlot(i, data);
                     });
@@ -280,47 +283,57 @@ class TitleScene extends Phaser.Scene {
         this._fadeAndStart('StartIntroScene', null, true);   // 新游戏 → 重置 guide 已读
     }
 
-    /** (用户) 难度选择面板: easy / normal / hard / extreme */
+    /** (用户) 难度选择面板: easy / normal / hard / extreme — 槽面板同款美术 */
     _showDifficultySelect(n) {
-        if (this._modalOpen) return;
-        this._modalOpen = true;
-        const W = this.scale.width, H = this.scale.height;
+        // 不查/不设 _modalOpen — 本面板从槽面板内打开 (彼时 _modalOpen 已是 true)
+        // 全部 setInteractive 不带 useHandCursor — Phaser 换/还原光标会把自定义 CSS 光标重置成 default, 看起来"鼠标不见了"
+        const W = this.cameras.main.width, H = this.cameras.main.height;
         const items = [];
-        const ov = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88).setDepth(5000).setInteractive();
+        const ov = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setDepth(5000).setInteractive();
         items.push(ov);
-        items.push(this.add.text(W / 2, H / 2 - 190, 'SELECT DIFFICULTY', {
-            fontSize: '42px', color: '#ffdd66', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 5
-        }).setOrigin(0.5).setDepth(5001));
+        const PW2 = 560, PH2 = 480;
+        const panel = this.add.container(W / 2, H / 2).setDepth(5001);
+        items.push(panel);
+        const bg = this.add.rectangle(0, 0, PW2, PH2, 0x0a0a18, 0.97).setStrokeStyle(3, 0x6688aa).setInteractive();
+        const title = this.add.text(0, -PH2 / 2 + 32, 'SELECT DIFFICULTY', {
+            fontSize: '34px', color: '#ffcc55', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 4
+        }).setOrigin(0.5);
+        panel.add([bg, title]);
         const defs = [
-            { mode: 'easy',    label: 'EASY',    desc: 'The intended experience.',                          color: '#88ff88' },
-            { mode: 'normal',  label: 'NORMAL',  desc: '3 hearts, tougher foes, faster corrosion.',         color: '#ffee88' },
-            { mode: 'hard',    label: 'HARD',    desc: '1 heart, brutal foes, pricier shop.',               color: '#ffaa66' },
-            { mode: 'extreme', label: 'EXTREME', desc: '1 heart, deadliest foes, shrines no longer heal.',  color: '#ff6666' }
+            { mode: 'easy',    label: 'EASY',    desc: 'The intended experience.',                         color: '#88ff88' },
+            { mode: 'normal',  label: 'NORMAL',  desc: '3 hearts \u00b7 tougher foes \u00b7 faster corrosion.',     color: '#ffee88' },
+            { mode: 'hard',    label: 'HARD',    desc: '1 heart \u00b7 brutal foes \u00b7 pricier shop.',           color: '#ffaa66' },
+            { mode: 'extreme', label: 'EXTREME', desc: '1 heart \u00b7 deadliest foes \u00b7 shrines no longer heal.', color: '#ff6666' }
         ];
         defs.forEach((d, i) => {
-            const y = H / 2 - 110 + i * 64;
-            const t = this.add.text(W / 2, y, d.label, {
-                fontSize: '34px', color: d.color, fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
-            }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
-            const sub = this.add.text(W / 2, y + 22, d.desc, {
-                fontSize: '17px', color: '#bbbbbb', fontFamily: '"VT323", monospace'
-            }).setOrigin(0.5).setDepth(5001);
-            t.on('pointerover', () => t.setScale(1.12));
-            t.on('pointerout',  () => t.setScale(1));
-            t.on('pointerdown', () => {
-                items.forEach(o => o.destroy());
-                this._modalOpen = false;
+            const y = -PH2 / 2 + 96 + i * 82;
+            const rowBg = this.add.rectangle(0, y, PW2 - 70, 70, 0x14142a, 1)
+                .setStrokeStyle(2, 0x445577).setInteractive();
+            rowBg.on('pointerover', () => { rowBg.setFillStyle(0x1e1e3a, 1); rowBg.setStrokeStyle(2, 0x88aacc); });
+            rowBg.on('pointerout',  () => { rowBg.setFillStyle(0x14142a, 1); rowBg.setStrokeStyle(2, 0x445577); });
+            const lbl = this.add.text(-(PW2 - 70) / 2 + 26, y - 14, d.label, {
+                fontSize: '28px', color: d.color, fontFamily: '"VT323", monospace',
+                stroke: '#000', strokeThickness: 4
+            }).setOrigin(0, 0.5);
+            const sub = this.add.text(-(PW2 - 70) / 2 + 26, y + 16, d.desc, {
+                fontSize: '16px', color: '#9999aa', fontFamily: '"VT323", monospace'
+            }).setOrigin(0, 0.5);
+            rowBg.on('pointerdown', () => {
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
+                items.forEach(o => { try { o.destroy(); } catch (e) {} });
                 this._startNewGameWithDifficulty(n, d.mode);
             });
-            items.push(t, sub);
+            panel.add([rowBg, lbl, sub]);
         });
-        const back = this.add.text(W / 2, H / 2 + 175, '< BACK', {
-            fontSize: '26px', color: '#999999', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5).setDepth(5001).setInteractive({ useHandCursor: true });
+        const back = this.add.text(0, PH2 / 2 - 34, '[ BACK ]', {
+            fontSize: '26px', color: '#ff8888', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 4
+        }).setOrigin(0.5).setInteractive();
         back.on('pointerover', () => back.setColor('#ffffff'));
-        back.on('pointerout',  () => back.setColor('#999999'));
-        back.on('pointerdown', () => { items.forEach(o => o.destroy()); back.destroy(); this._modalOpen = false; });
-        items.push(back);
+        back.on('pointerout',  () => back.setColor('#ff8888'));
+        back.on('pointerdown', () => { items.forEach(o => { try { o.destroy(); } catch (e) {} }); });   // 返回槽面板
+        panel.add(back);
     }
 
     _resumeSlot(n, data) {

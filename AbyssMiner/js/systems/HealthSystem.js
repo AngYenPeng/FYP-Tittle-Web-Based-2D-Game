@@ -50,13 +50,22 @@ class HealthSystem {
         const barW = 240;
         const barH = 28;
 
-        this.hpBarBg = s.add.rectangle(barX, barY, barW, barH, 0x222222, 0.85)
-            .setOrigin(0, 0.5).setDepth(200).setScrollFactor(0);
-        this.hpBarFill = s.add.rectangle(barX + 2, barY, barW - 4, barH - 4, 0xdd2222, 1)
-            .setOrigin(0, 0.5).setDepth(201).setScrollFactor(0);
-        this.hpBarBorder = s.add.rectangle(barX, barY, barW, barH)
-            .setOrigin(0, 0.5).setDepth(202).setScrollFactor(0)
-            .setStrokeStyle(2, 0xffffff).setFillStyle();
+        // (用户) 图片血条: HpBar 框 108×14 + HpBar_Fill 填充 100×5 (×2 缩放, 中心对齐, 框压填充); 缺图回退旧矩形
+        this._imgHpBar = s.textures.exists('HpBar') && s.textures.exists('HpBar_Fill');
+        if (this._imgHpBar) {
+            const cxBar = barX + 108;   // 216 宽的中心, 左缘与原条对齐
+            this.hpBarBg = null;
+            this.hpBarFill = s.add.image(cxBar, barY, 'HpBar_Fill').setScale(2).setDepth(201).setScrollFactor(0);
+            this.hpBarBorder = s.add.image(cxBar, barY, 'HpBar').setScale(2).setDepth(202).setScrollFactor(0);
+        } else {
+            this.hpBarBg = s.add.rectangle(barX, barY, barW, barH, 0x222222, 0.85)
+                .setOrigin(0, 0.5).setDepth(200).setScrollFactor(0);
+            this.hpBarFill = s.add.rectangle(barX + 2, barY, barW - 4, barH - 4, 0xdd2222, 1)
+                .setOrigin(0, 0.5).setDepth(201).setScrollFactor(0);
+            this.hpBarBorder = s.add.rectangle(barX, barY, barW, barH)
+                .setOrigin(0, 0.5).setDepth(202).setScrollFactor(0)
+                .setStrokeStyle(2, 0xffffff).setFillStyle();
+        }
 
         this.hpText = s.add.text(barX + barW / 2, barY, '100 / 100', {
             fontSize: '18px', color: '#ffffff', fontStyle: 'bold',
@@ -186,12 +195,28 @@ class HealthSystem {
         if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 死亡清侵蚀/中毒 — 修复复活后无限扣血
 
         if (s.player) {
-            s.player.setTint(0x555555);
-            s.player.setAlpha(0.6);
-            if (s.player.body) {
-                s.player.body.setVelocity(0, 0);
-                s.player.body.setAllowGravity(false);
-                s.player.body.setImmovable(true);
+            // (用户) Miner_dead 死亡动画: 播 7 帧定格末帧; 空中死保留重力, 边播边落地 (与墙 collider 已存在); 缺图回退旧灰影
+            if (s.textures.exists('Miner_dead')) {
+                if (!s.anims.exists('miner_dead')) {
+                    const _ft = s.textures.get('Miner_dead').frameTotal;
+                    s.anims.create({ key: 'miner_dead', frames: s.anims.generateFrameNumbers('Miner_dead', { start: 0, end: Math.max(0, _ft - 2) }), frameRate: 10, repeat: 0 });
+                }
+                s.player.clearTint();
+                s.player.setAlpha(1);
+                try { s.player.play('miner_dead'); } catch (e) {}
+                if (s.player.body) {
+                    s.player.body.setVelocityX(0);
+                    s.player.body.setAllowGravity(true);
+                    s.player.body.setImmovable(true);
+                }
+            } else {
+                s.player.setTint(0x555555);
+                s.player.setAlpha(0.6);
+                if (s.player.body) {
+                    s.player.body.setVelocity(0, 0);
+                    s.player.body.setAllowGravity(false);
+                    s.player.body.setImmovable(true);
+                }
             }
         }
 
@@ -264,24 +289,51 @@ class HealthSystem {
         if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 永久死亡同样清侵蚀/中毒
 
         if (s.player) {
-            s.player.setTint(0x555555);
-            s.player.setAlpha(0.5);
-            if (s.player.body) {
-                s.player.body.setVelocity(0, 0);
-                s.player.body.setAllowGravity(false);
-                s.player.body.setImmovable(true);
+            // (用户) Miner_dead 死亡动画: 播 7 帧定格末帧; 空中死保留重力, 边播边落地 (与墙 collider 已存在); 缺图回退旧灰影
+            if (s.textures.exists('Miner_dead')) {
+                if (!s.anims.exists('miner_dead')) {
+                    const _ft = s.textures.get('Miner_dead').frameTotal;
+                    s.anims.create({ key: 'miner_dead', frames: s.anims.generateFrameNumbers('Miner_dead', { start: 0, end: Math.max(0, _ft - 2) }), frameRate: 10, repeat: 0 });
+                }
+                s.player.clearTint();
+                s.player.setAlpha(1);
+                try { s.player.play('miner_dead'); } catch (e) {}
+                if (s.player.body) {
+                    s.player.body.setVelocityX(0);
+                    s.player.body.setAllowGravity(true);
+                    s.player.body.setImmovable(true);
+                }
+            } else {
+                s.player.setTint(0x555555);
+                s.player.setAlpha(0.5);
+                if (s.player.body) {
+                    s.player.body.setVelocity(0, 0);
+                    s.player.body.setAllowGravity(false);
+                    s.player.body.setImmovable(true);
+                }
             }
         }
 
         if (this.deathPanel) this.deathPanel.setVisible(false);   // 改用黑屏爱心动画
-        const goHub = () => { if (s.scene && s.scene.start) s.scene.start('HubScene'); };
-        // 黑屏爱心动画 (最后 1 颗碎裂) → 回大厅
+        // (用户) 彻底死亡: 当前存档打上阵亡标记 (槽位列表显示 FALLEN, 不可继续), 然后回主页
+        try {
+            if (typeof SaveSystem !== 'undefined' && SaveSystem.getCurrentSlot) {
+                const _slot = SaveSystem.getCurrentSlot();
+                if (_slot != null) {
+                    const _d = SaveSystem.getSlot(_slot) || SaveSystem.captureFromScene(s) || {};
+                    _d.dead = true;
+                    SaveSystem.saveSlot(_slot, _d);
+                }
+            }
+        } catch (e) {}
+        const goTitle = () => { if (s.scene && s.scene.start) s.scene.start('TitleScene'); };
+        // 黑屏爱心动画 (最后 1 颗碎裂) → 回主页
         if (s._deathHeartAnim) {
-            s._deathHeartAnim(1, goHub);
+            s._deathHeartAnim(1, goTitle);
         } else {
             this.deathPanel.setVisible(true);
-            this.deathText.setText('YOU DIED — RETURNING TO HUB...');
-            s.time.delayedCall(2500, goHub);
+            this.deathText.setText('YOU DIED');
+            s.time.delayedCall(2500, goTitle);
         }
     }
 
@@ -330,13 +382,18 @@ class HealthSystem {
 
     updateUI() {
         if (!this.hpBarFill) return;
-        const barW = 240;
         const pct = Math.max(0, this.hp / this.maxHp);
-        this.hpBarFill.width = (barW - 4) * pct;
-        // 颜色按血量变化: 高=红, 中=黄, 低=橙
-        if (pct > 0.6)      this.hpBarFill.fillColor = 0xdd2222;
-        else if (pct > 0.3) this.hpBarFill.fillColor = 0xddaa22;
-        else                this.hpBarFill.fillColor = 0xff6622;
+        if (this._imgHpBar) {
+            // (用户) 图片填充按血量从右往左裁: 纹理 100px = 100%, 50% → 右半 50px 隐藏
+            this.hpBarFill.setCrop(0, 0, Math.round(100 * pct), 5);
+        } else {
+            const barW = 240;
+            this.hpBarFill.width = (barW - 4) * pct;
+            // 颜色按血量变化: 高=红, 中=黄, 低=橙
+            if (pct > 0.6)      this.hpBarFill.fillColor = 0xdd2222;
+            else if (pct > 0.3) this.hpBarFill.fillColor = 0xddaa22;
+            else                this.hpBarFill.fillColor = 0xff6622;
+        }
         this.hpText.setText(Math.ceil(this.hp) + ' / ' + this.maxHp);
         this.heartsText.setText((this.heartIcon ? 'x' : '\u2764x') + this.hearts);   // (用户) 图标模式只显 xN
     }
