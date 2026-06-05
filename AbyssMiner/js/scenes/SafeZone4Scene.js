@@ -1452,14 +1452,19 @@ class SafeZone4Scene extends MainGameScene {
         const bg = this.add.rectangle(0, 0, 520, 220, 0x1d1424, 0.95).setStrokeStyle(4, 0x8866cc);
         const portraitBg = this.add.rectangle(-150, 0, 140, 140, 0x222222, 0.5).setStrokeStyle(3, 0x8866cc);
         const items = [portraitBg];
-        const ptex = this.textures.exists('Bat_attack') ? 'Bat_attack'
-                   : (this.textures.exists('Bat_fly') ? 'Bat_fly' : null);
-        if (ptex) {
-            items.push(this.add.image(-150, 0, ptex).setDisplaySize(120, 120));
+        if (this.textures.exists('Bat_boss_avatar')) {
+            // (用户) 专属头像 Bat_boss_avatar 144×112 — 等比 ×0.9 (129.6×100.8) 放进 140 框, 不拉伸
+            items.push(this.add.image(-150, 0, 'Bat_boss_avatar').setScale(0.9));
         } else {
-            const x1 = this.add.rectangle(-150, 0, 100, 4, 0x444444); x1.angle = 45;
-            const x2 = this.add.rectangle(-150, 0, 100, 4, 0x444444); x2.angle = -45;
-            items.push(x1, x2);
+            const ptex = this.textures.exists('Bat_attack') ? 'Bat_attack'
+                       : (this.textures.exists('Bat_fly') ? 'Bat_fly' : null);
+            if (ptex) {
+                items.push(this.add.image(-150, 0, ptex).setDisplaySize(120, 120));
+            } else {
+                const x1 = this.add.rectangle(-150, 0, 100, 4, 0x444444); x1.angle = 45;
+                const x2 = this.add.rectangle(-150, 0, 100, 4, 0x444444); x2.angle = -45;
+                items.push(x1, x2);
+            }
         }
         const nameText = this.add.text(60, 0, 'BROODMOTHER', {
             fontSize: '40px', color: '#ffffff', fontFamily: '"VT323", monospace',
