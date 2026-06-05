@@ -184,7 +184,7 @@ class SafeZone2Scene extends MainGameScene {
         // L1/L3 贴世界 1:1 (sf 1,1); 只有 L2 会动: X 视差 0.5, Y 1:1; L2 跟 SZ1 同款左移 20 格
         // depth: L1 最前 (-101), L2 中 (-102), L3 最深 (-103); 初始锚点 = 基础地图中心 (640, 360), 待按格微调
         {
-            const bgX = 640, bgY = 360;
+            const bgX = 640 + 23 * 32, bgY = 360 - 11 * 32;   // (用户) 净偏移: 右 23, 上 11 → (1376, 8)
             if (this.textures.exists('sz2_bg_L3')) {
                 this.bgL3 = this.add.image(bgX, bgY, 'sz2_bg_L3').setScrollFactor(1, 1).setDepth(-103);
             }
@@ -267,11 +267,7 @@ class SafeZone2Scene extends MainGameScene {
             }
         };
         const bgFromCells = (x1, y1, x2, y2) => {
-            for (let cx = x1; cx <= x2; cx++) {
-                for (let cy = y1; cy <= y2; cy++) {
-                    new BackgroundBlock(this, cx * G + G / 2, cy * G + G / 2, G, G);
-                }
-            }
+            // (用户) SZ2 BackgroundBlock 全部清空不要了 — 保留空函数, 调用点自然失效
         };
         // 内部地形（地板 + 顶 + 左右）
         rectFromCells(0, G_H - 2, G_W - 1, G_H - 1);
@@ -1805,9 +1801,7 @@ class SafeZone2Scene extends MainGameScene {
             }
         };
         const bgRange = (c1, r1, c2, r2) => {
-            for (let c = c1; c <= c2; c++) for (let r = r1; r <= r2; r++) {
-                new BackgroundBlock(this, c * G + G / 2, r * G + G / 2, G, G);
-            }
+            // (用户) SZ2 BackgroundBlock 全部清空不要了 — 保留空函数, 调用点自然失效
         };
         const wallRange = (c1, r1, c2, r2) => {
             const existing = new Set();
