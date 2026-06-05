@@ -7,7 +7,7 @@ class HUDSystem {
         this.crystalCount = 0; // 开局水晶
         this.crystalIcon = null;
         this.crystalText = null;
-        this.yellowCrystalCount = 0;  // 黄水晶 (任务货币) — 暂时开局给 100 测试用
+        this.yellowCrystalCount = 0;  // 黄水晶 (任务货币)
         this.yellowCrystalIcon = null;
         this.yellowCrystalText = null;
         this.yellowCrystalShown = false;  // 首次获得后才显示
