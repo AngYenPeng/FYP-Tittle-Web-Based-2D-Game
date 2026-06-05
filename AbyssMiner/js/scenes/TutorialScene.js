@@ -166,7 +166,7 @@ class TutorialScene extends MainGameScene {
     this._bgLayers = [];
     for (const l of parallaxLayers) {
         if (!this.textures.exists(l.key)) continue;
-        const img = this.add.image(W / 2, H / 2, l.key);
+        const img = this.add.image(W / 2, H / 2 + 32, l.key);   // (用户) 背景整体下移 1 格
         if (l.fixedToMap) img.setDisplaySize(W, H);  // 缩放到地图同尺寸 1:1
         img.setScrollFactor(l.sf).setDepth(l.depth);
         this._bgLayers.push(img);
