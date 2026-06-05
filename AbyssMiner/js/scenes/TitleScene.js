@@ -306,20 +306,26 @@ class TitleScene extends Phaser.Scene {
             { mode: 'hard',    label: 'HARD',    desc: '1 heart \u00b7 brutal foes \u00b7 pricier shop.',           color: '#ffaa66' },
             { mode: 'extreme', label: 'EXTREME', desc: '1 heart \u00b7 deadliest foes \u00b7 shrines no longer heal.', color: '#ff6666' }
         ];
+        // (用户) Extreme 需通关全游戏 >=1 次解锁
+        const _extremeLocked = !(window.AbyssDiff && AbyssDiff.isCleared && AbyssDiff.isCleared());
         defs.forEach((d, i) => {
             const y = -PH2 / 2 + 96 + i * 82;
-            const rowBg = this.add.rectangle(0, y, PW2 - 70, 70, 0x14142a, 1)
-                .setStrokeStyle(2, 0x445577).setInteractive();
-            rowBg.on('pointerover', () => { rowBg.setFillStyle(0x1e1e3a, 1); rowBg.setStrokeStyle(2, 0x88aacc); });
-            rowBg.on('pointerout',  () => { rowBg.setFillStyle(0x14142a, 1); rowBg.setStrokeStyle(2, 0x445577); });
+            const locked = (d.mode === 'extreme') && _extremeLocked;
+            const rowBg = this.add.rectangle(0, y, PW2 - 70, 70, locked ? 0x101018 : 0x14142a, 1)
+                .setStrokeStyle(2, locked ? 0x333344 : 0x445577).setInteractive();
+            if (!locked) {
+                rowBg.on('pointerover', () => { rowBg.setFillStyle(0x1e1e3a, 1); rowBg.setStrokeStyle(2, 0x88aacc); });
+                rowBg.on('pointerout',  () => { rowBg.setFillStyle(0x14142a, 1); rowBg.setStrokeStyle(2, 0x445577); });
+            }
             const lbl = this.add.text(-(PW2 - 70) / 2 + 26, y - 14, d.label, {
-                fontSize: '28px', color: d.color, fontFamily: '"VT323", monospace',
+                fontSize: '28px', color: locked ? '#555566' : d.color, fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 4
             }).setOrigin(0, 0.5);
-            const sub = this.add.text(-(PW2 - 70) / 2 + 26, y + 16, d.desc, {
+            const sub = this.add.text(-(PW2 - 70) / 2 + 26, y + 16, locked ? 'Locked \u2014 clear the game once to unlock.' : d.desc, {
                 fontSize: '16px', color: '#9999aa', fontFamily: '"VT323", monospace'
             }).setOrigin(0, 0.5);
             rowBg.on('pointerdown', () => {
+                if (locked) return;   // (用户) 未解锁不可选
                 if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
                 items.forEach(o => { try { o.destroy(); } catch (e) {} });
                 this._startNewGameWithDifficulty(n, d.mode);

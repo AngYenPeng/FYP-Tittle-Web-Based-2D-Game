@@ -35,7 +35,10 @@ window.AbyssDiff = {
         extreme: { hearts: 1, corrTick: 4, potionCd: 45000, hpMul: 3,   dmgMul: 2,   shopLife: false, priceMul: 2, cpRegen: false }
     },
     get() { return this.TABLE[this.mode] || this.TABLE.easy; },
-    set(m) { this.mode = this.TABLE[m] ? m : 'easy'; }
+    set(m) { this.mode = this.TABLE[m] ? m : 'easy'; },
+    // (用户) Extreme 解锁: 通关全游戏 >=1 次 (蜘蛛皇后死亡时 markCleared)
+    isCleared() { try { return localStorage.getItem('abyssMinerCleared') === '1'; } catch (e) { return false; } },
+    markCleared() { try { localStorage.setItem('abyssMinerCleared', '1'); } catch (e) {} }
 };
 
 const game = new Phaser.Game(config);

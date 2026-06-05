@@ -124,6 +124,7 @@ class SpiderQueenBoss extends Phaser.Physics.Arcade.Sprite {
         if (this._hpBg) this._hpBg.destroy();
         if (this._hpBar) this._hpBar.destroy();
         this.scene.events.emit('spider_queen_died', { x: this.x, y: this.y });
+        if (window.AbyssDiff && AbyssDiff.markCleared) AbyssDiff.markCleared();   // (用户) 最终 boss 死 = 通关 → 解锁 Extreme
         this.scene.tweens.add({
             targets: this,
             angle: 180,
