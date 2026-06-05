@@ -32,7 +32,8 @@ class TutorialScene extends MainGameScene {
             if (this.tweens && this.tweens.resumeAll) this.tweens.resumeAll();
             if (this.anims && this.anims.resumeAll) this.anims.resumeAll();
         } catch (e) {}
-        try { this.game.canvas.style.cursor = 'none'; } catch (e) {}
+        // (用户修复) 早期 'none' 移除 — create 冻结黑屏期 (StartIntro→Tutorial 无 Loading 层兜底) 沿用上场景 CSS 光标,
+        //   'none' 由精灵创建处接管 (见 crosshair 创建点)
         // (用户) 清掉上一轮残留的显示对象/数组缓存 — lazy 守卫 (if (!this.x)) 第二轮判真跳过重建,
         // 拿已销毁对象继续用 = 重进崩溃; 数组里囤的死对象同理
         this.ropeGraphics = null; this._gridCoordText = null;
@@ -453,6 +454,8 @@ class TutorialScene extends MainGameScene {
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
         this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
+        { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位
+        try { this.game.canvas.style.cursor = 'none'; } catch (e) {}   // (用户) 精灵就位才隐藏 OS 光标
         this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
         this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
         this.input.on('pointermove', (pointer) => {
