@@ -486,6 +486,8 @@ class SettingsSystem {
     }
 
     _saveAndExit() {
+        // (用户修复) 退出时抓取当前状态 — 原设计只存"进区快照", 会把扣掉的爱心/血/腐蚀全部回滚 (无限爱心漏洞)
+        try { if (typeof SaveSystem !== 'undefined' && SaveSystem.autoSave) SaveSystem.autoSave(this.scene); } catch (e) {}
         this._saveSettings();
         // 注意: 不在这里抓当前状态 — 存档以"进入区域时"的快照为准 (见各场景 autoSave),
         // 否则中途捡的东西会被存进去, 但 resume 又会刷新世界 → 可无限刷. 这里只负责退出.

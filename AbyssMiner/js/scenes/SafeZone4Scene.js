@@ -206,7 +206,20 @@ class SafeZone4Scene extends MainGameScene {
         if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone4');  // BGM (SafeZone4.mp3 放进 BGM/ 即生效)
 
         // pickaxeUpgraded — 从 registry 读 (跨场景有效, 刷新网页自动重置 — 暂无后台存档)
-        this._pickaxeUpgraded = true; this.registry.set('pickaxeUpgraded', true);  // SZ4: 进场即解锁双手+丢稿子
+        this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');  // (用户修复) 原"进场即解锁"是开发捷径 — 改从 registry 读
+        // (用户修复) 场景重启 (Save&Exit → Resume) 实例属性残留: boss 显示已死/剧情不播/空气墙不建
+        this._batBoss = null; this._batBossAwake = false; this._batBossDead = false;
+        this._batBossDeathStarted = false; this._batBossCrashing = false; this._batBossLanded = false;
+        if (this._batBossCrashGuard) { try { this._batBossCrashGuard.remove(); } catch (e) {} }
+        this._batBossCrashGuard = null;
+        this._sz4CutsceneStarted = false; this._sz4CutsceneActive = false; this._sz4CutsceneDone = false;
+        this._sz4CutsceneCrystal = null; this._sz4BossActive = false;
+        this._sz4InBossRoomNow = false; this._sz4WasInBossRoom = false;
+        this._sz4PlayerWall = null; this._sz4AirWall = null; this._sz4BatNests = null;
+        this._sz4MonsterWallsBuilt = false;
+        this._sz4CutPhase = null;
+        if (this._sz4PanGuard) { try { this._sz4PanGuard.remove(); } catch (e) {} }
+        this._sz4PanGuard = null;
         // 丢稿子距离极限 (砍短, 防飞出屏幕) — 这里覆盖一次, 不依赖 GameScene.js 构造器
         this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
         // 节点末索引 (15 节点 → 0..14)
@@ -624,6 +637,12 @@ class SafeZone4Scene extends MainGameScene {
             this._bosses.push(this._batBoss);
             this._batBoss._attackEnabled = false;  // 区2剧情结束前不攻击
             this._batBossAwake = false;            // 区2剧情唤醒前不跑 AI (挂在天花板不动)
+            // (用户) 唤醒前 = 睡觉姿势: 停掉构造器默认的飞行循环, 定格 Bat_boss_wakes_up 第 0 帧
+            // (修复: 镜头第一次揭示 boss 时露 0.几秒飞行动画, 之后才播苏醒 — 起床前不该飞)
+            if (this._batBoss.sprite && this.textures.exists('Bat_boss_wakes_up')) {
+                try { this._batBoss.sprite.anims.stop(); } catch (e) {}
+                this._batBoss.sprite.setTexture('Bat_boss_wakes_up', 0);
+            }
             // 睡眠期间隐藏血条 (剧情结束才显示)
             if (this._batBoss._hpBg)  this._batBoss._hpBg.setVisible(false);
             if (this._batBoss._hpBar) this._batBoss._hpBar.setVisible(false);

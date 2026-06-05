@@ -244,10 +244,14 @@ class DiseaseSystem {
 
         // 处理 DoT
         if (this._activeDots.length > 0) {
-            for (let i = this._activeDots.length - 1; i >= 0; i--) {
-                const dot = this._activeDots[i];
+            // (用户修复) 快照数组引用: tick 伤害可能致死 → resetOnDeath 把 _activeDots 换成新数组,
+            // 旧循环按旧长度继续读新空数组 → undefined.endsAt 宕机
+            const dots = this._activeDots;
+            for (let i = dots.length - 1; i >= 0; i--) {
+                const dot = dots[i];
+                if (!dot) continue;
                 if (now >= dot.endsAt) {
-                    this._activeDots.splice(i, 1);
+                    dots.splice(i, 1);
                     continue;
                 }
                 if (now >= dot.nextTickAt) {
@@ -257,6 +261,7 @@ class DiseaseSystem {
                     } else if (dot.kind === 'hp') {
                         if (s.healthSystem && s.healthSystem.takeDamage) {
                             s.healthSystem.takeDamage(dot.damage, { ignoreIframe: true, triggerIframe: false });
+                            if (this._activeDots !== dots) return;   // 致死已重置 → 本帧立即收手
                         }
                     }
                 }

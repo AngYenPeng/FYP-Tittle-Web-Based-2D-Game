@@ -17,9 +17,8 @@ class SafeZone25Scene extends SafeZone3Scene {
 
     create() {
         if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone25');  // BGM (SafeZone25.mp3 放进 BGM/ 即生效)
-        // 稿子解锁 (沙盒直接给, 无 Amber 任务)
-        this._pickaxeUpgraded = true;
-        this.registry.set('pickaxeUpgraded', true);
+        // (用户修复) 不再进场强制解锁 — 从 registry 读; SZ3 升级镐 NPC 才是合法解锁点 (原捷径导致免对话解锁)
+        this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
         this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
         this.activeEnd1 = 14; this.activeEnd2 = 14;
         this._cinematicLock = false;

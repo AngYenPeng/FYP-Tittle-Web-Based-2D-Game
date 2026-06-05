@@ -278,6 +278,7 @@ class TitleScene extends Phaser.Scene {
 
     _startNewGameWithDifficulty(n, mode) {
         if (window.AbyssDiff) AbyssDiff.set(mode);
+        try { this.registry.set('pickaxeUpgraded', false); } catch (e) {}   // (用户修复) 新游戏清跨场景旗标 — 防上一局残留免对话解锁
         SaveSystem.deleteSlot(n);          // 清空旧数据 (新游戏)
         SaveSystem.setCurrentSlot(n);      // deleteSlot 可能清 current, 重设
         this._fadeAndStart('StartIntroScene', null, true);   // 新游戏 → 重置 guide 已读

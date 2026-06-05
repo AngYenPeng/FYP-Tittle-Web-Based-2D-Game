@@ -166,6 +166,11 @@ class SafeZone2Scene extends MainGameScene {
 
         // pickaxeUpgraded — 从 registry 读 (跨场景有效, 刷新网页自动重置 — 暂无后台存档)
         this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
+        // (用户修复) 场景重启实例属性残留预防 (同 SZ4): boss 战旗标/墙引用清零
+        this._sz2BossFightStarted = false; this._sz2BossWallsBuilt = false; this._sz2WasInZone2 = false;
+        this._sz2MerchantRiseTriggered = false;
+        this._sz2MonsterWallLeft = null; this._sz2MonsterWallRight = null;
+        this._sz2BossDoorLeft = null; this._sz2BossDoorRight = null;
         // 丢稿子距离极限 (砍短, 防飞出屏幕) — 这里覆盖一次, 不依赖 GameScene.js 构造器
         this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
         // 节点末索引 (15 节点 → 0..14)
