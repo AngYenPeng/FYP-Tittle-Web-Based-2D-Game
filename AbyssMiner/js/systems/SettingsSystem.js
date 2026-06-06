@@ -86,12 +86,14 @@ class SettingsSystem {
         const dimmer = s.add.rectangle(0, 0, W * 2, H * 2, 0x000000, 0.45)
             .setScrollFactor(0);
         // 面板背景
-        const bg = s.add.rectangle(0, 0, PW, PH, 0x0d0d0d, 0.97)
-            .setStrokeStyle(1, 0x444444);
+        const bg = s.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.98)
+            .setStrokeStyle(2, 0x806020);   // (用户) 描金语言统一
+        const inner = s.add.rectangle(0, 0, PW - 14, PH - 14, 0x000000, 0)
+            .setStrokeStyle(1, 0xffcc44, 0.3);
 
         // 标题
-        const titleTxt = s.add.text(0, -PH / 2 + 26, 'SETTINGS', {
-            fontSize: '34px', color: '#ffffff', fontFamily: '"VT323", monospace',
+        const titleTxt = s.add.text(0, -PH / 2 + 26, '★ SETTINGS ★', {
+            fontSize: '34px', color: '#ffd86a', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 5,
             letterSpacing: 8
         }).setOrigin(0.5);
@@ -105,9 +107,9 @@ class SettingsSystem {
         closeBtn.on('pointerout',  () => closeBtn.setColor('#ff5555'));
 
         // 分割线
-        const divH = s.add.rectangle(0, -PH / 2 + 52, PW - 40, 1, 0x333333, 1);
+        const divH = s.add.rectangle(0, -PH / 2 + 52, PW - 40, 1, 0x444458, 1);
 
-        this.panel.add([dimmer, bg, titleTxt, closeBtn, divH]);
+        this.panel.add([dimmer, bg, inner, titleTxt, closeBtn, divH]);
 
         // ── 左侧标签栏 ──────────────────────────────────────
         this._tabs = {};
@@ -123,11 +125,11 @@ class SettingsSystem {
             const { key, label } = tabDefs[i];
             const ty = tabStartY + i * 52;
             const tb = s.add.text(tabX, ty, label, {
-                fontSize: '24px', color: '#bbbbbb', fontFamily: '"VT323", monospace',
+                fontSize: '24px', color: '#8a8a99', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3
             }).setOrigin(0, 0.5).setInteractive();
             tb.on('pointerover', () => { if (this._currentTab !== key) tb.setColor('#ffffff'); });
-            tb.on('pointerout',  () => { if (this._currentTab !== key) tb.setColor('#bbbbbb'); });
+            tb.on('pointerout',  () => { if (this._currentTab !== key) tb.setColor('#8a8a99'); });
             tb.on('pointerdown', () => {
                 if (key === 'ach') { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(s); }
                 else this._switchTab(key);
@@ -512,7 +514,7 @@ class SettingsSystem {
 
         // 更新 tab 文字颜色
         for (const [k, tb] of Object.entries(this._tabs)) {
-            tb.setColor(k === key ? '#ffff66' : '#bbbbbb');
+            tb.setColor(k === key ? '#ffd86a' : '#8a8a99');
         }
 
         const allGroups = {

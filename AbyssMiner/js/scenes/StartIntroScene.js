@@ -261,33 +261,39 @@ class StartIntroScene extends Phaser.Scene {
         const W = this.scale.width, H = this.scale.height;
         // 防御性 — 重新设置 game 鼠标 (确保弹窗里也是游戏内置鼠标; 与 create 同值, 重复设置不闪)
         this._applyGameCursor();
-        // 半透明遮罩
+        // (用户) 描金语言统一: 双层边框 + 药丸按钮
         const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(20);
-        // 弹窗
-        const boxW = 480, boxH = 200;
-        const box = this.add.rectangle(W / 2, H / 2, boxW, boxH, 0x1a1a1a).setDepth(21);
-        box.setStrokeStyle(2, 0xffffff);
-        const q = this.add.text(W / 2, H / 2 - 40, 'Skip the intro?', {
-            fontSize: '28px', color: '#ffffff', fontFamily: '"VT323", monospace'
+        const boxW = 480, boxH = 210;
+        const box = this.add.rectangle(W / 2, H / 2, boxW, boxH, 0x0b0b12, 0.98).setDepth(21);
+        box.setStrokeStyle(2, 0x806020);
+        const boxInner = this.add.rectangle(W / 2, H / 2, boxW - 14, boxH - 14, 0x000000, 0)
+            .setStrokeStyle(1, 0xffcc44, 0.3).setDepth(21);
+        const q = this.add.text(W / 2, H / 2 - 44, 'Skip the intro?', {
+            fontSize: '30px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 4
         }).setOrigin(0.5).setDepth(22);
 
         // 不用 useHandCursor — 防止 canvas.style.cursor 被覆盖
-        const yesBtn = this.add.text(W / 2 - 70, H / 2 + 30, '[ Yes ]', {
-            fontSize: '24px', color: '#ff6644', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 2
-        }).setOrigin(0.5).setDepth(22).setInteractive();
-        const noBtn = this.add.text(W / 2 + 70, H / 2 + 30, '[ No ]', {
-            fontSize: '24px', color: '#44ff66', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 2
-        }).setOrigin(0.5).setDepth(22).setInteractive();
+        const yesBtn = this.add.rectangle(W / 2 - 90, H / 2 + 40, 150, 46, 0x1c1828, 1)
+            .setStrokeStyle(2, 0xffcc44, 0.9).setDepth(22).setInteractive();
+        const yesTxt = this.add.text(W / 2 - 90, H / 2 + 40, 'YES', {
+            fontSize: '26px', color: '#ff8866', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(23);
+        const noBtn = this.add.rectangle(W / 2 + 90, H / 2 + 40, 150, 46, 0x1c1828, 1)
+            .setStrokeStyle(2, 0xffcc44, 0.9).setDepth(22).setInteractive();
+        const noTxt = this.add.text(W / 2 + 90, H / 2 + 40, 'NO', {
+            fontSize: '26px', color: '#9adfa9', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setDepth(23);
 
-        yesBtn.on('pointerover', () => yesBtn.setColor('#ff9988'));
-        yesBtn.on('pointerout',  () => yesBtn.setColor('#ff6644'));
-        noBtn.on('pointerover',  () => noBtn.setColor('#88ff99'));
-        noBtn.on('pointerout',   () => noBtn.setColor('#44ff66'));
+        yesBtn.on('pointerover', () => { yesBtn.setFillStyle(0x2a2438); yesTxt.setColor('#ffbbaa'); });
+        yesBtn.on('pointerout',  () => { yesBtn.setFillStyle(0x1c1828); yesTxt.setColor('#ff8866'); });
+        noBtn.on('pointerover',  () => { noBtn.setFillStyle(0x2a2438); noTxt.setColor('#c8f5cf'); });
+        noBtn.on('pointerout',   () => { noBtn.setFillStyle(0x1c1828); noTxt.setColor('#9adfa9'); });
 
         const closeOverlay = () => {
-            try { dim.destroy(); box.destroy(); q.destroy(); yesBtn.destroy(); noBtn.destroy(); } catch(e) {}
+            try { dim.destroy(); box.destroy(); boxInner.destroy(); q.destroy(); yesBtn.destroy(); yesTxt.destroy(); noBtn.destroy(); noTxt.destroy(); } catch(e) {}
             this._confirmOpen = false;
         };
         yesBtn.on('pointerdown', (p, lx, ly, ev) => {

@@ -4,7 +4,7 @@
 class HUDSystem {
     constructor(scene) {
         this.scene = scene;
-        this.crystalCount = 1000; // (用户) 开局水晶归零 (测试期曾给 1000)
+        this.crystalCount = 0; // (用户) 开局水晶归零 (测试期曾给 1000)
         this.crystalIcon = null;
         this.crystalText = null;
         this.yellowCrystalCount = 0;  // (用户) 黄水晶归零 (测试期曾给 100)
@@ -278,11 +278,11 @@ class HUDSystem {
         this.confirmPanel = s.add.container(cx, cy)
             .setScrollFactor(0).setDepth(400).setVisible(false);
 
-        let bg = s.add.rectangle(0, 0, 550, 220, 0x000000, 0.92);
-        bg.setStrokeStyle(3, 0xffffff);
+        let bg = s.add.rectangle(0, 0, 550, 220, 0x0b0b12, 0.98);
+        bg.setStrokeStyle(2, 0x806020);   // (用户) 描金语言统一
 
         let title = s.add.text(0, -60, 'Use this potion?', {
-            fontSize: '32px', color: '#ffffff',
+            fontSize: '32px', color: '#ffd86a',
             fontFamily: '"VT323", monospace'
         }).setOrigin(0.5);
 
@@ -291,7 +291,7 @@ class HUDSystem {
             fontFamily: '"VT323", monospace'
         }).setOrigin(0.5);
 
-        let yesBtn = s.add.rectangle(-100, 50, 160, 55, 0x228833, 1)
+        let yesBtn = s.add.rectangle(-100, 50, 160, 55, 0x1d4a28, 1)
             .setStrokeStyle(2, 0xffffff);
         yesBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 160, 55), Phaser.Geom.Rectangle.Contains);
         let yesTxt = s.add.text(-100, 50, 'YES', {
@@ -299,7 +299,7 @@ class HUDSystem {
             fontFamily: '"VT323", monospace'
         }).setOrigin(0.5);
 
-        let noBtn = s.add.rectangle(100, 50, 160, 55, 0x883333, 1)
+        let noBtn = s.add.rectangle(100, 50, 160, 55, 0x4a1d1d, 1)
             .setStrokeStyle(2, 0xffffff);
         noBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 160, 55), Phaser.Geom.Rectangle.Contains);
         let noTxt = s.add.text(100, 50, 'NO', {
@@ -307,10 +307,10 @@ class HUDSystem {
             fontFamily: '"VT323", monospace'
         }).setOrigin(0.5);
 
-        yesBtn.on('pointerover', () => yesBtn.setFillStyle(0x33aa44));
-        yesBtn.on('pointerout',  () => yesBtn.setFillStyle(0x228833));
-        noBtn.on('pointerover',  () => noBtn.setFillStyle(0xaa4444));
-        noBtn.on('pointerout',   () => noBtn.setFillStyle(0x883333));
+        yesBtn.on('pointerover', () => yesBtn.setFillStyle(0x2a6638));
+        yesBtn.on('pointerout',  () => yesBtn.setFillStyle(0x1d4a28));
+        noBtn.on('pointerover',  () => noBtn.setFillStyle(0x663030));
+        noBtn.on('pointerout',   () => noBtn.setFillStyle(0x4a1d1d));
 
         yesBtn.on('pointerdown', () => this._resolveConfirm(true));
         noBtn.on('pointerdown',  () => this._resolveConfirm(false));
