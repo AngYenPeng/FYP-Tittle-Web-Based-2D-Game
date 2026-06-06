@@ -851,14 +851,19 @@ class MainGameScene extends Phaser.Scene {
                 this.player.body.setVelocity(Math.cos(a)*350, Math.sin(a)*350 - 100);
             }
         }
-        [this.spiders,this.bungeeSpiders,this.bats,this.earthworms,this.slimes,this.miniSlimes,this.beetles].forEach(grp =>
+        // (用户) SZ 场景不一定创建全部怪物组 (如 bats) — 逐组判空, 否则玩家旁爆炸直接宕机
+        [this.spiders,this.bungeeSpiders,this.bats,this.earthworms,this.slimes,this.miniSlimes,this.beetles].forEach(grp => {
+            if (!grp || typeof grp.getChildren !== 'function') return;
             grp.getChildren().forEach(m => {
-                if (m.hp > 0 && Phaser.Math.Distance.Between(cx, cy, m.x, m.y) <= radius) m.takeDamage(5);
-            }));
-        this.volatileCrystals.getChildren().forEach(c => {
-            if (c.state === 'idle' && Phaser.Math.Distance.Between(cx, cy, c.x, c.y) <= radius * 1.2)
-                this.time.delayedCall(120, () => { if (c && c.trigger) c.trigger(); });
+                if (m && m.hp > 0 && Phaser.Math.Distance.Between(cx, cy, m.x, m.y) <= radius) m.takeDamage(5);
+            });
         });
+        if (this.volatileCrystals && typeof this.volatileCrystals.getChildren === 'function') {
+            this.volatileCrystals.getChildren().forEach(c => {
+                if (c.state === 'idle' && Phaser.Math.Distance.Between(cx, cy, c.x, c.y) <= radius * 1.2)
+                    this.time.delayedCall(120, () => { if (c && c.trigger) c.trigger(); });
+            });
+        }
     }
 
     createWall(x, y, w, h) {
@@ -1255,9 +1260,8 @@ class MainGameScene extends Phaser.Scene {
         this.leftHandIndicator.setPosition(sx - 22, sy);
         this.rightHandIndicator.setPosition(sx + 22, sy);
 
-        // 【强制保险】：商店/确认框打开时，每帧都把 crosshair + 左右手指示设为 hidden
+        // (用户) 商店/确认框 = 精灵光标模式: 准星保持可见 (旧"每帧藏准星"是系统鼠标年代残留, 导致商店里鼠标消失)
         if (paused) {
-            this.crosshair.setVisible(false);
             this.leftHandIndicator.setVisible(false);
             this.rightHandIndicator.setVisible(false);
         }
