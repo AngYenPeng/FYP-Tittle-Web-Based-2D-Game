@@ -497,6 +497,7 @@ class TutorialScene extends MainGameScene {
             }
         });
 
+        if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // (用户) 进入 Tutorial 即建档 — 中途退出后从 Tutorial 开头重进
         // console.log('[T1] step 13: visuals');   // (用户) 诊断日志静默
         // 视觉：绳索 / 怪物 (空，但 update 需要)
         this.ropeGraphics    = this.add.graphics().setDepth(2);
@@ -1197,7 +1198,7 @@ class TutorialScene extends MainGameScene {
             this.leftHandIndicator.setPosition(sx - 22, sy);
             this.rightHandIndicator.setPosition(sx + 22, sy);
             if (paused) {
-                this.crosshair.setVisible(false);
+                // (用户) 商店/确认框 = 精灵光标模式: 准星保持可见 (旧"每帧藏准星"导致交易页鼠标消失)
                 this.leftHandIndicator.setVisible(false);
                 this.rightHandIndicator.setVisible(false);
             }
@@ -1349,7 +1350,8 @@ class TutorialScene extends MainGameScene {
 
         // 2. 水晶门已开 + 玩家穿过 → 触发剧情
         if (!this._crystalDoorPlotTriggered && this._crystalDoor && this._crystalDoor.opened) {
-            if (this.player.x < this._crystalDoor.x - G) {
+            if (this.player.x < this._crystalDoor.x - G &&
+                Math.abs(this.player.y - this._crystalDoor.y) < 2.5 * G) {   // (用户) 必须与门同层(走进房间)才触发 — 修"跑回一楼也播二楼剧情"
                 this._crystalDoorPlotTriggered = true;
                 this._startCrystalDoorPlot();
             }

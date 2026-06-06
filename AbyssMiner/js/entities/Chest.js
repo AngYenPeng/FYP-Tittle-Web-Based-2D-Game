@@ -15,7 +15,7 @@ class Chest {
         this.row = row;
         this.x = col * G + G / 2;
         this.y = row * G + G / 2;
-        this.interactRange = options.interactRange || 80;
+        this.interactRange = options.interactRange || ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80);   // (用户) 全游戏统一交互距离
         this.opened = false;
         this._dropping = false;
         this._hintVisible = false;

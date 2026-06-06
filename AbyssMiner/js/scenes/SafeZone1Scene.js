@@ -632,6 +632,8 @@ class SafeZone1Scene extends MainGameScene {
 
     _applyInheritedState() {
         const data = this._inheritedData || {};
+        // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
             if (this.hudSystem.refreshCrystal) this.hudSystem.refreshCrystal();
@@ -1038,19 +1040,8 @@ class SafeZone1Scene extends MainGameScene {
         if (!cp.activated && !cp._activating && inRange4Cells && !inDialog && !this._cinematicLock) {
             cp._activate();
         }
-        // 玩家靠近已激活 checkpoint (5 格 = 160 px) → 每秒 -1 侵蚀度 + +1 HP
-        const inHealRange = dist <= 160;
-        if (cp.activated && inHealRange) {
-            const now = this.time.now;
-            if (!this._checkpointHealNextAt) this._checkpointHealNextAt = now + 1000;
-            if (now >= this._checkpointHealNextAt) {
-                if (this.healthSystem && this.healthSystem.healAmount) this.healthSystem.healAmount(1);
-                if (this.diseaseSystem && this.diseaseSystem.reduceCorrosion) this.diseaseSystem.reduceCorrosion(1);
-                this._checkpointHealNextAt = now + 1000;
-            }
-        } else {
-            this._checkpointHealNextAt = 0;
-        }
+        // (用户) 场景侧旧回血循环已移除 — 与 HealthSystem.update 的中央回血 (+1 HP / -1% 腐蚀每秒, Extreme 关闭)
+        //   双轨叠加, 曾导致神像每秒回 2 滴血
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1182,6 +1173,7 @@ class SafeZone1Scene extends MainGameScene {
 
     _endSZ1MerchantCutscene() {
         this._sz1MerchantCutsceneDone = true;
+        if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // (用户) 剧情完成立即落盘
         // 恢复镜头
         const cam = this.cameras.main;
         const z0 = this._savedCameraZoom || 1.25;

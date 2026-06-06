@@ -771,13 +771,13 @@ class MainGameScene extends Phaser.Scene {
         // 怪物类型 → 伤害量 + 副作用 spec
         const spec = this._getMobDamageSpec(monster);
         const _dmul = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);   // (用户) 难度: 怪物伤害倍率
-        const wasEffective = this.healthSystem.takeDamage(spec.hp * _dmul);
+        const wasEffective = this.healthSystem.takeDamage(Math.floor(spec.hp * _dmul));   // (用户) 向下取整
 
         // 副作用只在"有效命中"时附加 (玩家不在无敌帧才算)
         if (wasEffective && this.diseaseSystem) {
             if (spec.corrosionInstant) this.diseaseSystem.addCorrosion(spec.corrosionInstant);
             if (spec.corrosionDoT)     this.diseaseSystem.addCorrosionDoT(spec.corrosionDoT[0], spec.corrosionDoT[1]);
-            if (spec.hpDoT)            this.diseaseSystem.addHpDoT(spec.hpDoT[0] * _dmul, spec.hpDoT[1]);
+            if (spec.hpDoT)            this.diseaseSystem.addHpDoT(Math.floor(spec.hpDoT[0] * _dmul), spec.hpDoT[1]);   // (用户) 向下取整
             if (spec.tempSlow)         this.diseaseSystem.addTempSlow(spec.tempSlow[0], spec.tempSlow[1]);
         }
 
@@ -838,11 +838,7 @@ class MainGameScene extends Phaser.Scene {
     }
 
     handleCrystalExplosion(cx, cy, radius) {
-        let fx = this.add.graphics();
-        if (this.uiCam) this.uiCam.ignore(fx);
-        fx.lineStyle(4, 0xffffff, 1); fx.strokeCircle(cx, cy, radius);
-        fx.fillStyle(0xffffff, 0.3); fx.fillCircle(cx, cy, radius);
-        this.tweens.add({ targets: fx, alpha: 0, duration: 500, onComplete: () => fx.destroy() });
+        // (用户) 白圈范围指示已移除 — 爆炸动画表本身已精确覆盖伤害半径
 
         if (Phaser.Math.Distance.Between(cx, cy, this.player.x, this.player.y) <= radius) {
             this._playerHit(this.player, null);

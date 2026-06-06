@@ -58,9 +58,10 @@ class Signpost {
 
     isPlayerNear(player) {
         if (!player) return false;
+        const R = ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80);   // (用户) 全游戏统一交互距离 (图标与交互同源)
         const dx = player.x - this.x;
         const dy = player.y - this.y;
-        return Math.abs(dx) < this.w / 2 + 16 && Math.abs(dy) < this.h / 2 + 16;
+        return dx * dx + dy * dy <= R * R;
     }
 
     setHintVisible(v) {

@@ -619,10 +619,17 @@ class GuideSystem {
 
         // 荆棘带 (3 格, 优先 Thorns 贴图; fallback 暗红尖刺三角)
         const T = 44;
+        this._demoThornTiles = [];   // (用户) 可播动画的荆棘 tile (走过时摆动)
         [cx - T, cx, cx + T].forEach(tx => {
             let sp;
             if (s.textures.exists('Thorns')) {
-                sp = s.add.image(tx, groundTopY - T / 2 + 4, 'Thorns').setDisplaySize(T, T);
+                // (用户) 演示荆棘改 sprite + 幂等注册 thorns_move — 玩家经过时播摆动动画 (与游戏一致)
+                if (s.textures.exists('Thorns_move') && s.anims && !s.anims.exists('thorns_move')) {
+                    const _ft = s.textures.get('Thorns_move').frameTotal;
+                    s.anims.create({ key: 'thorns_move', frames: s.anims.generateFrameNumbers('Thorns_move', { start: 0, end: Math.max(0, _ft - 2) }), frameRate: 20, repeat: 0 });
+                }
+                sp = s.add.sprite(tx, groundTopY - T / 2 + 4, 'Thorns').setDisplaySize(T, T);
+                if (s.anims.exists('thorns_move')) this._demoThornTiles.push(sp);
             } else {
                 sp = s.add.triangle(tx, groundTopY + 2, -16, 0, 16, 0, 0, -30, 0x992233).setOrigin(0.5, 1);
             }
@@ -694,7 +701,21 @@ class GuideSystem {
                 if (Math.abs(sprite.x - cx) < 78) dmgTick();
             }});
             this._demoTimers.push(tickEv);
-            s.tweens.add({ targets: sprite, x: endX, duration: 2600, ease: 'Linear', onComplete: () => {
+            s.tweens.add({ targets: sprite, x: endX, duration: 2600, ease: 'Linear',
+                onUpdate: () => {
+                    // (用户) 玩家在荆棘带 (|x-cx|<78) 内 → tile 循环播摆动; 离开后播完回静态图
+                    const inBand = Math.abs(sprite.x - cx) < 78;
+                    (this._demoThornTiles || []).forEach(tp => {
+                        if (!tp || !tp.scene || !tp.anims) return;
+                        if (inBand) {
+                            if (!tp.anims.isPlaying) tp.play('thorns_move');
+                        } else if (!tp.anims.isPlaying && tp.texture && tp.texture.key === 'Thorns_move') {
+                            tp.setTexture('Thorns');
+                            tp.setDisplaySize(44, 44);
+                        }
+                    });
+                },
+                onComplete: () => {
                 if (!this._animSprite) return;
                 if (s.anims.exists('idle')) sprite.play('idle');
                 // (用户) 与游戏一致: 离开荆棘后还有 DoT — 每秒 -1 HP × 3 秒 (只扣血, 不加腐蚀)

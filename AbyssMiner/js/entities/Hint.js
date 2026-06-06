@@ -9,7 +9,7 @@ class Hint {
         this.x = col * G + G / 2 - 5;  // 往左偏 5px
         this.y = row * G + G / 2 + (options.yOffset || 0);  // 可选 y 偏移
         this.onInteract = options.onInteract || (() => {});
-        this.interactRange = options.interactRange || 64;
+        this.interactRange = options.interactRange || ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80);   // (用户) 全游戏统一交互距离
         this._achId = options.achId || null;   // (用户成就) 交互即解锁的成就 id
         this.hasInteracted = false;
         this._isOpen = false;

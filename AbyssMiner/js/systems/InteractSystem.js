@@ -40,7 +40,7 @@ class InteractSystem {
         if (s._checkpoint && !s._checkpoint._buried && !s._checkpoint.activated) {
             const cp = s._checkpoint;
             const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, cp.x, cp.y);
-            if (dist <= 84) {
+            if (dist <= InteractSystem.RANGE) {
                 cp.interact(s.player);
                 return;
             }
@@ -52,7 +52,7 @@ class InteractSystem {
         for (const door of allKeyDoors) {
             if (!door || door.opened) continue;
             const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, door.x, door.y);
-            if (dist <= 64) {
+            if (dist <= InteractSystem.RANGE) {
                 this._tryOpenKeyDoor(door);
                 return;
             }
@@ -61,7 +61,7 @@ class InteractSystem {
         // 水晶门 — 144px 范围 (用户: 取消怪物附近限制)
         if (s._crystalDoor && !s._crystalDoor.opened) {
             const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, s._crystalDoor.x, s._crystalDoor.y);
-            if (dist <= 144) {
+            if (dist <= InteractSystem.RANGE) {
                 this._tryOpenCrystalDoor();
                 return;
             }
@@ -72,7 +72,7 @@ class InteractSystem {
         // 3) 商人
         if (s.moleTrader && s.moleTrader.active) {
             const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, s.moleTrader.x, s.moleTrader.y);
-            if (dist <= 64) {
+            if (dist <= InteractSystem.RANGE) {
                 this._interactMole();
                 return;
             }
@@ -120,7 +120,7 @@ class InteractSystem {
             }
             if (!activeDoor && s._crystalDoor && !s._crystalDoor.opened) {
                 const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, s._crystalDoor.x, s._crystalDoor.y);
-                if (dist <= 144) activeDoor = s._crystalDoor;
+                if (dist <= InteractSystem.RANGE) activeDoor = s._crystalDoor;
             }
         }
 
@@ -177,7 +177,7 @@ class InteractSystem {
                 cp.setHintVisible(false);
             } else {
                 const dist = Phaser.Math.Distance.Between(s.player.x, s.player.y, cp.x, cp.y);
-                cp.setHintVisible(!inCinematicOrDialog && dist <= 84);
+                cp.setHintVisible(!inCinematicOrDialog && dist <= InteractSystem.RANGE);
             }
         }
 
@@ -392,3 +392,6 @@ class InteractSystem {
         });
     }
 }
+
+// (用户) 全游戏统一交互距离 — E 图标出现距离与可交互距离严格相等, 所有可交互物共用此值
+InteractSystem.RANGE = 80;

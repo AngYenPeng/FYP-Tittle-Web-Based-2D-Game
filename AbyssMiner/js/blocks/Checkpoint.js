@@ -72,43 +72,9 @@ class Checkpoint {
     }
 
     interact(player) {
-        const scene = this.scene;
-        if (this._activating) return;
-
-        // (用户) 取消"附近有怪/剧情未清 → shrine 不能交互"判定 — _locked 不再拦截 (SZ2 等处的设锁代码自然失效)
-
-        if (this.activated) {
-            if (scene.dialogSystem && scene.dialogSystem.show) {
-                scene.dialogSystem.show({
-                    speaker: '???',
-                    text: 'This shrine is already activated.'
-                });
-            }
-            return;
-        }
-
-        if (!scene.dialogSystem || !scene.dialogSystem.show) {
-            this._activate();
-            return;
-        }
-
-        scene.dialogSystem.show({
-            speaker: '???',
-            text: 'Activate this checkpoint?',
-            choices: [
-                {
-                    label: 'Yes',
-                    action: () => {
-                        scene.dialogSystem.close();
-                        this._activate();
-                    }
-                },
-                {
-                    label: 'No',
-                    action: () => scene.dialogSystem.close()
-                }
-            ]
-        });
+        if (this._activating || this.activated) return;
+        // (用户) Shrine 全部对话取消 — 靠近/交互即直接静默激活 (动画+音效保留, 无确认框/无提示)
+        this._activate();
     }
 
     _activate() {
@@ -144,12 +110,7 @@ class Checkpoint {
                     maxRadius: 1500,  // 够覆盖整个 zone2
                     active: true
                 };
-                if (scene.dialogSystem && scene.dialogSystem.show) {
-                    scene.dialogSystem.show({
-                        speaker: '???',
-                        text: 'Checkpoint activated.'
-                    });
-                }
+                // (用户) "Checkpoint activated." 提示已取消 — 静默完成
             });
         } else {
             this._activating = false;

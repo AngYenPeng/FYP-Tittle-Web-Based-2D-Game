@@ -48,7 +48,7 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
         const inCinematicOrDialog = this.scene._cinematicLock ||
             (this.scene.dialogSystem && this.scene.dialogSystem.isOpen);
 
-        if (dist < 80 && !inCinematicOrDialog) {
+        if (dist < ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80) && !inCinematicOrDialog) {   // (用户) 图标距离 = 交互距离, 全游戏统一
             if (!this.interactHintShown) {
                 this.interactHintShown = true;
                 this.interactionIcon.setVisible(true);

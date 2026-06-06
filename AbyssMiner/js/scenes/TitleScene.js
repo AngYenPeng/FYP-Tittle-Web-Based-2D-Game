@@ -256,14 +256,15 @@ class TitleScene extends Phaser.Scene {
 
                 // (用户) 卡片化: 有档=暖紫底金描边+金竖条, 空档=深灰底
                 const has = !!data;
-                const rowBg = this.add.rectangle(0, y, PW - 80, 78, has ? 0x1c1828 : 0x121219, 1)
-                    .setStrokeStyle(1, has ? 0x6a5a2a : 0x2a2a38).setInteractive();
-                rowBg.on('pointerover', () => rowBg.setFillStyle(has ? 0x2a2438 : 0x1a1a24, 1));
-                rowBg.on('pointerout',  () => rowBg.setFillStyle(has ? 0x1c1828 : 0x121219, 1));
-                const accent = this.add.rectangle(-(PW - 80) / 2 + 3, y, 5, 78, has ? 0xffcc44 : 0x3a3a48, 1);
+                // (用户) 空档 = 蓝色系 (回归旧版观感); 有档 = 暖紫底金描边
+                const rowBg = this.add.rectangle(0, y, PW - 80, 78, has ? 0x1c1828 : 0x14202e, 1)
+                    .setStrokeStyle(1, has ? 0x6a5a2a : 0x33557a).setInteractive();
+                rowBg.on('pointerover', () => rowBg.setFillStyle(has ? 0x2a2438 : 0x1c2c42, 1));
+                rowBg.on('pointerout',  () => rowBg.setFillStyle(has ? 0x1c1828 : 0x14202e, 1));
+                const accent = this.add.rectangle(-(PW - 80) / 2 + 3, y, 5, 78, has ? 0xffcc44 : 0x4488cc, 1);
 
                 const slotLbl = this.add.text(-PW / 2 + 60, y - 16, 'SLOT ' + i, {
-                    fontSize: '24px', color: has ? '#ffd86a' : '#8a8a99', fontFamily: '"VT323", monospace',
+                    fontSize: '24px', color: has ? '#ffd86a' : '#88bbee', fontFamily: '"VT323", monospace',
                     stroke: '#000', strokeThickness: 3
                 }).setOrigin(0, 0.5);
 
@@ -274,7 +275,8 @@ class TitleScene extends Phaser.Scene {
                     // (用户) 阵亡存档: 红色 FALLEN 标记, 不可继续 (只能删除)
                     const info = this.add.text(-PW / 2 + 60, y + 14,
                         data.dead ? (zone + '    \u2620 FALLEN') :
-                        (zone + '    \u25C6 ' + (data.crystalCount || 0) + '    \u2665 ' + (data.hearts || 0)), {
+                        (zone + '    \u25C6 ' + (data.crystalCount || 0) + '    \u2665 ' + (data.hearts || 0)
+                            + (data.difficulty ? ('    [' + String(data.difficulty).toUpperCase() + ']') : '')), {   // (用户) 显示该档难度
                         fontSize: '18px', color: data.dead ? '#ff6666' : '#dddddd', fontFamily: '"VT323", monospace'
                     }).setOrigin(0, 0.5);
                     const tstamp = this.add.text(PW / 2 - 90, y - 16, SaveSystem.savedAgo(data.savedAt), {
@@ -423,7 +425,9 @@ class TitleScene extends Phaser.Scene {
         try { this.registry.set('pickaxeUpgraded', !!data.pickaxeUpgraded); } catch (e) {}
         try { this.registry.set('hasPetSpider', !!data.hasPetSpider); } catch (e) {}   // (用户) 宠物随档恢复
         try { this.registry.set('runDeaths', data.runDeaths || 0); } catch (e) {}   // (用户成就) 死亡计数随档
-        this._fadeAndStart(data.scene || 'SafeZone1Scene', data, false);   // resume → 保留 guide
+        // (用户) Tutorial 阶段的档 → 从开局图文故事 (StartIntro) 重新开始, 不直接跳进剧情半途
+        const _tut = (data.scene === 'TutorialScene');
+        this._fadeAndStart(_tut ? 'StartIntroScene' : (data.scene || 'SafeZone1Scene'), _tut ? null : data, false);   // resume → 保留 guide
     }
 
     _openOptions() {

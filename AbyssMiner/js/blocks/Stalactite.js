@@ -199,7 +199,7 @@ class Stalactite {
         if (p && p.body && s.healthSystem && !s.healthSystem.isDead) {
             const b = p.body;
             if (sRight > b.x && sLeft < b.x + b.width && sBot > b.y && sTop < b.y + b.height) {
-                s.healthSystem.takeDamage(this.damage);
+                s.healthSystem.takeDamage(Math.floor(this.damage * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1)));   // (用户) × 难度, 向下取整
                 if (s.diseaseSystem && s.diseaseSystem.addCorrosion) s.diseaseSystem.addCorrosion(1);   // (用户) 钟乳石砸中 +1 腐蚀度
                 this._impact();
                 return;

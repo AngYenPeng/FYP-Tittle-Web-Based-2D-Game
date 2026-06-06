@@ -94,18 +94,21 @@ class Thorns {
         const over = this._playerOverlaps();
 
         if (over) {
-            // 接触瞬间立刻扣一次, 之后每秒一次
-            if (!this._wasOverlapping || (now - this._lastTick) >= 1000) {
-                this._lastTick = now;
-                s.healthSystem.takeDamage(this.contactDamage, { ignoreIframe: true, triggerIframe: false });
-                if (s.diseaseSystem && s.diseaseSystem.addCorrosion) s.diseaseSystem.addCorrosion(1);   // (用户) 荆棘每秒 +1 腐蚀度
+            // (用户) 全局 1 秒冷却 (挂场景, 所有荆棘共享) — 同一窗口踩多片荆棘只扣一次;
+            //   接触伤害 × 难度倍率, 向下取整
+            if (now - (s._thornsGlobalTickAt || 0) >= 1000) {
+                s._thornsGlobalTickAt = now;
+                const _dm = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);
+                s.healthSystem.takeDamage(Math.floor(this.contactDamage * _dm), { ignoreIframe: true, triggerIframe: false });
+                if (s.diseaseSystem && s.diseaseSystem.addCorrosion) s.diseaseSystem.addCorrosion(1);   // 荆棘每秒 +1 腐蚀度
             }
             this._wasOverlapping = true;
         } else {
             if (this._wasOverlapping) {
                 // 刚离开 → 施加离开 DoT (每秒 dotPerSec × dotSeconds 秒)
                 if (s.diseaseSystem && s.diseaseSystem.addHpDoT) {
-                    s.diseaseSystem.addHpDoT(this.dotPerSec, this.dotSeconds);
+                    const _dm2 = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);
+                    s.diseaseSystem.addHpDoT(Math.floor(this.dotPerSec * _dm2), this.dotSeconds);   // (用户) 毒伤 × 难度, 向下取整
                 }
             }
             this._wasOverlapping = false;
@@ -120,7 +123,10 @@ class Thorns {
         if (!this._animOK) return;
         const p = this.scene.player;
         const vx = (over && p && p.body) ? p.body.velocity.x : 0;
-        const desired = (over && vx > 20) ? 'fwd' : ((over && vx < -20) ? 'rev' : null);
+        const vy = (over && p && p.body) ? p.body.velocity.y : 0;
+        let desired = (over && vx > 20) ? 'fwd' : ((over && vx < -20) ? 'rev' : null);
+        // (用户) 垂直穿越 (上→下 / 下→上, 横向基本不动) 也播动画 — 随机正放或倒放
+        if (!desired && over && Math.abs(vy) > 20) desired = (Math.random() < 0.5) ? 'fwd' : 'rev';
         const lead = this.sprites[0];
         if (lead.anims && lead.anims.isPlaying) return;   // 一整套没播完不打断
         if (desired === 'fwd') {

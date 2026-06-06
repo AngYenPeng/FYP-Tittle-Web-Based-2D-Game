@@ -48,6 +48,17 @@ class SaveSystem {
     }
 
     // 从场景抓当前状态 (字段与场景间继承的 data 对齐)
+    // (用户) 一次性剧情完成标志 — 按命名规则自动扫场景布尔属性 (新剧情命名跟规则即自动入档)
+    static _capturePlotFlags(scene) {
+        const out = {};
+        try {
+            for (const k in scene) {
+                if (/(CutsceneStarted|CutsceneDone|DialogDone|TakeoffDone|IntroFinished|PlotDone|PlotPlayed)$/.test(k) && scene[k] === true) out[k] = true;
+            }
+        } catch (e) {}
+        return out;
+    }
+
     static captureFromScene(scene) {
         const inv = (scene.inventorySystem && scene.inventorySystem.slots)
             ? [...scene.inventorySystem.slots] : null;
@@ -64,6 +75,7 @@ class SaveSystem {
             difficulty:        (window.AbyssDiff ? AbyssDiff.mode : 'easy'),
             inventorySlots:    inv,
             pickaxeUpgraded:   !!((scene.registry && scene.registry.get('pickaxeUpgraded')) || scene._pickaxeUpgraded),
+            plotFlags:         SaveSystem._capturePlotFlags(scene),
             savedAt:           Date.now()
         };
     }
@@ -72,16 +84,26 @@ class SaveSystem {
     static autoSave(scene) {
         const n = SaveSystem.getCurrentSlot();
         if (n == null) return false;
-        return SaveSystem.saveSlot(n, SaveSystem.captureFromScene(scene));
+        const data = SaveSystem.captureFromScene(scene);
+        // (用户) "死亡只活在本局"的结构性保证: 快照永不把比档内更低的心数写入 —
+        //   心数只会因死亡下降, 故死亡损失天生不可落盘; 药水加心(只升不降)照常入档
+        try {
+            const prev = SaveSystem.getSlot(n);
+            if (prev && typeof prev.hearts === 'number' && typeof data.hearts === 'number' && data.hearts < prev.hearts) {
+                data.hearts = prev.hearts;
+            }
+        } catch (e) {}
+        return SaveSystem.saveSlot(n, data);
     }
 
     // 显示用: 场景 key → 区域名
     static zoneName(sceneKey) {
+        // (用户) 区名重映射: Tutorial=Zone1, SZ1=Zone2, SZ2=Zone3, SZ2.5=Zone4, SZ3=Zone5, SZ4=Zone6, SZ5=Zone7
         const map = {
-            'TutorialScene': 'Tutorial', 'HubScene': 'Hub',
-            'SafeZone1Scene': 'Zone 1', 'SafeZone2Scene': 'Zone 2',
-            'SafeZone25Scene': 'Zone 2.5', 'SafeZone3Scene': 'Zone 3',
-            'SafeZone4Scene': 'Zone 4', 'SafeZone5Scene': 'Zone 5'
+            'TutorialScene': 'Zone 1', 'HubScene': 'Hub',
+            'SafeZone1Scene': 'Zone 2', 'SafeZone2Scene': 'Zone 3',
+            'SafeZone25Scene': 'Zone 4', 'SafeZone3Scene': 'Zone 5',
+            'SafeZone4Scene': 'Zone 6', 'SafeZone5Scene': 'Zone 7'
         };
         return map[sceneKey] || sceneKey || 'Unknown';
     }

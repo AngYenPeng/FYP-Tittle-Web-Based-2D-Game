@@ -101,10 +101,13 @@ class DialogSystem {
     show(entry) {
         if (!this.panel) return;
         this.isOpen = true;
-        // (用户) 跑动中触发交互 → 立即切站立动画 (UI 锁定期不再保持跑步姿态; 仅落地时切, 防空中僵直)
+        // (用户) 跑动中触发交互 → 切站立动画. 仅当前动画是 run/crouch 且非剧情锁定时介入 —
+        //   开场剧情等过场动画绝不硬切 (帧尺寸/offset 不配会令 body 跳位穿模坠出世界)
         try {
             const _p = this.scene.player;
-            if (_p && _p.body && (_p.body.blocked.down || _p.body.touching.down) && this.scene.anims.exists('idle')) {
+            const _k = (_p && _p.anims && _p.anims.currentAnim) ? _p.anims.currentAnim.key : '';
+            if (_p && _p.body && !this.scene._cinematicLock && (_k === 'run' || _k === 'crouch') &&
+                (_p.body.blocked.down || _p.body.touching.down) && this.scene.anims.exists('idle')) {
                 _p.setVelocityX(0);
                 _p.play('idle', true);
             }

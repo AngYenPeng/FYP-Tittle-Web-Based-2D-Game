@@ -305,7 +305,7 @@ class DiseaseSystem {
             if (this.damageTickAt === 0) this.damageTickAt = now + 1000;
             if (now >= this.damageTickAt) {
                 if (s.healthSystem && s.healthSystem.takeDamage) {
-                    s.healthSystem.takeDamage(1, { ignoreIframe: true, triggerIframe: false });
+                    s.healthSystem.takeDamage(Math.floor(1 * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1)), { ignoreIframe: true, triggerIframe: false });   // (用户) 腐蚀满伤害 × 难度, 向下取整
                 }
                 this.damageTickAt = now + 1000;
             }
@@ -319,7 +319,7 @@ class DiseaseSystem {
             if (!this.clingDamageTickAt) this.clingDamageTickAt = now + 1000;
             if (now >= this.clingDamageTickAt) {
                 if (s.healthSystem && s.healthSystem.takeDamage) {
-                    s.healthSystem.takeDamage(clingCount * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1), { ignoreIframe: true, triggerIframe: false });
+                    s.healthSystem.takeDamage(Math.floor(clingCount * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1)), { ignoreIframe: true, triggerIframe: false });   // (用户) 向下取整
                 }
                 this.clingDamageTickAt = now + 1000;
             }

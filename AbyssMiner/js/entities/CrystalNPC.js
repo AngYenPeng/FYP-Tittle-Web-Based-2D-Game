@@ -21,7 +21,7 @@ class CrystalNpc {
         this.x = col * G + G / 2;
         this.y = row * G + G / 2 + (options.yOffset || 0);  // 可选 y 偏移 (SZ2 传 20)
         this._stickIcon = options.stickIcon || false;  // E 图标粘头上不漂浮
-        this.interactRange = options.interactRange || 90;
+        this.interactRange = options.interactRange || ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80);   // (用户) 全游戏统一交互距离
         this.onInteract = options.onInteract || (() => {});
         this.texture = options.texture || null;
         this.tint = options.tint || 0x66ddff;
