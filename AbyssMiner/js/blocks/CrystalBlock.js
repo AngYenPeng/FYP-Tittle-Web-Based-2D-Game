@@ -103,6 +103,10 @@ class CrystalBlock {
         if (this.scene.gridSystem) {
             this.scene.gridSystem.unmarkRect(this.x, this.y, 32, 32);
         }
+        // (用户) 灰罩同步消失: 通知雾系统该格已变空气
+        if (this.scene.fogSystem && this.scene.fogSystem.notifyCellCleared) {
+            this.scene.fogSystem.notifyCellCleared(this.x, this.y);
+        }
         // 掉落水晶
         this.scene.events.emit('monster_killed', this.x, this.y, this.dropCount);
     }

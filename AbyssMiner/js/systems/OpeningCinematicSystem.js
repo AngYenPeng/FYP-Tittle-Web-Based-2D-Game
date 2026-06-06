@@ -393,7 +393,7 @@ class OpeningCinematicSystem {
             const origDisplayW = s.moleTrader.displayWidth;
             const origDisplayH = s.moleTrader.displayHeight;
             if (s.anims.exists('trader_dig') && s.moleTrader.play) {
-                s.moleTrader.setPosition(origX - 32, origY - 32);
+                s.moleTrader.setPosition(origX, origY - 32);   // (用户) 钻地动画微调终值: 右移 32px、净上移 0px (+16/-8 ×2, 再下移 16)
                 // dig 帧是 64×64，缩小到 48×48 显示
                 s.moleTrader.setDisplaySize(48, 48);
                 s.moleTrader.play('trader_dig');

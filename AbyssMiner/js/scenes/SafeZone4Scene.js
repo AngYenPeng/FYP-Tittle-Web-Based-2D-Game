@@ -490,13 +490,30 @@ class SafeZone4Scene extends MainGameScene {
                 const radius = 5 + Math.random() * 10;
                 let targetX = mx + Math.cos(angle) * radius;
                 let targetY = my + Math.sin(angle) * radius;
-                // 防穿模：检查 targetX,targetY 是否在墙内
+                // (用户) 防穿模 v2 — 与 GameScene 同源:
                 if (this.wallRects) {
+                    // ① 落点 X 若伸进同高度侧墙体内 → 先水平挤出 (水晶半宽 10)
                     for (const w of this.wallRects) {
-                        if (targetX >= w.left && targetX <= w.right &&
-                            targetY >= w.top && targetY <= w.bottom) {
-                            targetY = w.top - 1;
-                            break;
+                        if (w.bottom > my - 14 && w.top < my + 14 && targetX > w.left - 10 && targetX < w.right + 10) {
+                            targetX = (mx <= (w.left + w.right) / 2) ? w.left - 10 : w.right + 10;
+                        }
+                    }
+                    // ② 垂直 raycast 找地板, 钉地板顶 (半高 10 + 2px 余量)
+                    let nearestFloorY = Infinity;
+                    for (const w of this.wallRects) {
+                        if (targetX >= w.left && targetX <= w.right && w.top >= my - 4) {
+                            if (w.top < nearestFloorY) nearestFloorY = w.top;
+                        }
+                    }
+                    if (nearestFloorY === Infinity) {
+                        targetX = mx; targetY = my;   // 该 X 列没地板 → 回方块原位
+                    } else {
+                        targetY = nearestFloorY - 12;
+                    }
+                    // ③ 最终保险: 仍与任何墙重叠 → 回方块原位 (刚打掉的格子必为空气)
+                    for (const w of this.wallRects) {
+                        if (targetX > w.left - 10 && targetX < w.right + 10 && targetY > w.top - 10 && targetY < w.bottom + 10) {
+                            targetX = mx; targetY = my; break;
                         }
                     }
                 }

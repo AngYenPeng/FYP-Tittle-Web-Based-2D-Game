@@ -62,6 +62,15 @@ class Door {
         if (this.scene.gridSystem) {
             this.scene.gridSystem.unmarkRect(this.x, this.y, this.w, this.h);
         }
+        // (用户) 灰罩同步消失: 门占的每一格都通知雾系统重算 (与水晶块同规) — 所有门类共用
+        if (this.scene.fogSystem && this.scene.fogSystem.notifyCellCleared) {
+            const cs = this.scene.fogSystem.cellSize || 32;
+            for (let cy = this.y - this.h / 2 + cs / 2; cy < this.y + this.h / 2; cy += cs) {
+                for (let cx = this.x - this.w / 2 + cs / 2; cx < this.x + this.w / 2; cx += cs) {
+                    this.scene.fogSystem.notifyCellCleared(cx, cy);
+                }
+            }
+        }
         if (this.scene._rebuildWallRects) {
             this.scene._rebuildWallRects();
         }

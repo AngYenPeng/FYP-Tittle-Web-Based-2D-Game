@@ -64,15 +64,16 @@ class FogSystem {
         this.gfx.setDepth(810);
         this.gfx.setPosition(this.originX, this.originY);   // fillRect 用网格本地坐标, 整体平移到原点
 
-        // (用户) 雾层打洞: 玩家+攻击特效所在圆内雾不渲染 → 等效"只对雾置顶", 不改任何深度关系.
-        //   反向 GeometryMask 仅 WebGL 生效; Canvas 渲染器下反向不支持 → 不启用 (保持原样)
+        // (用户) 雾层逐像素剪影遮罩: 玩家+攻击特效的"身体像素"处雾不渲染 —
+        //   无光圈、不掏周边格、不碰光影层(809). 每帧把角色精灵盖印进 RenderTexture 作反向 BitmapMask.
+        //   仅 WebGL (Canvas 不支持 BitmapMask → 不启用, 保持原样)
         this._pierceOk = false;
         try {
             if (scene.game && scene.game.renderer && scene.game.renderer.type === Phaser.WEBGL) {
-                this._pierceGfx = scene.make.graphics({}, false);   // 不进显示列表, 纯遮罩几何 (世界坐标)
-                this._pierceMask = this._pierceGfx.createGeometryMask();
-                this._pierceMask.setInvertAlpha(true);
-                this.gfx.setMask(this._pierceMask);
+                this._pierceRT = scene.make.renderTexture({ width: 1280, height: 720, add: false });
+                const pm = new Phaser.Display.Masks.BitmapMask(scene, this._pierceRT);
+                pm.invertAlpha = true;   // 剪影像素处 → 雾隐藏
+                this.gfx.setMask(pm);
                 this._pierceOk = true;
             }
         } catch (e) {}
@@ -286,18 +287,23 @@ class FogSystem {
     update(playerX, playerY) {
         if (this.enabled === false) return;
         if (this._maskImg) this._maskImg.setPosition(playerX, playerY);   // 每帧只有这一个精灵位移
-        // (用户) 每帧重画打洞圆: 玩家全身 + 场景登记的活跃攻击特效 (失效自动剔除)
-        if (this._pierceOk) {
-            const g = this._pierceGfx;
-            g.clear();
-            g.fillStyle(0xffffff, 1);
-            g.fillCircle(playerX, playerY, 76);
-            const fx = this.scene._fogPierceFx;
-            if (fx && fx.length) {
-                for (let i = fx.length - 1; i >= 0; i--) {
-                    const o = fx[i];
-                    if (!o || !o.active) { fx.splice(i, 1); continue; }
-                    g.fillCircle(o.x, o.y, 56);
+        // (用户) 每帧盖印剪影: RT 对齐镜头视口, 把玩家 + 活跃攻击特效按当前动画帧/翻转印进去 (失效自动剔除)
+        if (this._pierceOk && this._pierceRT) {
+            const cam = this.scene.cameras && this.scene.cameras.main;
+            if (cam) {
+                const rt = this._pierceRT;
+                const vx = cam.worldView.x, vy = cam.worldView.y;
+                rt.setPosition(vx, vy);
+                rt.clear();
+                const p = this.scene.player;
+                if (p && p.active) rt.draw(p, playerX - vx, playerY - vy);
+                const fx = this.scene._fogPierceFx;
+                if (fx && fx.length) {
+                    for (let i = fx.length - 1; i >= 0; i--) {
+                        const o = fx[i];
+                        if (!o || !o.active) { fx.splice(i, 1); continue; }
+                        rt.draw(o, o.x - vx, o.y - vy);
+                    }
                 }
             }
         }
