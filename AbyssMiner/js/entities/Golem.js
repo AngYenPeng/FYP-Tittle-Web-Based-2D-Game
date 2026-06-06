@@ -22,13 +22,13 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(false);
         this.setDepth(10);
 
-        this.hp = 300;
-        this.maxHp = 300;
-        // 双手 HP (各 100), 死亡标记
-        this._handLHp = 100;
-        this._handRHp = 100;
-        this._handLMaxHp = 100;
-        this._handRMaxHp = 100;
+        this.hp = 200;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul, 自动在此基础上翻)
+        this.maxHp = 200;
+        // 双手 HP (各 80 — (用户) Easy 基准 100→80), 死亡标记
+        this._handLHp = 80;
+        this._handRHp = 80;
+        this._handLMaxHp = 80;
+        this._handRMaxHp = 80;
         this.state = 'idle';
         this.bodyState = 'sleep';        // sleep | wake | head_eye (= 战斗时显示眼睛头像)
         this.attackCount = 0;

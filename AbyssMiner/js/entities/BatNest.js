@@ -25,7 +25,7 @@ class BatNest {
         this.phase1Range = options.phase1Range || [12000, 18000];    // 一阶段间隔 (ms)
         this.phase2Range = options.phase2Range || [8000, 15000];     // 半血后间隔 (ms)
         this.maxAlive = options.maxAlive != null ? options.maxAlive : null;  // 该巢同时存活上限 (null=不限)
-        this.hp = options.hp != null ? options.hp : 80;   // 巢穴自身血量 (可被攻击破坏)
+        this.hp = options.hp != null ? options.hp : 60;   // 巢穴自身血量 (可被攻击破坏) — (用户) Easy 基准 80→60
         this.maxHp = this.hp;
 
         this._active = false;

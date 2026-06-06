@@ -14,7 +14,7 @@ class ShopSystem {
             { id: 'life_potion',     name: 'Life+ Potion',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },
             { id: 'health_potion',   name: 'Health Potion',   price: 10, desc: '-50% Corrosion + 30s immunity',  tex: 'potion_health_img' },
             { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Adds corrosion bar (limit 1)',   tex: 'health_detector_img' },
-            { id: 'pet_egg',         name: 'Mysterious Egg',  price: 399, desc: 'Hatches a loyal pet spider',     tex: 'Small_spider_run' }
+            { id: 'pet_egg',         name: 'Mysterious Egg',  price: 399, desc: '???',                            tex: 'Small_spider_run' }
             // 黄钥匙不卖 — tutorial 任务专用, 平常掉落/任务奖励获得
         ];
         // (用户) 难度: hard/extreme 不卖加爱心药水, 其余 3 件价格 ×priceMul
