@@ -39,6 +39,20 @@ class RankingSystem {
         else if (crystalCount >= 10) { grade = 'C'; gradeColor = '#cccccc'; comment = 'Just scraped by.'; }
         else { grade = 'D'; gradeColor = '#aa6666'; comment = 'You barely made it out.'; }
 
+        // (用户) 通关记录落盘 — 主菜单 RECORDS 页读取 (最多留 50 条, 新的在前)
+        try {
+            const recs = JSON.parse(localStorage.getItem('abyssMinerClearRecords') || '[]');
+            recs.unshift({
+                at: Date.now(),
+                difficulty: (window.AbyssDiff ? AbyssDiff.mode : 'easy'),
+                crystals: crystalCount | 0,
+                grade: grade,
+                deaths: (this.scene.registry && this.scene.registry.get('runDeaths')) || 0
+            });
+            if (recs.length > 50) recs.length = 50;
+            localStorage.setItem('abyssMinerClearRecords', JSON.stringify(recs));
+        } catch (e) {}
+
         this._gradeLabel = this.scene.add.text(W/2 - 80, H/2 + 20, 'RANK', {
             fontSize: '20px', color: '#888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);

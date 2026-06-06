@@ -11,6 +11,8 @@ class TitleScene extends Phaser.Scene {
         // 标题页背景图（洞穴）
         this.load.image('Tittle_scene_background_image', 'assets/images/Tittle_scene_background_image.png');
         this.load.image('Mouse_cursor', 'assets/images/Mouse_cursor.png');   // (用户) Title 精灵光标用
+        this.load.image('Crystal', 'assets/images/Crystal.png');   // (用户) 存档行/RECORDS 图标
+        this.load.image('Heart', 'assets/images/Heart.png');
     }
 
     create() {
@@ -109,6 +111,7 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE5',   action: () => this._devJump('SafeZone5Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
             { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
+            { label: 'RECORDS',     action: () => this._openRecords() },   // (用户) 通关记录
             { label: 'CREDITS',     action: () => this._openCredits() },
             { label: 'QUIT',        action: () => { alert('Thanks for playing!'); } }
         ];
@@ -272,13 +275,39 @@ class TitleScene extends Phaser.Scene {
 
                 if (data) {
                     const zone = SaveSystem.zoneName(data.scene);
-                    // (用户) 阵亡存档: 红色 FALLEN 标记, 不可继续 (只能删除)
-                    const info = this.add.text(-PW / 2 + 60, y + 14,
-                        data.dead ? (zone + '    \u2620 FALLEN') :
-                        (zone + '    \u25C6 ' + (data.crystalCount || 0) + '    \u2665 ' + (data.hearts || 0)
-                            + (data.difficulty ? ('    [' + String(data.difficulty).toUpperCase() + ']') : '')), {   // (用户) 显示该档难度
-                        fontSize: '18px', color: data.dead ? '#ff6666' : '#dddddd', fontFamily: '"VT323", monospace'
-                    }).setOrigin(0, 0.5);
+                    // (用户) 阵亡存档: 红色 FALLEN 标记; 普通档改图标: Crystal/Heart 贴图缩小 18px + 数字最亮白
+                    let info;
+                    if (data.dead) {
+                        info = this.add.text(-PW / 2 + 62, y + 14, zone + '    \u2620 FALLEN', {
+                            fontSize: '18px', color: '#ff6666', fontFamily: '"VT323", monospace'
+                        }).setOrigin(0, 0.5);
+                    } else {
+                        const x0 = -PW / 2 + 62;   // (用户) 信息整行右移 2px
+                        info = this.add.text(x0, y + 14, zone, {
+                            fontSize: '18px', color: '#dddddd', fontFamily: '"VT323", monospace'
+                        }).setOrigin(0, 0.5);
+                        let ix = x0 + 130;
+                        const ci = this.textures.exists('Crystal')
+                            ? this.add.image(ix, y + 14, 'Crystal').setDisplaySize(18, 18)
+                            : this.add.text(ix, y + 14, '\u25C6', { fontSize: '18px', color: '#88ccff', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
+                        const cN = this.add.text(ix + 14, y + 14, String(data.crystalCount || 0), {
+                            fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
+                        }).setOrigin(0, 0.5);
+                        ix += 80;
+                        const hi = this.textures.exists('Heart')
+                            ? this.add.image(ix, y + 14, 'Heart').setDisplaySize(18, 18)
+                            : this.add.text(ix, y + 14, '\u2665', { fontSize: '18px', color: '#ff5577', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
+                        const hN = this.add.text(ix + 14, y + 14, String(data.hearts || 0), {
+                            fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
+                        }).setOrigin(0, 0.5);
+                        rowItems.push(ci, cN, hi, hN);
+                        if (data.difficulty) {
+                            const dT = this.add.text(ix + 80, y + 14, '[' + String(data.difficulty).toUpperCase() + ']', {
+                                fontSize: '18px', color: '#dddddd', fontFamily: '"VT323", monospace'
+                            }).setOrigin(0, 0.5);
+                            rowItems.push(dT);
+                        }
+                    }
                     const tstamp = this.add.text(PW / 2 - 90, y - 16, SaveSystem.savedAgo(data.savedAt), {
                         fontSize: '13px', color: '#777788', fontFamily: '"VT323", monospace'
                     }).setOrigin(1, 0.5);
@@ -310,9 +339,9 @@ class TitleScene extends Phaser.Scene {
                         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
                         this._resumeSlot(i, data);
                     });
-                    rowItems.push(info, tstamp, del);
+                    rowItems.push(info, tstamp, del);   // info=区名(或FALLEN), 图标数字已在分支内 push
                 } else {
-                    const info = this.add.text(-PW / 2 + 60, y + 14, '- Empty -  (click to start new)', {
+                    const info = this.add.text(-PW / 2 + 62, y + 14, '- Empty -  (click to start new)', {
                         fontSize: '18px', color: '#777777', fontFamily: '"VT323", monospace'
                     }).setOrigin(0, 0.5);
                     rowBg.on('pointerdown', () => {
@@ -340,6 +369,102 @@ class TitleScene extends Phaser.Scene {
     }
 
     // dev 菜单直接跳场景 (不绑存档位, 清空 current 避免污染真存档)
+    // (用户) 通关记录面板 — 金框风格, 空态提示, 超出滚轮+滚动条
+    _openRecords() {
+        if (this._modalOpen || this._fading) return;
+        this._modalOpen = true;
+        const W = this.cameras.main.width, H = this.cameras.main.height;
+        const PW = 720, PH = 520;
+        const items = [];
+        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.72).setDepth(900).setInteractive();
+        const panel = this.add.container(W / 2, H / 2).setDepth(901);
+        items.push(dim, panel);
+        let onWheel = () => {};
+        const close = () => {
+            this.input.off('wheel', onWheel);
+            items.forEach(o => { try { o.destroy(); } catch (e) {} });
+            this._modalOpen = false;
+        };
+        dim.on('pointerdown', close);
+        const bg = this.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.97).setStrokeStyle(2, 0x806020).setInteractive();   // 吞内部点击
+        const inner = this.add.rectangle(0, 0, PW - 10, PH - 10, 0x000000, 0).setStrokeStyle(1, 0xffcc44, 0.3);
+        const title = this.add.text(0, -PH / 2 + 34, '\u2605 RECORDS \u2605', {
+            fontSize: '30px', color: '#ffd86a', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
+        }).setOrigin(0.5);
+        const divider = this.add.rectangle(0, -PH / 2 + 58, PW - 60, 2, 0x806020, 1);
+        const xBtn = this.add.text(PW / 2 - 26, -PH / 2 + 26, '\u2715', {
+            fontSize: '24px', color: '#ff7766', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5).setInteractive();
+        xBtn.on('pointerover', () => xBtn.setColor('#ffaa99'));
+        xBtn.on('pointerout',  () => xBtn.setColor('#ff7766'));
+        xBtn.on('pointerdown', close);
+        panel.add([bg, inner, title, divider, xBtn]);
+
+        let recs = [];
+        try { recs = JSON.parse(localStorage.getItem('abyssMinerClearRecords') || '[]'); } catch (e) {}
+
+        if (!recs.length) {
+            const empty = this.add.text(0, 16, 'No records yet.\nClear the game to write history!', {
+                fontSize: '22px', color: '#9aa0b0', fontFamily: '"VT323", monospace', align: 'center', lineSpacing: 8
+            }).setOrigin(0.5);
+            panel.add(empty);
+            this.input.on('wheel', onWheel);
+            return;
+        }
+
+        const VIEW_TOP = -PH / 2 + 76, VIEW_H = PH - 76 - 28;
+        const ROW_H = 56, GAP = 6;
+        const list = this.add.container(0, 0);
+        panel.add(list);
+        const fmtDate = ts => { const d = new Date(ts); const p = n => (n < 10 ? '0' : '') + n;
+            return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+        const gColor = g => ({ S: '#ffcc44', A: '#88dd66', B: '#66aaff', C: '#cccccc', D: '#aa6666' })[g] || '#cccccc';
+        recs.forEach((r, i) => {
+            const ry = VIEW_TOP + 8 + ROW_H / 2 + i * (ROW_H + GAP);
+            const card = this.add.rectangle(0, ry, PW - 70, ROW_H, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a);
+            const bar = this.add.rectangle(-(PW - 70) / 2 + 3, ry, 4, ROW_H, 0xffcc44, 1);
+            const gT = this.add.text(-(PW - 70) / 2 + 34, ry, r.grade || '-', {
+                fontSize: '34px', color: gColor(r.grade), fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
+            }).setOrigin(0.5);
+            const main = this.add.text(-(PW - 70) / 2 + 64, ry - 11, 'CLEARED  [' + String(r.difficulty || '').toUpperCase() + ']', {
+                fontSize: '19px', color: '#ffd86a', fontFamily: '"VT323", monospace'
+            }).setOrigin(0, 0.5);
+            const sub = this.add.text(-(PW - 70) / 2 + 64, ry + 12, fmtDate(r.at) + '    Deaths ' + (r.deaths | 0), {
+                fontSize: '15px', color: '#9aa0b0', fontFamily: '"VT323", monospace'
+            }).setOrigin(0, 0.5);
+            list.add([card, bar, gT, main, sub]);
+            const cxr = (PW - 70) / 2 - 92;
+            if (this.textures.exists('Crystal')) list.add(this.add.image(cxr, ry, 'Crystal').setDisplaySize(20, 20));
+            list.add(this.add.text(cxr + 16, ry, String(r.crystals | 0), {
+                fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace'
+            }).setOrigin(0, 0.5));
+        });
+        const contentH = recs.length * (ROW_H + GAP) + 16;
+        const maxScroll = Math.max(0, contentH - VIEW_H);
+        const mg = this.make.graphics({}, false);
+        mg.fillStyle(0xffffff, 1);
+        mg.fillRect(W / 2 - (PW - 60) / 2, H / 2 + VIEW_TOP, PW - 60, VIEW_H);
+        list.setMask(mg.createGeometryMask());
+        items.push(mg);
+        let scroll = 0;
+        if (maxScroll > 0) {
+            const track = this.add.rectangle(PW / 2 - 18, VIEW_TOP + VIEW_H / 2, 8, VIEW_H, 0x222230, 1);
+            const thH = Math.max(36, VIEW_H * VIEW_H / contentH);
+            const thumb = this.add.rectangle(PW / 2 - 18, VIEW_TOP + thH / 2, 8, thH, 0xffcc44, 1).setInteractive({ draggable: true });
+            panel.add([track, thumb]);
+            const syncThumb = () => { thumb.y = VIEW_TOP + thH / 2 + (VIEW_H - thH) * (maxScroll ? scroll / maxScroll : 0); };
+            thumb.on('drag', (p, dx, dy) => {
+                const t = Phaser.Math.Clamp((dy - (VIEW_TOP + thH / 2)) / Math.max(1, VIEW_H - thH), 0, 1);
+                scroll = t * maxScroll; list.y = -scroll; syncThumb();
+            });
+            onWheel = (p, objs, wx, wy) => {
+                scroll = Phaser.Math.Clamp(scroll + wy * 0.6, 0, maxScroll);
+                list.y = -scroll; syncThumb();
+            };
+        }
+        this.input.on('wheel', onWheel);
+    }
+
     _devJump(sceneKey) {
         if (typeof SaveSystem !== 'undefined') SaveSystem.setCurrentSlot(null);
         this._fadeAndStart(sceneKey, null, true);
