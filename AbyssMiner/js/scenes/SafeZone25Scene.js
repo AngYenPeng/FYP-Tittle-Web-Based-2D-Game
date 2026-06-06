@@ -378,11 +378,11 @@ class SafeZone25Scene extends SafeZone3Scene {
 
         // 鼠标
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
-        this.crosshair = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
+        this.crosshair = this.add.sprite(0, 0, cursorTex).setDepth(999999).setScrollFactor(0);
         { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
-        this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
-        this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
+        this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
+        this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
         this.input.on('pointermove', (pointer) => {
             if (!this.crosshair) return;
             this.crosshair.setPosition(pointer.x, pointer.y);

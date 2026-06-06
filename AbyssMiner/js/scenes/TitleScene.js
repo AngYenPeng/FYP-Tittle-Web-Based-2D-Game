@@ -475,7 +475,7 @@ class TitleScene extends Phaser.Scene {
             const role = this.add.text(-CW / 2 + 22, cy - 18, c.role, {
                 fontSize: '18px', color: '#ffcc44', fontFamily: '"VT323", monospace'   // (用户) 字距走 main.js 全局补丁 (≤18px 自动 +1px)
             }).setOrigin(0, 0.5);
-            const name = this.add.text(-CW / 2 + 20, cy + 4, c.name, {   // (用户) 再左移 1px
+            const name = this.add.text(-CW / 2 + 20, cy + 7, c.name, {   // (用户) 下移 3px
                 fontSize: '26px', color: '#ffffff', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3
             }).setOrigin(0, 0.5);

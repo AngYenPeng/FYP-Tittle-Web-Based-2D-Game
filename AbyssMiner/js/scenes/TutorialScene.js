@@ -452,7 +452,7 @@ class TutorialScene extends MainGameScene {
 
         // 鼠标 + 左右手：屏幕坐标 + depth 9999（在所有 UI 之上不被 fog 影响）
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
-        this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
+        this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(999999).setScrollFactor(0);   // (用户) 鼠标永远最高显示优先级
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
         { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位
         try { this.game.canvas.style.cursor = 'none'; } catch (e) {}   // (用户) 精灵就位才隐藏 OS 光标

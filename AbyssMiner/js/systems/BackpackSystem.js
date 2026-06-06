@@ -344,17 +344,21 @@ class BackpackSystem {
             }
         } else if (qs.type === 'health_potion') {
             const now = s.time.now;
-            const immuneUntil = s._diseaseImmuneUntil || 0;
-            if (immuneUntil > now) {
-                s.hudSystem.showConfirm('Already immune (no stacking) — no effect.', (yes) => {
-                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000); }
-                });
-            } else {
+            const apply = () => {
                 s._diseaseImmuneUntil = now + 30000;   // (用户) 健康药水免疫 60s → 30s
                 if (s.diseaseSystem && s.diseaseSystem.cure) s.diseaseSystem.cure();
                 this._consumeFromInventory(qs.type, 1);
                 this.refreshQuick();
                 this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000);
+            };
+            // (用户) 只在侵蚀度=0 时弹确认 ("你很健康, 确定用吗"); 免疫期内只要侵蚀>0 照常直接使用, 不再拦
+            const corr = (s.diseaseSystem && typeof s.diseaseSystem.corrosionPct === 'number') ? s.diseaseSystem.corrosionPct : 0;
+            if (corr <= 0) {
+                s.hudSystem.showConfirm('You are healthy. Use it anyway?', (yes) => {
+                    if (yes) apply();
+                });
+            } else {
+                apply();
             }
         } else if (qs.type === 'key') {
             // 钥匙不能在这里用 — 走到 KeyDoor interact 自动消耗

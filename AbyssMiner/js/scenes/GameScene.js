@@ -598,7 +598,7 @@ class MainGameScene extends Phaser.Scene {
         this._gridGraphics.strokePath();
         this._gridGraphics.setVisible(false);  // 默认关闭，按 R 打开
         const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
-        this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(9999).setScrollFactor(0);
+        this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(999999).setScrollFactor(0);   // (用户) 鼠标永远最高显示优先级 — 9999 会被成就面板(25000+)压住
         { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
         try { this.game.canvas.style.cursor = 'none'; } catch (e) {}   // (用户) 精灵就位, 此刻才隐藏 OS 光标
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
