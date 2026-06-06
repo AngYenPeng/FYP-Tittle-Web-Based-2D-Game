@@ -4,12 +4,12 @@
  *
  * 规格:
  *   - 体型 = 普通猎蛛一半 (scale 0.5, 世界 hitbox 16×16)
- *   - 速度 = 普蛛 2.5 倍: 走 150 (普蛛 60), 爬墙 300 (普蛛 120)
+ *   - 速度 = 普蛛 5 倍: 走 300 (普蛛 60), 爬墙 600 (普蛛 120)
  *   - 同普蛛爬墙系统: 撞墙 → 关重力直上, 翻过沿口小跳落地
  *   - ≤2.5 格停下; >4 格恢复跟随; >10 格强制传送回玩家身上
  *   - 在 2.5 格内且玩家静止满 5s → 爬上头顶; 仅当玩家落地高度 >3 格才掉下来
  *   - 是宠物: 不攻击玩家, 不进任何怪物组 (不可被打/不造成伤害)
- *   - 显示深度 11 > 玩家 10
+ *   - 显示深度 = 玩家深度 + 1 (永远压玩家一头)
  */
 class PetSpider extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
@@ -21,10 +21,10 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         this.setScale(0.5);                 // (用户) 一半体型
         this.body.setSize(32, 32);          // ×0.5 = 世界 16×16
         this.body.setCollideWorldBounds(true);
-        this.setDepth(11);                  // (用户) 显示优先级大于玩家 (10)
+        this.setDepth((scene.player && scene.player.depth ? scene.player.depth : 600) + 1);   // (用户) 显示优先级大于玩家 (玩家实际 600)
 
-        this.WALK  = 150;                   // (用户) 2.5× 普蛛走速 60
-        this.CLIMB = 300;                   // (用户) 2.5× 普蛛爬墙速 120
+        this.WALK  = 300;                   // (用户) 5× 普蛛走速 60
+        this.CLIMB = 600;                   // (用户) 5× 普蛛爬墙速 120
         this.state = 'follow';              // follow / idle / mounted
         this._stillMs = 0;                  // 玩家静止累计 (上头计时)
         this._climbSide = null;
@@ -68,11 +68,12 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         if (this.state === 'mounted') {
             const fx = p.flipX ? 1 : -1;        // (用户) 面右 → 左移 8px; 面左 → 右移 8px (坐头顶偏后)
             this.x = p.x + fx * 8;
-            this.y = p.body.top - 1;            // (用户) 较原位再下移 5px
+            this.y = p.body.top - 3;            // (用户) 在 -1 基础上再上移 2px
             this.setFlipX(p.flipX);
             return;
         }
 
+        if (this.depth <= p.depth) this.setDepth(p.depth + 1);   // (用户) 深度自愈: 永远 > 玩家
         const dx = p.x - this.x, dy = p.y - this.y;
         const d = Math.hypot(dx, dy);
         const b = this.body;
