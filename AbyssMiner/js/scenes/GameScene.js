@@ -56,7 +56,8 @@ class MainGameScene extends Phaser.Scene {
         if (typeof CrystalNpc !== 'undefined' && CrystalNpc.loadAnimSheets) CrystalNpc.loadAnimSheets(this);  // 加载 CNPC 动画
         // 静默处理资源加载失败（不在 console 显示 404 红字）
         this.load.on('loaderror', (file) => {
-            // 只 log warn，不抛错
+            // 只 log warn，不抛错; 音频缺失 AudioSystem 已有汇总日志, 这里跳过防重复刷屏
+            if (file && file.type === 'audio') return;
             console.warn('[Asset 404]', file.key, file.url);
         });
         this.load.spritesheet('Miner_stand','assets/images/Miner_stand.png',{frameWidth:128,frameHeight:128});

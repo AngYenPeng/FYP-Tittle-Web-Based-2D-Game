@@ -234,12 +234,15 @@ class TitleScene extends Phaser.Scene {
         const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78).setDepth(900).setInteractive();   // (用户修复) 吃掉点击, 防止穿透到标题按钮
         const panel = this.add.container(W / 2, H / 2).setDepth(901);
         const PW = 660, PH = 470;
-        const bg = this.add.rectangle(0, 0, PW, PH, 0x0a0a18, 0.97).setStrokeStyle(3, 0x6688aa).setInteractive();   // (用户修复) 面板缝隙也不能穿透
-        const title = this.add.text(0, -PH / 2 + 30, 'SELECT SAVE', {
-            fontSize: '34px', color: '#ffcc55', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 4
+        // (用户) 描金语言统一: 双层边框 + 分隔线
+        const bg = this.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.98).setStrokeStyle(2, 0x806020).setInteractive();   // (用户修复) 面板缝隙也不能穿透
+        const inner = this.add.rectangle(0, 0, PW - 16, PH - 16, 0x000000, 0).setStrokeStyle(1, 0xffcc44, 0.3);
+        const title = this.add.text(0, -PH / 2 + 32, '★ SELECT SAVE ★', {
+            fontSize: '34px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 5
         }).setOrigin(0.5);
-        panel.add([bg, title]);
+        const divider = this.add.rectangle(0, -PH / 2 + 58, PW - 56, 1, 0x444458, 1);
+        panel.add([bg, inner, title, divider]);
 
         const N = SaveSystem.NUM_SLOTS || 3;
         let rowItems = [];
@@ -251,17 +254,20 @@ class TitleScene extends Phaser.Scene {
                 const y = -120 + (i - 1) * 92;
                 const data = SaveSystem.getSlot(i);
 
-                const rowBg = this.add.rectangle(0, y, PW - 80, 78, 0x14142a, 1)
-                    .setStrokeStyle(2, 0x445577).setInteractive();
-                rowBg.on('pointerover', () => rowBg.setFillStyle(0x1e1e3a, 1));
-                rowBg.on('pointerout',  () => rowBg.setFillStyle(0x14142a, 1));
+                // (用户) 卡片化: 有档=暖紫底金描边+金竖条, 空档=深灰底
+                const has = !!data;
+                const rowBg = this.add.rectangle(0, y, PW - 80, 78, has ? 0x1c1828 : 0x121219, 1)
+                    .setStrokeStyle(1, has ? 0x6a5a2a : 0x2a2a38).setInteractive();
+                rowBg.on('pointerover', () => rowBg.setFillStyle(has ? 0x2a2438 : 0x1a1a24, 1));
+                rowBg.on('pointerout',  () => rowBg.setFillStyle(has ? 0x1c1828 : 0x121219, 1));
+                const accent = this.add.rectangle(-(PW - 80) / 2 + 3, y, 5, 78, has ? 0xffcc44 : 0x3a3a48, 1);
 
                 const slotLbl = this.add.text(-PW / 2 + 60, y - 16, 'SLOT ' + i, {
-                    fontSize: '24px', color: '#88ccff', fontFamily: '"VT323", monospace',
+                    fontSize: '24px', color: has ? '#ffd86a' : '#8a8a99', fontFamily: '"VT323", monospace',
                     stroke: '#000', strokeThickness: 3
                 }).setOrigin(0, 0.5);
 
-                rowItems.push(rowBg, slotLbl);
+                rowItems.push(rowBg, accent, slotLbl);
 
                 if (data) {
                     const zone = SaveSystem.zoneName(data.scene);
@@ -318,14 +324,17 @@ class TitleScene extends Phaser.Scene {
         };
         buildSlots();
 
-        const backBtn = this.add.text(0, PH / 2 - 38, '[ BACK ]', {
-            fontSize: '26px', color: '#ff8888', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 4
-        }).setOrigin(0.5).setInteractive();
-        backBtn.on('pointerover', () => backBtn.setColor('#ffffff'));
-        backBtn.on('pointerout',  () => backBtn.setColor('#ff8888'));
-        backBtn.on('pointerdown', () => { dim.destroy(); panel.destroy(); this._modalOpen = false; });
-        panel.add(backBtn);
+        // (用户) BACK 药丸按钮 (与 CREDITS 同款)
+        const backBg = this.add.rectangle(0, PH / 2 - 42, 170, 44, 0x1c1828, 1)
+            .setStrokeStyle(2, 0xffcc44, 0.9).setInteractive();
+        const backTxt = this.add.text(0, PH / 2 - 42, 'BACK', {
+            fontSize: '26px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5);
+        backBg.on('pointerover', () => { backBg.setFillStyle(0x2a2438); backTxt.setColor('#ffffff'); });
+        backBg.on('pointerout',  () => { backBg.setFillStyle(0x1c1828); backTxt.setColor('#ffd86a'); });
+        backBg.on('pointerdown', () => { dim.destroy(); panel.destroy(); this._modalOpen = false; });
+        panel.add([backBg, backTxt]);
     }
 
     // dev 菜单直接跳场景 (不绑存档位, 清空 current 避免污染真存档)

@@ -50,7 +50,15 @@ class CrystalDoor extends Door {
                 try { this.scene.uiCam.ignore(this.image); } catch(e) {}
             }
             if (this.scene.anims.exists('crystal_door_open')) {
-                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'CrystalDoorOpen');
+                // (用户) 开门音效时长精确贴合动画 (27帧/9fps = 3s): rate = 音频原时长 / 3s, 同始同终
+                if (typeof AudioSystem !== 'undefined') {
+                    let _rate = 1;
+                    try {
+                        const _buf = this.scene.cache.audio.get('CrystalDoorOpen');
+                        if (_buf && _buf.duration > 0) _rate = _buf.duration / 3.0;
+                    } catch (e) {}
+                    AudioSystem.sfx(this.scene, 'CrystalDoorOpen', { rate: _rate });
+                }
                 this.image.play('crystal_door_open');
                 this.image.once('animationcomplete-crystal_door_open', () => {
                     if (this.image && this.image.scene) {

@@ -14,6 +14,7 @@ class AudioSystem {
             let queued = 0;
             for (const key in m) {
                 try {
+                    if (AudioSystem._missing.has(key)) continue;   // (用户) 404 过的本次会话不再重试, 防控制台刷屏
                     if (scene.cache.audio.exists(key)) continue;
                     scene.load.audio(key, 'assets/audio/' + m[key]);
                     queued++;
@@ -23,7 +24,7 @@ class AudioSystem {
                 // 缺失/改名的音频 → 静默处理: 加载器不刷屏, 播放端已用 cache.audio.exists 兜底.
                 // (浏览器自身的网络 404 行 JS 无法屏蔽, 但这里按 key 汇总, 方便对照 assets/audio/ 下的真实文件名)
                 const missingAudio = [];
-                const onAudioErr = (file) => { if (file && file.type === 'audio') missingAudio.push(file.key); };
+                const onAudioErr = (file) => { if (file && file.type === 'audio') { missingAudio.push(file.key); AudioSystem._missing.add(file.key); } };
                 scene.load.on('loaderror', onAudioErr);
                 scene.load.once('complete', () => {
                     try { scene.load.off('loaderror', onAudioErr); } catch (e) {}
@@ -161,6 +162,7 @@ class AudioSystem {
 
 // ---- 静态状态 (类外赋值, 兼容性最好) ----
 AudioSystem.sfxVolume = 0.6;
+AudioSystem._missing = new Set();   // (用户) 已 404 的音频 key (跨场景共享, 不再重试)
 AudioSystem.bgmVolume = 0.35;
 AudioSystem._bgm = null;
 AudioSystem._bgmKey = null;
@@ -195,7 +197,7 @@ AudioSystem.MANIFEST = {
     'Beetle_Death':      'Mobs/Beetle_Death.wav',
     'Beetle_Hurt':       'Mobs/Beetle_Hurt.wav',
     // (用户) 商店音效 (.wav, audio/TraderShop/)
-    'Buy':               'TraderShop/Buy.wav',
+    'Buy':               'TraderShop/Buy.mp3',   // (用户) 此文件实际是 mp3
     'CantBuy':           'TraderShop/CantBuy.wav',
     // BGM (key 加 bgm_ 前缀避免与音效冲突)
     'bgm_BatBossFight':   'BGM/BatBossFight.mp3',

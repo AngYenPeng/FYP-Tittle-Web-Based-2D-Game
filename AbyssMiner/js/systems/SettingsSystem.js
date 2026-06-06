@@ -118,7 +118,7 @@ class SettingsSystem {
             { key: 'audio',    label: '▶ AUDIO'    },
             { key: 'ach',      label: '▶ ACHIEVEMENTS' },   // (用户) 成就入口 — 点击开面板, 不是内容页
             { key: 'game',     label: '▶ GAME'     },
-        ];
+        ].filter(t => !(this.titleMode && t.key === 'ach'));   // (用户) 标题 OPTIONS 不放成就入口 (主菜单已有)
         const tabX = -PW / 2 + 30;
         const tabStartY = -PH / 2 + 90;
         for (let i = 0; i < tabDefs.length; i++) {

@@ -94,6 +94,53 @@ window.AbyssDiff = {
 
 const game = new Phaser.Game(config);
 
+// (用户) 切出网页再切回: canvas cursor='none' + 精灵光标停在旧位置, 玩家动鼠标前看不到任何指针.
+//   修复: 重获焦点瞬间临时换回 CSS 自定义光标 (OS 按真实位置渲染), 首次移动/点击后交还精灵光标
+game.events.once('ready', () => {
+    const cv = game.canvas;
+    const applyCssCursor = () => {
+        try {
+            const sc = (cv.clientWidth / cv.width) || 1;
+            const hot = Math.round(32 * sc);
+            cv.style.cursor = 'url(assets/images/Mouse_cursor.png) ' + hot + ' ' + hot + ', default';
+            cv.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / sc).toFixed(3) + 'x) ' + hot + ' ' + hot + ', default';
+        } catch (e) {}
+    };
+    const onRefocus = () => {
+        if (cv.style.cursor !== 'none') return;   // 仅精灵光标模式接管; StartIntro/Opening 的 CSS 模式不动
+        applyCssCursor();
+        const back = () => {
+            cv.removeEventListener('pointermove', back);
+            cv.removeEventListener('pointerdown', back);
+            const sc0 = game.scene.getScenes(true)[0];
+            if (sc0 && sc0.crosshair) {
+                // (用户) 概率消失的元凶: 点击切回时 focus→换CSS→同一下点击立刻收回'none',
+                //   但 pointermove 还没发生, 精灵停在旧位置 → 真实指针处空无一物.
+                //   修复: 收回前先把精灵吸附到指针真实位置 (Phaser 的监听先于本监听, activePointer 已更新)
+                const p = sc0.input && sc0.input.activePointer;
+                if (p) { try { sc0.crosshair.setPosition(p.x, p.y); } catch (e) {} }
+                cv.style.cursor = 'none';   // 有精灵光标的场景 → 收回 CSS
+            }
+        };
+        cv.addEventListener('pointermove', back);
+        cv.addEventListener('pointerdown', back);
+    };
+    window.addEventListener('focus', onRefocus);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) onRefocus(); });
+
+    // (用户) 指针移出画面范围 (全屏黑边等) 时精灵会跟到镜头外 + canvas cursor:none → 两头都看不见.
+    //   全局每帧把准星钳在画面边缘内: 越界时钉在边上保持可见 (标准游戏做法), 覆盖所有场景/缩放
+    game.events.on('step', () => {
+        const sc0 = game.scene.getScenes(true)[0];
+        const ch = sc0 && sc0.crosshair;
+        if (ch && ch.active) {
+            const W = game.scale.width, H = game.scale.height;
+            if (ch.x < 8) ch.x = 8; else if (ch.x > W - 8) ch.x = W - 8;
+            if (ch.y < 8) ch.y = 8; else if (ch.y > H - 8) ch.y = H - 8;
+        }
+    });
+});
+
 // (用户) GroundShaking: 任意场景主镜头在震动 → 循环播放; 震动一停 → 立即停止 (哪怕没播完)
 //   挂游戏级 POST_STEP, 一处覆盖所有场景 (剧情震屏 / boss 咆哮 / golem 砸地全都响)
 if (game && game.events) {
