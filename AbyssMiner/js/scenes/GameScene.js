@@ -602,8 +602,8 @@ class MainGameScene extends Phaser.Scene {
         { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
         try { this.game.canvas.style.cursor = 'none'; } catch (e) {}   // (用户) 精灵就位, 此刻才隐藏 OS 光标
         if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
-        this.leftHandIndicator  = this.add.sprite(0,0,'left_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
-        this.rightHandIndicator = this.add.sprite(0,0,'right_hand_icon').setDepth(9999).setVisible(false).setScrollFactor(0);
+        this.leftHandIndicator  = this.add.sprite(0,0,'left_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
+        this.rightHandIndicator = this.add.sprite(0,0,'right_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
 
         // 鼠标位置用屏幕坐标（不受相机缩放/滚动影响）
         this.input.on('pointermove', (pointer) => {
