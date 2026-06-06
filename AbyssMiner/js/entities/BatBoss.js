@@ -46,6 +46,7 @@ class BatBoss {
         this.WANDER_SPEED = options.wanderSpeed || 130;
         this.DASH_SPEED   = 900;     // 一阶段冲刺速度 (参考 Golem 横扫)
         this.DASH_SPEED2  = 1200;    // 半血冲刺速度 (参考 Golem 半血横扫)
+        this.FLOOR_Y      = 14 * 32; // (用户) 活动下限: 不飞到 y=14 行及以下
         this.MOVEY_SPEED  = 320;     // 飞到玩家 y 的速度
         this.RING_SPEED   = 10 * G;  // 冲击波外扩 10 格/秒
         this.WALK_SPEED   = 450;     // 玩家走路速度 (击退用)
@@ -102,7 +103,7 @@ class BatBoss {
         this._cooldownDur = 1200;    // 开场短冷却
         this._lastSkill = null;
         this._sameCount = 0;
-        this._windTimer = Phaser.Math.Between(2000, 17000);  // 半血 WIND 计时 ((用户) 上下限各 -8s)
+        this._windTimer = Phaser.Math.Between(3000, 10000);  // 半血 WIND 计时 ((用户) 上下限各 -8s)
 
         // wander
         this._wanderTarget = this._randomArenaPoint();
@@ -123,10 +124,17 @@ class BatBoss {
     get y() { return this.sprite ? this.sprite.y : 0; }
 
     _randomArenaPoint() {
-        return {
-            x: Phaser.Math.Between(this.arena.x1 + 30, this.arena.x2 - 30),
-            y: Phaser.Math.Between(this.arena.y1 + 30, Math.min(this.arena.y2 - 30, this.arena.y1 + (this.arena.y2 - this.arena.y1) * 0.6))
-        };
+        const FY = this.FLOOR_Y || (14 * 32);
+        const px = Phaser.Math.Between(this.arena.x1 + 30, this.arena.x2 - 30);
+        let py = Phaser.Math.Between(this.arena.y1 + 30, Math.min(this.arena.y2 - 30, this.arena.y1 + (this.arena.y2 - this.arena.y1) * 0.6));
+        py = Math.min(py, FY - 8);   // (用户) 硬下限: 漂浮目标不选 y=14 行及以下
+        // (用户) 软梯度: 距下限 <5 格时, 越贴近 y=14 往下选的概率越低 (落选则翻到上方)
+        const distFloor = FY - this.y;
+        if (py > this.y && distFloor < 5 * 32) {
+            const pDown = Math.max(0, distFloor / (5 * 32));
+            if (Math.random() > pDown) py = Math.max(this.arena.y1 + 30, this.y - Math.abs(py - this.y) * 0.6);
+        }
+        return { x: px, y: py };
     }
 
     _setState(s) {
@@ -194,7 +202,7 @@ class BatBoss {
         // 半血切换
         if (!this._phase2 && this.hp <= this.maxHp / 2) {
             this._phase2 = true;
-            this._windTimer = Phaser.Math.Between(2000, 17000);
+            this._windTimer = Phaser.Math.Between(3000, 10000);
         }
         if (this._phase2 && (this.state === 'idle')) this._windTimer -= delta;
 
@@ -207,6 +215,15 @@ class BatBoss {
             case 'dash_go':    this._updateDashGo(dt, p); break;
             case 'roar':       this._updateRoar(dt, p); break;
             case 'roar_wait':  this._updateRoarWait(dt, p); break;
+        }
+
+        // (用户) y=14 行硬下限: 任何状态越界立即顶回, 向下速度清零; 冲刺越界则立即结束冲刺
+        const FYU = this.FLOOR_Y || (14 * 32);
+        if (this.sprite && this.sprite.y >= FYU) {
+            this.sprite.y = FYU - 1;
+            const bv = this.sprite.body && this.sprite.body.velocity;
+            if (bv && bv.y > 0) bv.y = 0;
+            if (this.state === 'dash_go') { this._vel(0, 0); this._enterCooldown(); }
         }
 
         // 风击退窗口结束 → 清除
@@ -243,7 +260,7 @@ class BatBoss {
     _pickSkill() {
         let skill;
         if (this._phase2) {
-            if (this._windTimer <= 0) { this._windTimer = Phaser.Math.Between(2000, 17000); return 'wind'; }
+            if (this._windTimer <= 0) { this._windTimer = Phaser.Math.Between(3000, 10000); return 'wind'; }
             skill = (Math.random() < 0.6) ? 'dash' : 'roar';
         } else {
             const r = Math.random();
@@ -271,7 +288,7 @@ class BatBoss {
     }
 
     _enterCooldown() {
-        this._cooldownDur = this._phase2 ? 2500 : 3000;
+        this._cooldownDur = this._phase2 ? 1500 : 3000;   // (用户) 二阶段冷却 2.5s→1.5s
         this._setState('idle');
         this._wanderTarget = this._randomArenaPoint();
     }
@@ -400,12 +417,17 @@ class BatBoss {
             this._sideDir = null;
             this._vel(0, 0);
             this._setState('dash_charge');
-            this._chargeDur = this._phase2 ? 500 : 650;   // 蓄力时间
+            this._chargeDur = this._phase2 ? 550 : 650;   // 蓄力时间 ((用户) 二阶段 0.55s)
             this._dashTargetX = p.x; this._dashTargetY = p.y;
             this._makeDashTelegraph(p);
             return;
         }
-        if (this._t > 4000) { this._vel(0, 0); this._sideDir = null; this._enterCooldown(); return; }  // 找不到通路 → 放弃换技能
+        if (this._t > 4000) {   // (用户) 找不到通路 → 不进冷却, 立刻随机换一个别的技能
+            this._vel(0, 0); this._sideDir = null;
+            const pool = ['wind', 'roar'];
+            this._startSkill(pool[Math.floor(Math.random() * pool.length)]);
+            return;
+        }
 
         // 否则朝玩家飞 (重定位找能直冲的位置, 全程追玩家)
         let vx = (dx / dist) * this.APPROACH_SPEED, vy = (dy / dist) * this.APPROACH_SPEED;
@@ -497,7 +519,7 @@ class BatBoss {
 
     _dropStalactites(p) {
         if (typeof Stalactite === 'undefined') return;   // 没有 Stalactite 类就跳过
-        const count = this._phase2 ? Phaser.Math.Between(7, 11) : Phaser.Math.Between(5, 8);
+        const count = this._phase2 ? Phaser.Math.Between(15, 22) : Phaser.Math.Between(10, 17);   // (用户) 加量
         Stalactite.rain(this.scene, {
             count: count,
             ceilingY: this.ceilingTop + 16,   // 生成点往下移 16 (一个 block 高) → 落在钟乳石 block 本体最下方边

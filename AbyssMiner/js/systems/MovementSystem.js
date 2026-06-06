@@ -16,7 +16,14 @@ class MovementSystem {
         if (s.player && s.player.body && typeof AudioSystem !== 'undefined') {
             const _b = s.player.body;
             const _grounded = _b.blocked.down || _b.touching.down;
-            if (_grounded && s._wasAirborne) AudioSystem.sfx(s, 'JumpLanding', { volume: 0.5 });
+            if (!_grounded && _b.velocity.y > 0 && s._fallStartY == null) s._fallStartY = s.player.y;   // (用户) 记录下落顶点
+            if (_grounded && s._wasAirborne) {
+                // (用户) 落地音量按下落高度分级: ≥3格 100% / ≥2格 66% / ≥1格 33% / <1格 不响; 再乘设置音量
+                const _drop = (s._fallStartY != null) ? (s.player.y - s._fallStartY) / 32 : 0;
+                const _tier = _drop >= 3 ? 1.0 : (_drop >= 2 ? 0.66 : (_drop >= 1 ? 0.33 : 0));
+                if (_tier > 0) AudioSystem.sfx(s, 'JumpLanding', { volume: AudioSystem.sfxVolume * _tier });
+            }
+            if (_grounded) s._fallStartY = null;
             s._wasAirborne = !_grounded;
             const _movingX = _grounded && Math.abs(_b.velocity.x) > 40 && !s.isDead;
             const _wantKey = _movingX ? (s.isCrouching ? 'CrouchWalking' : 'Walking') : null;
@@ -102,7 +109,7 @@ class MovementSystem {
                 s.grappleSystem.hasSnapped = false;
                 s.player.body.setAllowGravity(true);
                 s.player.body.checkCollision.none = false;
-                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'JumpUp', { volume: 0.5 });
+                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                 if (s.activeGrapplePick) {
                     s.recallSystem.startRecall(s.activeGrapplePick);
                     s.activeGrapplePick = null;
@@ -122,10 +129,10 @@ class MovementSystem {
                         s.player.body.setSize(32, 64);
                         s.player.body.setOffset(currentXOffset, 45);
                         s.player.y -= 16;
-                        s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'JumpUp', { volume: 0.5 });
+                        s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                     }
                 } else {
-                    s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'JumpUp', { volume: 0.5 });
+                    s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                 }
             }
         }

@@ -53,6 +53,17 @@ class AudioSystem {
         } catch (e) { return null; }
     }
 
+    // (用户) 跳跃音效节流: 每 3~4 次跳跃才响一次
+    static jumpSfx(scene) {
+        AudioSystem._jumpN = (AudioSystem._jumpN || 0) + 1;
+        if (AudioSystem._jumpTarget == null) AudioSystem._jumpTarget = 3 + Math.floor(Math.random() * 2);
+        if (AudioSystem._jumpN >= AudioSystem._jumpTarget) {
+            AudioSystem._jumpN = 0;
+            AudioSystem._jumpTarget = 3 + Math.floor(Math.random() * 2);
+            AudioSystem.sfx(scene, 'JumpUp', { volume: 0.5 });
+        }
+    }
+
     // 随机播放一组音效里的一个 (例如 Golem 的 Smash / Smash2)
     static sfxRandom(scene, keys, opts) {
         if (!Array.isArray(keys) || !keys.length) return null;
