@@ -125,6 +125,14 @@ class SpiderQueenBoss extends Phaser.Physics.Arcade.Sprite {
         if (this._hpBar) this._hpBar.destroy();
         this.scene.events.emit('spider_queen_died', { x: this.x, y: this.y });
         if (window.AbyssDiff && AbyssDiff.markCleared) AbyssDiff.markCleared();   // (用户) 最终 boss 死 = 通关 → 解锁 Extreme
+        // (用户成就) 绝缝求生 (本区未死) + 珍惜生命 (全程零死亡)
+        try {
+            if (typeof AchievementSystem !== 'undefined') {
+                if (!this.scene._achDiedHere) AchievementSystem.unlock(this.scene, 'sz5_clutch');
+                const rd = (this.scene.registry && this.scene.registry.get('runDeaths')) || 0;
+                if (rd === 0) AchievementSystem.unlock(this.scene, 'one_life');
+            }
+        } catch (e) {}
         this.scene.tweens.add({
             targets: this,
             angle: 180,

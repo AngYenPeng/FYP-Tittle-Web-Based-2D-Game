@@ -130,6 +130,7 @@ class BatNest {
 
     destroy() {
         this._dead = true;   // 死亡标记 — 任何后续 startSummoning 都会跳过
+        if (this.hp <= 0 && this.scene) this.scene._achNestBroken = true;   // (用户成就) 巢被打烂记录 (自然清理 hp>0 不算)
         this.stopSummoning();
         if (this.sprite) { try { this.sprite.destroy(); } catch (e) {} this.sprite = null; }
         if (this._hpBg)  { try { this._hpBg.destroy(); }  catch (e) {} this._hpBg = null; }

@@ -1307,6 +1307,7 @@ class SafeZone3Scene extends MainGameScene {
                     { label: 'Give the toy you found', action: () => {
                         s.dialogSystem.close();
                         s._sz3ToyGiven = true;
+                        if (typeof AchievementSystem !== 'undefined') AchievementSystem.unlock(s, 'sz3_toy');   // (用户成就) 善意在"人"间
                         s._sz3HasToy = false;
                         if (s._sz3ToyNpc) s._sz3ToyNpc._idleOverride = 'Crying_guy_happy';   // cry → happy
                         if (s.hudSystem && s.hudSystem.addYellowCrystal) s.hudSystem.addYellowCrystal(5);

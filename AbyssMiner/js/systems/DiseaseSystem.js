@@ -337,6 +337,11 @@ class DiseaseSystem {
     }
 
     _updateUI() {
+        // (用户成就) 我是如何走到这一步的 (腐蚀侧触发)
+        try {
+            const hs = this.scene.healthSystem;
+            if (typeof AchievementSystem !== 'undefined' && hs && hs.hp === 1 && this.corrosionPct >= 100) AchievementSystem.unlock(this.scene, 'rock_bottom');
+        } catch (e) {}
         if (!this.corrosionFill) return;
         const pct = this.corrosionPct / this.maxCorrosion;
         if (this._imgCorBar) {

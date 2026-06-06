@@ -647,6 +647,8 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
     }
 
     die() {
+        // (用户成就) 外科手术: 双手皆断后击杀本体
+        if (typeof AchievementSystem !== 'undefined' && this._handLHp <= 0 && this._handRHp <= 0) AchievementSystem.unlock(this.scene, 'sz2_surgical');
         this.hp = 0;
         this.state = 'dead';
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'Golem Death');

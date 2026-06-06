@@ -89,6 +89,14 @@ class CrystalBlock {
 
     _destroy() {
         this.destroyed = true;
+        // (用户成就) 富贵险中求: SZ2.5 本局未死 + 全部蓝水晶挖光
+        try {
+            const sc = this.scene;
+            if (typeof AchievementSystem !== 'undefined' && sc && sc.scene && sc.scene.key === 'SafeZone25Scene' &&
+                sc._crystalOres && !sc._achDiedHere && sc._crystalOres.every(o => !o || o.destroyed)) {
+                AchievementSystem.unlock(sc, 'sz25_allcry');
+            }
+        } catch (e) {}
         this.sprite.setVisible(false);
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'CrystalBreak');  // 破碎音效
         // GridSystem 改回 AIR（玩家可走过去）

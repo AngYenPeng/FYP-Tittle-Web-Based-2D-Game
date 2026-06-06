@@ -10,6 +10,7 @@ class Hint {
         this.y = row * G + G / 2 + (options.yOffset || 0);  // 可选 y 偏移
         this.onInteract = options.onInteract || (() => {});
         this.interactRange = options.interactRange || 64;
+        this._achId = options.achId || null;   // (用户成就) 交互即解锁的成就 id
         this.hasInteracted = false;
         this._isOpen = false;
         this._hintVisible = false;
@@ -78,6 +79,7 @@ class Hint {
         else this._hideHint();
 
         if (inRange && !this._isOpen && this.scene.keyE && Phaser.Input.Keyboard.JustDown(this.scene.keyE)) {
+            if (this._achId && typeof AchievementSystem !== 'undefined') AchievementSystem.unlock(this.scene, this._achId);   // (用户成就)
             this._isOpen = true;
             const firstTime = !this.hasInteracted;
             this.hasInteracted = true;

@@ -226,6 +226,7 @@ class ShopSystem {
             }
             s.hudSystem.spendCrystal(item.price);
             if (s.registry) s.registry.set('hasPetSpider', true);
+            if (typeof AchievementSystem !== 'undefined') AchievementSystem.unlock(s, 'best_friend');   // (用户成就) 最好的伙伴
             if (typeof PetSpider !== 'undefined' && s.player && (!s._petSpider || !s._petSpider.scene)) {
                 s._petSpider = new PetSpider(s, s.player.x, s.player.y);
             }

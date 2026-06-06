@@ -559,6 +559,8 @@ class BatBoss {
     _die() {
         if (this.dead) return;
         this.dead = true;
+        // (用户成就) 逆风而行: 全程没打烂任何蝙蝠巢
+        if (typeof AchievementSystem !== 'undefined' && this.scene && !this.scene._achNestBroken) AchievementSystem.unlock(this.scene, 'sz4_headwind');
         if (this.scene._windKnockVx) this.scene._windKnockVx = 0;
         this._rings.forEach(r => { try { r.g.destroy(); } catch (e) {} });
         this._rings = [];

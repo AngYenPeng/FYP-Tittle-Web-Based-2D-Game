@@ -49,6 +49,7 @@ class MainGameScene extends Phaser.Scene {
         this._crystalOres = null; this._deathFragments = null;
         this._currentCamBoundsKey = null;   // (用户) 重进场景必须清 — 否则 _updateChunkCamera 以为边界没变, 跳过 setBounds, 新摄像机永远无界
         this._cpSnapDone = null;   // (用户) checkpoint 快照集合 — 每次 create 重置 (每个 checkpoint 每局首次进圈记一次)
+        this._achDiedHere = false; this._achNestBroken = false;   // (用户成就) 区内死亡/巢破坏标记每局重置
         this.uiCam = null; this.pick1 = null; this.pick2 = null;
         this.mobWalls = null; this.playerWalls = null;   // (用户) 懒建组字段 — 死组残留是重进崩溃的元凶 (MobWall children.set)   // (用户) uiCam 在 create 末段才重建, 早段读到旧轮死相机; pick 同理 (墙注册早于稿子重建时拿死稿子挂碰撞器)
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
@@ -534,7 +535,7 @@ class MainGameScene extends Phaser.Scene {
                 this.physics.add.collider(m, this.walls);
             }
         });
-        this.events.on('crystal_explode', c => this.handleCrystalExplosion(c.x, c.y, c.explodeRadius));
+        // (用户修复) crystal_explode 监听拆除 — VolatileCrystal 现在直接调用 handleCrystalExplosion, 留监听会双重伤害
 
         // 地面碰撞
         this.physics.add.collider([this.spiders, this.earthworms, this.slimes, this.miniSlimes, this.beetles, this.volatileCrystals, this.mimicOres, this.cowardMimics], this.walls);

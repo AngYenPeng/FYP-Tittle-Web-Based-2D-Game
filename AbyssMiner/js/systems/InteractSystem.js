@@ -92,6 +92,7 @@ class InteractSystem {
             for (const sign of s._signposts) {
                 if (sign.isPlayerNear(s.player)) {
                     sign.interact(s.player);
+                    if (typeof AchievementSystem !== 'undefined' && (s.scene.key || '').toLowerCase().includes('tutorial')) AchievementSystem.unlock(s, 'tut_signpost');   // (用户成就) 你不该在这里
                     return;
                 }
             }

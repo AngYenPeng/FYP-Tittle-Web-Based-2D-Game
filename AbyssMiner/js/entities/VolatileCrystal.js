@@ -84,7 +84,8 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         if (this.hasExploded) return;
         this.hasExploded = true;
         // 伤害/连锁/掉落事件立刻发 (handleCrystalExplosion 当场读坐标, 时机与旧版一致)
-        this.scene.events.emit('crystal_explode', this);
+        // (用户修复) 直接调用场景处理函数 — 旧事件监听只有 GameScene 注册过, SZ1/2/3/4/5 爆炸全是空响 (不扣血/无冲击圈/无连锁)
+        if (this.scene.handleCrystalExplosion) this.scene.handleCrystalExplosion(this.x, this.y, this.explodeRadius);
         let dropRate = this.killedByDamage ? 0.2 : 0.0;
         this.scene.events.emit('monster_killed', this.x, this.y, dropRate);
         if (this.body) this.body.enable = false;
@@ -92,6 +93,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         if (this.scene.anims.exists('volatile_crystal_explode')) {
             this.clearTint();
             this.setScale(1.3);
+            this.y += 16;   // (用户) 爆炸动画下移 16px (伤害中心已按原坐标结算)
             this.play('volatile_crystal_explode');
             this.once('animationcomplete-volatile_crystal_explode', () => { if (this.scene && this.active) this.destroy(); });
             this.scene.time.delayedCall(600, () => { if (this.scene && this.active) this.destroy(); });   // 兜底
@@ -128,6 +130,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         this.setScale(1.0);
         this.scene.events.emit('monster_killed', this.x, this.y, 0.2);
         if (this.scene.anims.exists('volatile_crystal_dead')) {
+            this.y += 16;   // (用户) 死亡动画下移 16px
             this.play('volatile_crystal_dead');
             this.once('animationcomplete-volatile_crystal_dead', () => {
                 if (!this.scene || !this.active) return;

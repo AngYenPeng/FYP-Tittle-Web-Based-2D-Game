@@ -176,6 +176,9 @@ class HealthSystem {
     /** HP 归零 → 扣 1 爱心. 爱心剩余 → 5 秒倒计时 → 复活在最新存档点. 爱心归零 → 永久死亡返回大厅 */
     _loseHeart() {
         this.hearts--;
+        // (用户成就) 死亡记录: 本区死过 (区成就) + 全程死亡计数 (一命通关)
+        this.scene._achDiedHere = true;
+        try { if (this.scene.registry) this.scene.registry.set('runDeaths', (this.scene.registry.get('runDeaths') || 0) + 1); } catch (e) {}
         if (this.hearts <= 0) {
             this.hearts = 0;
             this._permanentDeath();
@@ -397,6 +400,8 @@ class HealthSystem {
     refresh() { this.updateUI(); }
 
     updateUI() {
+        // (用户成就) 我是如何走到这一步的: 腐蚀 ≥100% 且 hp 恰好 1
+        if (typeof AchievementSystem !== 'undefined' && this.hp === 1 && this.scene.diseaseSystem && this.scene.diseaseSystem.corrosionPct >= 100) AchievementSystem.unlock(this.scene, 'rock_bottom');
         if (!this.hpBarFill) return;
         const pct = Math.max(0, this.hp / this.maxHp);
         if (this._imgHpBar) {
