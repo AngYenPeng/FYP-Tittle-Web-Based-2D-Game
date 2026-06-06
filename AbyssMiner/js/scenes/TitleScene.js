@@ -457,15 +457,15 @@ class TitleScene extends Phaser.Scene {
             { role: 'ART & LEVEL DESIGN', name: 'Dylan' },
         ];
         const cardItems = [];
-        const CW = 500, CH = 80, startY = -PH / 2 + 206;   // (用户) 卡片加高到 80, 行距进一步拉开
+        const CW = 500, CH = 74, startY = -PH / 2 + 206;   // (用户) 卡片 74 (80 回滚 — 行距本来就够)
         crew.forEach((c, i) => {
             const cy = startY + i * (CH + 16);
             const card = this.add.rectangle(0, cy, CW, CH, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a, 1);
             const accent = this.add.rectangle(-CW / 2 + 3, cy, 5, CH, 0xffcc44, 1);
-            const role = this.add.text(-CW / 2 + 22, cy - 26, c.role, {
-                fontSize: '16px', color: '#ffcc44', fontFamily: '"VT323", monospace', letterSpacing: 2
+            const role = this.add.text(-CW / 2 + 22, cy - 18, c.role, {
+                fontSize: '16px', color: '#ffcc44', fontFamily: '"VT323", monospace', letterSpacing: 4   // (用户) "密"指字母间距 → 2→4
             }).setOrigin(0, 0.5);
-            const name = this.add.text(-CW / 2 + 22, cy + 9, c.name, {   // (用户) 名字再上移 5px
+            const name = this.add.text(-CW / 2 + 22, cy + 4, c.name, {   // (用户) 名字 = 原位 cy+14 再上移 10px
                 fontSize: '26px', color: '#ffffff', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3, letterSpacing: 1
             }).setOrigin(0, 0.5);   // (用户) 名字距卡片底边留 ~10px, 字距 +1
