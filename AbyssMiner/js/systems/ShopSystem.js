@@ -13,7 +13,8 @@ class ShopSystem {
             { id: 'healing_potion',  name: 'Healing Potion',  price: 5,  desc: 'Restore 50% HP',                 tex: 'potion_heal_img' },
             { id: 'life_potion',     name: 'Life+ Potion',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },
             { id: 'health_potion',   name: 'Health Potion',   price: 10, desc: '-50% Corrosion + 30s immunity',  tex: 'potion_health_img' },
-            { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Adds corrosion bar (limit 1)',   tex: 'health_detector_img' }
+            { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Adds corrosion bar (limit 1)',   tex: 'health_detector_img' },
+            { id: 'pet_egg',         name: 'Mysterious Egg',  price: 399, desc: 'Hatches a loyal pet spider',     tex: 'Small_spider_run' }
             // 黄钥匙不卖 — tutorial 任务专用, 平常掉落/任务奖励获得
         ];
         // (用户) 难度: hard/extreme 不卖加爱心药水, 其余 3 件价格 ×priceMul
@@ -152,6 +153,9 @@ class ShopSystem {
         if (detector) {
             this._setButtonDisabled(detector, detectorOwned);
         }
+        // (用户) 宠物彩蛋: 已拥有 → 永久灰
+        const egg = this._buyButtons['pet_egg'];
+        if (egg) this._setButtonDisabled(egg, !!(s.registry && s.registry.get('hasPetSpider')));
     }
 
     _setButtonDisabled({ buyBtn, buyTxt }, disabled) {
@@ -211,6 +215,23 @@ class ShopSystem {
                     captionText: 'Shows your corrosion level. Higher corrosion = slower movement. At 100% you lose HP each second.'
                 });
             }
+            return;
+        }
+
+        // (用户) 宠物彩蛋 — 限购 1 次: 设跨场景旗标 + 当场在玩家脚边孵出
+        if (item.id === 'pet_egg') {
+            if (s.registry && s.registry.get('hasPetSpider')) {
+                this._flashMessage('Already owned!', 0xff4444);
+                return;
+            }
+            s.hudSystem.spendCrystal(item.price);
+            if (s.registry) s.registry.set('hasPetSpider', true);
+            if (typeof PetSpider !== 'undefined' && s.player && (!s._petSpider || !s._petSpider.scene)) {
+                s._petSpider = new PetSpider(s, s.player.x, s.player.y);
+            }
+            this._refreshCrystalDisplay();
+            this._flashMessage('Egg hatched! A tiny spider follows you.', 0x44ff44);
+            this._refreshBuyButtons();
             return;
         }
 

@@ -330,6 +330,7 @@ class TitleScene extends Phaser.Scene {
     _startNewGameWithDifficulty(n, mode) {
         if (window.AbyssDiff) AbyssDiff.set(mode);
         try { this.registry.set('pickaxeUpgraded', false); } catch (e) {}   // (用户修复) 新游戏清跨场景旗标 — 防上一局残留免对话解锁
+        try { this.registry.set('hasPetSpider', false); } catch (e) {}   // (用户) 宠物旗标同清
         SaveSystem.deleteSlot(n);          // 清空旧数据 (新游戏)
         SaveSystem.setCurrentSlot(n);      // deleteSlot 可能清 current, 重设
         this._fadeAndStart('StartIntroScene', null, true);   // 新游戏 → 重置 guide 已读
@@ -399,6 +400,7 @@ class TitleScene extends Phaser.Scene {
         if (window.AbyssDiff) AbyssDiff.set((data && data.difficulty) || 'easy');   // (用户) 读档恢复难度
         // 恢复需要在 registry 里的标志 (跨场景持久)
         try { this.registry.set('pickaxeUpgraded', !!data.pickaxeUpgraded); } catch (e) {}
+        try { this.registry.set('hasPetSpider', !!data.hasPetSpider); } catch (e) {}   // (用户) 宠物随档恢复
         this._fadeAndStart(data.scene || 'SafeZone1Scene', data, false);   // resume → 保留 guide
     }
 

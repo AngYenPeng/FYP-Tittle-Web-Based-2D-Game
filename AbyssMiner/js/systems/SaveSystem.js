@@ -59,6 +59,7 @@ class SaveSystem {
             hearts:            scene.healthSystem ? scene.healthSystem.hearts : 5,
             corrosionPct:      scene.diseaseSystem ? scene.diseaseSystem.corrosionPct : 0,
             hasHealthDetector: !!scene._hasHealthDetector,
+            hasPetSpider:      !!(scene.registry && scene.registry.get('hasPetSpider')),
             difficulty:        (window.AbyssDiff ? AbyssDiff.mode : 'easy'),
             inventorySlots:    inv,
             pickaxeUpgraded:   !!((scene.registry && scene.registry.get('pickaxeUpgraded')) || scene._pickaxeUpgraded),

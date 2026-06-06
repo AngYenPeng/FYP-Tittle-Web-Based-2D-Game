@@ -22,9 +22,15 @@ class MovementSystem {
                 const _drop = (s._fallStartY != null) ? (s.player.y - s._fallStartY) / 32 : 0;
                 const _tier = _drop >= 3 ? 1.0 : (_drop >= 2 ? 0.66 : (_drop >= 1 ? 0.33 : 0));
                 if (_tier > 0) AudioSystem.sfx(s, 'JumpLanding', { volume: AudioSystem.sfxVolume * _tier });
+                if (_drop > 3 && s._petSpider && s._petSpider.state === 'mounted') s._petSpider.dismount();   // (用户) 落地 >3 格 → 宠物从头顶掉下
             }
             if (_grounded) s._fallStartY = null;
             s._wasAirborne = !_grounded;
+            // (用户) 宠物蜘蛛: 懒生成 + 驱动 (买过彩蛋后所有场景自动跟随; 场景重建后自动重生)
+            if (s.registry && s.registry.get('hasPetSpider') && typeof PetSpider !== 'undefined') {
+                if (!s._petSpider || !s._petSpider.scene || !s._petSpider.body) s._petSpider = new PetSpider(s, s.player.x, s.player.y);
+                s._petSpider.update(time, delta);
+            }
             const _movingX = _grounded && Math.abs(_b.velocity.x) > 40 && !s.isDead;
             const _wantKey = _movingX ? (s.isCrouching ? 'CrouchWalking' : 'Walking') : null;
             if (s._stepKey !== _wantKey) {
