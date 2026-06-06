@@ -42,6 +42,56 @@ window.AbyssDiff = {
     markCleared() { try { localStorage.setItem('abyssMinerCleared', '1'); } catch (e) {} }
 };
 
+// (用户) 全局小字号字距: Phaser 3.60 没有 letterSpacing — 借 Canvas2D 的 ctx.letterSpacing (Chrome 99+)
+//   关键教训: Phaser 画字前会重设画布尺寸, 而画布一重设, 2D 上下文状态(含 letterSpacing)全部清零 —
+//   所以补丁必须打在 Canvas2D 原型层: 每次 measure/fill/stroke 时从 ctx.font 现解析字号、现设间距。
+//   measureText 也打 → 宽度测量含字距, 换行/对齐/画布尺寸全部自洽; 不支持的浏览器静默跳过。
+{
+    const proto = CanvasRenderingContext2D.prototype;
+    if (!proto._abyssLsPatched) {
+        proto._abyssLsPatched = true;
+        const want = (ctx) => {
+            const m = /(\d+(?:\.\d+)?)px/.exec(ctx.font || '');
+            return (m && parseFloat(m[1]) <= 18) ? '1px' : '0px';
+        };
+        // (用户) 全局灰字提亮 (商店/对话/设置/credits 全部生效): 只动低饱和灰色 —
+        //   深灰档(如 #666677, 看不清) → 提到 #9aa6b5 那档; 中灰档(#9aa6b5 类) → 再亮一点但封顶不白;
+        //   彩色字/纯黑描边/近黑近白全不动, 保持设计层级
+        const _greyCache = new Map();
+        const remapGrey = (c) => {
+            if (typeof c !== 'string' || c[0] !== '#') return c;
+            if (_greyCache.has(c)) return _greyCache.get(c);
+            let out = c;
+            const h = c.length === 4 ? '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c;
+            if (h.length === 7) {
+                const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
+                const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                const spread = Math.max(r, g, b) - Math.min(r, g, b);
+                let target = 0;
+                if (spread <= 36) {
+                    if (L >= 75 && L < 140) target = 165;        // 深灰 → 可读中灰档
+                    else if (L >= 140 && L < 185) target = 205;  // 中灰 → 亮灰 (不白)
+                }
+                if (target) {
+                    const f = target / L;
+                    const cv = (v) => Math.max(0, Math.min(235, Math.round(v * f)));
+                    out = '#' + [cv(r), cv(g), cv(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+                }
+            }
+            _greyCache.set(c, out);
+            return out;
+        };
+        ['measureText', 'fillText', 'strokeText'].forEach((fn) => {
+            const orig = proto[fn];
+            proto[fn] = function (...args) {
+                try { if (this.letterSpacing !== undefined) this.letterSpacing = want(this); } catch (e) {}
+                if (fn === 'fillText') { try { this.fillStyle = remapGrey(this.fillStyle); } catch (e) {} }
+                return orig.apply(this, args);
+            };
+        });
+    }
+}
+
 const game = new Phaser.Game(config);
 
 // (用户) GroundShaking: 任意场景主镜头在震动 → 循环播放; 震动一停 → 立即停止 (哪怕没播完)

@@ -66,6 +66,16 @@ class TitleScene extends Phaser.Scene {
             });
         }
 
+        // (用户) 设置系统每次进 Title 重建 — 场景实例复用会让 this.settingsSystem 揣着上一轮的旧面板
+        //   (对象已随场景销毁、数值是过期快照), 这就是 Title 设置与局内设置"不联通"的根源;
+        //   顺带亮度等持久化设置一进标题页即应用, 不用等开一次 OPTIONS
+        if (typeof SettingsSystem !== 'undefined') {
+            this.settingsSystem = new SettingsSystem(this, { titleMode: true });
+            this.settingsSystem.init();
+            const origClose = this.settingsSystem.close.bind(this.settingsSystem);
+            this.settingsSystem.close = () => { origClose(); this._modalOpen = false; };
+        }
+
         // 主标题
         let title = this.add.text(W / 2, H * 0.30, 'ABYSS MINER', {
             fontSize: '88px',
@@ -458,28 +468,18 @@ class TitleScene extends Phaser.Scene {
         ];
         const cardItems = [];
         const CW = 500, CH = 70, startY = -PH / 2 + 206;   // (用户) 卡片 74→70
-        // (用户) Phaser 3.60 无 letterSpacing — 手动逐字母排版实现自定义字距 (gap 像素)
-        const spacedText = (x, y, str, gap, style) => {
-            const objs = []; let cx = x;
-            for (const ch of str) {
-                if (ch === ' ') { cx += 12; continue; }   // 词间距
-                const t = this.add.text(cx, y, ch, style).setOrigin(0, 0.5);
-                objs.push(t); cx += t.width + gap;
-            }
-            return objs;
-        };
         crew.forEach((c, i) => {
             const cy = startY + i * (CH + 16);
             const card = this.add.rectangle(0, cy, CW, CH, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a, 1);
             const accent = this.add.rectangle(-CW / 2 + 3, cy, 5, CH, 0xffcc44, 1);
-            const roleObjs = spacedText(-CW / 2 + 22, cy - 18, c.role, 1, {
-                fontSize: '18px', color: '#ffcc44', fontFamily: '"VT323", monospace'
-            });
+            const role = this.add.text(-CW / 2 + 22, cy - 18, c.role, {
+                fontSize: '18px', color: '#ffcc44', fontFamily: '"VT323", monospace'   // (用户) 字距走 main.js 全局补丁 (≤18px 自动 +1px)
+            }).setOrigin(0, 0.5);
             const name = this.add.text(-CW / 2 + 20, cy + 4, c.name, {   // (用户) 再左移 1px
                 fontSize: '26px', color: '#ffffff', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3
             }).setOrigin(0, 0.5);
-            cardItems.push(card, accent, ...roleObjs, name);
+            cardItems.push(card, accent, role, name);
         });
 
         // 页脚 + CLOSE 药丸按钮
