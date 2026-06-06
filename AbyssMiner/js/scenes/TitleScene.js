@@ -427,43 +427,67 @@ class TitleScene extends Phaser.Scene {
         const W = this.cameras.main.width;
         const H = this.cameras.main.height;
 
-        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(900);
+        // (用户) 美化: 与成就面板同一套描金语言 — 双层边框 + 角色卡片 + 药丸按钮
+        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(900).setInteractive();
         const panel = this.add.container(W / 2, H / 2).setDepth(901);
-        const PW = 600, PH = 480;
-        const bg = this.add.rectangle(0, 0, PW, PH, 0x0a0a18, 0.97).setStrokeStyle(3, 0x6688aa);
-        const title = this.add.text(0, -PH / 2 + 30, 'CREDITS', {
-            fontSize: '36px', color: '#ffcc55', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 4
+        const PW = 600, PH = 560;
+        const bg = this.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.98)
+            .setStrokeStyle(2, 0x806020).setInteractive();   // 吸收面板内点击
+        const inner = this.add.rectangle(0, 0, PW - 16, PH - 16, 0x000000, 0)
+            .setStrokeStyle(1, 0xffcc44, 0.3);
+        const title = this.add.text(0, -PH / 2 + 34, '★ CREDITS ★', {
+            fontSize: '36px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 5, letterSpacing: 4
+        }).setOrigin(0.5);
+        const divider = this.add.rectangle(0, -PH / 2 + 62, PW - 56, 1, 0x444458, 1);
+
+        // 游戏名块
+        const logo = this.add.text(0, -PH / 2 + 106, 'ABYSS MINER', {
+            fontSize: '42px', color: '#88ccff', fontFamily: '"VT323", monospace',
+            stroke: '#1a3550', strokeThickness: 6, letterSpacing: 6
+        }).setOrigin(0.5);
+        const tagline = this.add.text(0, -PH / 2 + 144, 'A Roguelike Mining Adventure', {
+            fontSize: '19px', color: '#9aa6b5', fontFamily: '"VT323", monospace'
         }).setOrigin(0.5);
 
-        const lines = [
-            { y: -PH / 2 + 90,  text: 'ABYSS MINER',          size: '32px', color: '#88ccff' },
-            { y: -PH / 2 + 130, text: 'A Roguelike Mining Adventure', size: '20px', color: '#aaaaaa' },
-            { y: -50,           text: 'Programming',          size: '22px', color: '#ffcc55' },
-            { y: -20,           text: 'Ang Yen Peng',         size: '20px', color: '#ffffff' },
-            { y: 10,            text: 'Backend & Database',   size: '22px', color: '#ffcc55' },
-            { y: 40,            text: 'Low Yong Yi',          size: '20px', color: '#ffffff' },
-            { y: 70,            text: 'Art & Level Design',   size: '22px', color: '#ffcc55' },
-            { y: 100,           text: 'Dylan',                size: '20px', color: '#ffffff' },
-            { y: 150,           text: 'Built with Phaser 3',  size: '18px', color: '#888888' }
+        // 角色卡片
+        const crew = [
+            { role: 'PROGRAMMING',        name: 'Ang Yen Peng' },
+            { role: 'BACKEND & DATABASE', name: 'Low Yong Yi' },
+            { role: 'ART & LEVEL DESIGN', name: 'Dylan' },
         ];
-        const texts = lines.map(l => this.add.text(0, l.y, l.text, {
-            fontSize: l.size, color: l.color, fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5));
-
-        const closeBtn = this.add.text(0, PH / 2 - 50, 'CLOSE', {
-            fontSize: '28px', color: '#ff8888', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 4
-        }).setOrigin(0.5).setInteractive();
-        closeBtn.on('pointerover', () => closeBtn.setColor('#ffffff'));
-        closeBtn.on('pointerout',  () => closeBtn.setColor('#ff8888'));
-        closeBtn.on('pointerdown', () => {
-            dim.destroy();
-            panel.destroy();
-            this._modalOpen = false;
+        const cardItems = [];
+        const CW = 500, CH = 80, startY = -PH / 2 + 206;   // (用户) 卡片加高到 80, 行距进一步拉开
+        crew.forEach((c, i) => {
+            const cy = startY + i * (CH + 16);
+            const card = this.add.rectangle(0, cy, CW, CH, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a, 1);
+            const accent = this.add.rectangle(-CW / 2 + 3, cy, 5, CH, 0xffcc44, 1);
+            const role = this.add.text(-CW / 2 + 22, cy - 26, c.role, {
+                fontSize: '16px', color: '#ffcc44', fontFamily: '"VT323", monospace', letterSpacing: 2
+            }).setOrigin(0, 0.5);
+            const name = this.add.text(-CW / 2 + 22, cy + 9, c.name, {   // (用户) 名字再上移 5px
+                fontSize: '26px', color: '#ffffff', fontFamily: '"VT323", monospace',
+                stroke: '#000', strokeThickness: 3, letterSpacing: 1
+            }).setOrigin(0, 0.5);   // (用户) 名字距卡片底边留 ~10px, 字距 +1
+            cardItems.push(card, accent, role, name);
         });
 
-        panel.add([bg, title, ...texts, closeBtn]);
+        // 页脚 + CLOSE 药丸按钮
+        const foot = this.add.text(0, PH / 2 - 98, 'Built with Phaser 3', {
+            fontSize: '17px', color: '#666677', fontFamily: '"VT323", monospace'
+        }).setOrigin(0.5);
+        const btnBg = this.add.rectangle(0, PH / 2 - 52, 170, 44, 0x1c1828, 1)
+            .setStrokeStyle(2, 0xffcc44, 0.9).setInteractive();
+        const btnTxt = this.add.text(0, PH / 2 - 52, 'CLOSE', {
+            fontSize: '26px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 3, letterSpacing: 3
+        }).setOrigin(0.5);
+        const doClose = () => { dim.destroy(); panel.destroy(); this._modalOpen = false; };
+        btnBg.on('pointerover', () => { btnBg.setFillStyle(0x2a2438); btnTxt.setColor('#ffffff'); });
+        btnBg.on('pointerout',  () => { btnBg.setFillStyle(0x1c1828); btnTxt.setColor('#ffd86a'); });
+        btnBg.on('pointerdown', doClose);
+        dim.on('pointerdown', doClose);   // 点外侧暗区也可关
+
+        panel.add([bg, inner, title, divider, logo, tagline, ...cardItems, foot, btnBg, btnTxt]);
     }
 }
