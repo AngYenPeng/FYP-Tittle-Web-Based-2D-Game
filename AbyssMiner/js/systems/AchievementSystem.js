@@ -75,55 +75,114 @@ const AchievementSystem = {
         } catch (e) {}
     },
 
-    /** 成就一览面板 (Settings 左栏 / Title 主菜单入口; 滚轮滚动列表, 点遮罩或 ✕ 关闭) */
+    /** 成就一览面板 — 卡片化排版: 头部进度条 + 徽章图标 + 解锁日期; 滚轮/拖滑块滚动, 点外侧暗区或 ✕ 关闭 */
     showPanel(scene) {
         if (!scene || !scene.add || this._panelOpen) return;
         this._panelOpen = true;
         try {
             const W = scene.scale.width, H = scene.scale.height;
             const items = [];
-            const dim = scene.add.rectangle(W / 2, H / 2, W * 2, H * 2, 0x000000, 0.6)
+            const data = this._load();
+            const total = this.DEFS.length;
+            const gotN = this.DEFS.filter(a => !!data[a.id]).length;
+
+            // ── 框架 ──
+            const dim = scene.add.rectangle(W / 2, H / 2, W * 2, H * 2, 0x000000, 0.66)
                 .setScrollFactor(0).setDepth(25000).setInteractive();
-            const bg = scene.add.rectangle(W / 2, H / 2, 640, 660, 0x0d0d14, 0.97)
-                .setStrokeStyle(2, 0xffcc44).setScrollFactor(0).setDepth(25001);
+            const bg = scene.add.rectangle(W / 2, H / 2, 660, 664, 0x0b0b12, 0.98)
+                .setStrokeStyle(2, 0x806020).setScrollFactor(0).setDepth(25001)
+                .setInteractive();   // 吸收面板内点击, 防点穿误关
+            const inner = scene.add.rectangle(W / 2, H / 2, 644, 648, 0x000000, 0)
+                .setStrokeStyle(1, 0xffcc44, 0.3).setScrollFactor(0).setDepth(25001);
             const title = scene.add.text(W / 2, H / 2 - 300, '★ ACHIEVEMENTS ★', {
-                fontSize: '34px', color: '#ffcc44', fontFamily: '"VT323", monospace',
-                stroke: '#000', strokeThickness: 4
+                fontSize: '36px', color: '#ffd86a', fontFamily: '"VT323", monospace',
+                stroke: '#000', strokeThickness: 5, letterSpacing: 4
             }).setOrigin(0.5).setScrollFactor(0).setDepth(25002);
-            const closeB = scene.add.text(W / 2 + 298, H / 2 - 304, '✕', {
+            const closeB = scene.add.text(W / 2 + 306, H / 2 - 306, '✕', {
                 fontSize: '28px', color: '#ff5555', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3
-            }).setOrigin(0.5).setScrollFactor(0).setDepth(25002).setInteractive();
-            items.push(dim, bg, title, closeB);
+            }).setOrigin(0.5).setScrollFactor(0).setDepth(25003).setInteractive();
+            items.push(dim, bg, inner, title, closeB);
 
-            // ── 滚动行容器 (遮罩裁切视窗 + 滚轮) ──
-            const VIEW_TOP = H / 2 - 268, VIEW_H = 556, ROW_H = 58;
+            // ── 头部进度条 + 计数 ──
+            const pbY = H / 2 - 270, pbW = 480;
+            const pbTrack = scene.add.rectangle(W / 2 - 40, pbY, pbW, 8, 0x23232f, 1)
+                .setStrokeStyle(1, 0x3a3a4c, 1).setScrollFactor(0).setDepth(25002);
+            const pbFill = scene.add.rectangle(W / 2 - 40 - pbW / 2, pbY, Math.max(2, pbW * gotN / total), 6, 0xffcc44, 1)
+                .setOrigin(0, 0.5).setScrollFactor(0).setDepth(25003);
+            const pbTxt = scene.add.text(W / 2 + 232, pbY, gotN + ' / ' + total, {
+                fontSize: '20px', color: '#ffcc44', fontFamily: '"VT323", monospace'
+            }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(25002);
+            const divider = scene.add.rectangle(W / 2, H / 2 - 254, 620, 1, 0x444458, 1)
+                .setScrollFactor(0).setDepth(25002);
+            items.push(pbTrack, pbFill, pbTxt, divider);
+
+            // ── 卡片行 (滚动容器 + 遮罩) ──
+            const VIEW_TOP = H / 2 - 246, VIEW_H = 536, ROW_H = 64;
+            const CARD_W = 592, CARD_L = W / 2 - 304;
             const rowsC = scene.add.container(0, 0).setDepth(25002).setScrollFactor(0);
-            const data = this._load();
             this.DEFS.forEach((a, i) => {
-                const y = VIEW_TOP + 26 + i * ROW_H;
+                const y = VIEW_TOP + 34 + i * ROW_H;
                 const got = !!data[a.id];
-                const icon = scene.add.text(W / 2 - 292, y, got ? '✓' : '✕', {
-                    fontSize: '26px', color: got ? '#66ff88' : '#444455', fontFamily: '"VT323", monospace'
+                // 卡片底 + 左侧描金条
+                const card = scene.add.rectangle(CARD_L + CARD_W / 2, y, CARD_W, 56, got ? 0x1c1828 : 0x121219, 1)
+                    .setStrokeStyle(1, got ? 0x6a5a2a : 0x2a2a38, 1);
+                const accent = scene.add.rectangle(CARD_L + 3, y, 5, 56, got ? 0xffcc44 : 0x3a3a48, 1);
+                // 徽章
+                const medal = scene.add.circle(CARD_L + 36, y, 16, got ? 0xffcc44 : 0x23232f, 1)
+                    .setStrokeStyle(2, got ? 0xfff0b0 : 0x3a3a4c, 1);
+                const mark = scene.add.text(CARD_L + 36, y + 1, got ? '✓' : '✕', {
+                    fontSize: '22px', color: got ? '#1a1408' : '#555566', fontFamily: '"VT323", monospace'
+                }).setOrigin(0.5);
+                // 文案
+                const tt = scene.add.text(CARD_L + 64, y - 12, a.title, {
+                    fontSize: '24px', color: got ? '#ffd86a' : '#8a8a99', fontFamily: '"VT323", monospace'
                 }).setOrigin(0, 0.5);
-                const tt = scene.add.text(W / 2 - 256, y - 13, a.title, {
-                    fontSize: '24px', color: got ? '#ffcc44' : '#8a8a99', fontFamily: '"VT323", monospace'
+                const dd = scene.add.text(CARD_L + 64, y + 14, a.desc, {
+                    fontSize: '15px', color: got ? '#b9b9c9' : '#52525f', fontFamily: '"VT323", monospace'
                 }).setOrigin(0, 0.5);
-                const dd = scene.add.text(W / 2 - 256, y + 15, a.desc, {
-                    fontSize: '16px', color: got ? '#bbbbcc' : '#55556a', fontFamily: '"VT323", monospace'
-                }).setOrigin(0, 0.5);
-                rowsC.add([icon, tt, dd]);
+                rowsC.add([card, accent, medal, mark, tt, dd]);
+                // 解锁日期 (右上角小字)
+                if (got) {
+                    const dt = new Date(data[a.id]);
+                    const ds = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+                    rowsC.add(scene.add.text(CARD_L + CARD_W - 10, y - 14, ds, {
+                        fontSize: '13px', color: '#8a7a4a', fontFamily: '"VT323", monospace'
+                    }).setOrigin(1, 0.5));
+                }
             });
             items.push(rowsC);
 
-            const maskG = scene.make.graphics();
+            const maskG = scene.make.graphics({}, false);
             maskG.fillStyle(0xffffff).fillRect(W / 2 - 320, VIEW_TOP, 640, VIEW_H);
             rowsC.setMask(maskG.createGeometryMask());
 
-            const contentH = this.DEFS.length * ROW_H + 30;
+            // ── 滚动: 滚轮 + 右侧滑轨/滑块 ──
+            const contentH = this.DEFS.length * ROW_H + 16;
             const minY = Math.min(0, VIEW_H - contentH);
+            let barThumb = null;
+            const BAR_X = W / 2 + 310, THUMB_H = Math.max(40, Math.round(VIEW_H * VIEW_H / contentH));
+            const syncBar = () => {
+                if (!barThumb) return;
+                const ratio = minY < 0 ? (rowsC.y / minY) : 0;
+                barThumb.y = VIEW_TOP + THUMB_H / 2 + ratio * (VIEW_H - THUMB_H);
+            };
+            if (contentH > VIEW_H) {
+                const track = scene.add.rectangle(BAR_X, VIEW_TOP + VIEW_H / 2, 10, VIEW_H, 0x23232f, 1)
+                    .setStrokeStyle(1, 0x3a3a4c, 0.9).setScrollFactor(0).setDepth(25010);
+                barThumb = scene.add.rectangle(BAR_X, VIEW_TOP + THUMB_H / 2, 10, THUMB_H, 0xffcc44, 1)
+                    .setStrokeStyle(1, 0xfff0b0, 0.7).setScrollFactor(0).setDepth(25011).setInteractive();
+                scene.input.setDraggable(barThumb);
+                barThumb.on('drag', (pointer, dragX, dragY) => {
+                    const t = Phaser.Math.Clamp((dragY - VIEW_TOP - THUMB_H / 2) / (VIEW_H - THUMB_H), 0, 1);
+                    rowsC.y = t * minY;
+                    syncBar();
+                });
+                items.push(track, barThumb);
+            }
             const onWheel = (pointer, objs, dx, dy) => {
                 rowsC.y = Phaser.Math.Clamp(rowsC.y - dy * 0.5, minY, 0);
+                syncBar();
             };
             scene.input.on('wheel', onWheel);
 
