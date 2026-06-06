@@ -457,19 +457,29 @@ class TitleScene extends Phaser.Scene {
             { role: 'ART & LEVEL DESIGN', name: 'Dylan' },
         ];
         const cardItems = [];
-        const CW = 500, CH = 74, startY = -PH / 2 + 206;   // (用户) 卡片 74 (80 回滚 — 行距本来就够)
+        const CW = 500, CH = 70, startY = -PH / 2 + 206;   // (用户) 卡片 74→70
+        // (用户) Phaser 3.60 无 letterSpacing — 手动逐字母排版实现自定义字距 (gap 像素)
+        const spacedText = (x, y, str, gap, style) => {
+            const objs = []; let cx = x;
+            for (const ch of str) {
+                if (ch === ' ') { cx += 12; continue; }   // 词间距
+                const t = this.add.text(cx, y, ch, style).setOrigin(0, 0.5);
+                objs.push(t); cx += t.width + gap;
+            }
+            return objs;
+        };
         crew.forEach((c, i) => {
             const cy = startY + i * (CH + 16);
             const card = this.add.rectangle(0, cy, CW, CH, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a, 1);
             const accent = this.add.rectangle(-CW / 2 + 3, cy, 5, CH, 0xffcc44, 1);
-            const role = this.add.text(-CW / 2 + 22, cy - 18, c.role, {
-                fontSize: '16px', color: '#ffcc44', fontFamily: '"VT323", monospace', letterSpacing: 4   // (用户) "密"指字母间距 → 2→4
-            }).setOrigin(0, 0.5);
-            const name = this.add.text(-CW / 2 + 22, cy + 4, c.name, {   // (用户) 名字 = 原位 cy+14 再上移 10px
+            const roleObjs = spacedText(-CW / 2 + 22, cy - 18, c.role, 1, {
+                fontSize: '18px', color: '#ffcc44', fontFamily: '"VT323", monospace'
+            });
+            const name = this.add.text(-CW / 2 + 20, cy + 4, c.name, {   // (用户) 再左移 1px
                 fontSize: '26px', color: '#ffffff', fontFamily: '"VT323", monospace',
-                stroke: '#000', strokeThickness: 3, letterSpacing: 1
-            }).setOrigin(0, 0.5);   // (用户) 名字距卡片底边留 ~10px, 字距 +1
-            cardItems.push(card, accent, role, name);
+                stroke: '#000', strokeThickness: 3
+            }).setOrigin(0, 0.5);
+            cardItems.push(card, accent, ...roleObjs, name);
         });
 
         // 页脚 + CLOSE 药丸按钮
