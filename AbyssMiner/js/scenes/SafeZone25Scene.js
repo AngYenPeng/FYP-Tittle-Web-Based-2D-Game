@@ -16,7 +16,7 @@ class SafeZone25Scene extends SafeZone3Scene {
     }
 
     create() {
-        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone25');  // BGM (SafeZone25.mp3 放进 BGM/ 即生效)
+        // (用户) SZ25 BGM 改为怪潮触发时才播 (3s 淡入), 入场静默
         // (用户修复) 不再进场强制解锁 — 从 registry 读; SZ3 升级镐 NPC 才是合法解锁点 (原捷径导致免对话解锁)
         this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
         this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
@@ -440,6 +440,15 @@ class SafeZone25Scene extends SafeZone3Scene {
     _sz25HandleDeath() {
         if (this._sz25DeathSeq) return;
         this._sz25DeathSeq = true;
+        if (typeof AudioSystem !== 'undefined') {
+            AudioSystem.playGameOver(this);   // (用户) 死亡 BGM
+            AudioSystem.sfx(this, 'Death_Grow');   // (用户) 死亡瞬间音效
+            // (用户) 怪潮 BGM 3 秒从大声到无声 (死亡清场)
+            if (AudioSystem._bgmKey === 'bgm_SafeZone25' && AudioSystem._bgm) {
+                const _tb = AudioSystem._bgm;
+                this.tweens.add({ targets: _tb, volume: 0, duration: 3000, onComplete: () => { try { _tb.stop(); } catch (e) {} } });
+            }
+        }
         const hs = this.healthSystem;
         const preHearts = Math.max(0, hs.hearts);   // 死前爱心数 (显示这么多颗)
 
@@ -482,6 +491,7 @@ class SafeZone25Scene extends SafeZone3Scene {
             try { this.cameras.main.ignore(h); } catch (e) {}
             arr.push(h);
         }
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'LoseALife');   // (用户) 爱心列队出现瞬间
         this._sz25DeathHearts = arr;
         if (n <= 0) { this.time.delayedCall(700, () => this._sz25Respawn()); return; }
         // 最右边那颗 → 碎掉 (抖动 → 碎裂飞溅), 碎完游戏解锁/复活
@@ -528,6 +538,14 @@ class SafeZone25Scene extends SafeZone3Scene {
 
     /** 复活到出生点: 扣 1 爱心 + 回满 HP + 清空怪物 + 刷新震动机制 + 黑屏淡出 */
     _sz25Respawn() {
+        // (用户) GameOver BGM 播完才复活
+        if (typeof AudioSystem !== 'undefined' && AudioSystem.gameOverPlaying && AudioSystem.gameOverPlaying()) {
+            if (!this._sz25GoWait) {
+                this._sz25GoWait = true;
+                AudioSystem._gameOver.once('complete', () => { this._sz25GoWait = false; this._sz25Respawn(); });
+            }
+            return;
+        }
         const hs = this.healthSystem;
         hs.hearts = Math.max(0, hs.hearts - 1);   // 扣 1 爱心
         hs.hp = hs.maxHp; hs.playerHp = hs.hp;     // 回满 HP
@@ -662,6 +680,14 @@ class SafeZone25Scene extends SafeZone3Scene {
         // 1) 玩家走到 x <= 24 (col 24) → 开始震动, 一直震到进 SZ3
         if (!this._sz25ShakeStarted && !this._sz25DeathSeq && this.player.x <= 24 * 32) {
             this._sz25ShakeStarted = true;
+            // (用户) 怪潮 BGM: 触发即播, 3 秒从无声到满音量
+            if (typeof AudioSystem !== 'undefined') {
+                AudioSystem.bgm(this, 'bgm_SafeZone25');
+                if (AudioSystem._bgm) {
+                    AudioSystem._bgm.setVolume(0);
+                    this.tweens.add({ targets: AudioSystem._bgm, volume: AudioSystem.bgmVolume, duration: 3000 });
+                }
+            }
             this.cameras.main.shake(3000, 0.003);
         }
         // 2) 震动期间: shake 结束就重触发 (保持连续) + 每 0.20s 从 (49,6) 刷怪

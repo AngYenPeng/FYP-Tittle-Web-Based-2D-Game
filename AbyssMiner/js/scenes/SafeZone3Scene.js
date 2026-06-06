@@ -161,7 +161,8 @@ class SafeZone3Scene extends MainGameScene {
     }
 
     create() {
-        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone3');  // BGM (SafeZone3.mp3 放进 BGM/ 即生效)
+        // (用户) SZ3 BGM = Upper/Lower 双轨按附近 5 格皮肤占比交叉淡变 (见 _sz3BgmUpdate), 入场停旧 BGM
+        if (typeof AudioSystem !== 'undefined') AudioSystem.stopBGM();
 
         // pickaxeUpgraded — 从 registry 读 (跨场景有效, 刷新网页自动重置 — 暂无后台存档)
         this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
@@ -2171,7 +2172,61 @@ class SafeZone3Scene extends MainGameScene {
         this.ropeLength1 = 0; this.ropeLength2 = 0;
     }
 
+    // ── (用户) SZ3 双轨 BGM: yellowdirt 多→UpperHalf, 原皮 wall 多→LowerHalf; 满↔无各 5 秒; 附近都没有→维持上次 ──
+    _sz3BgmUpdate(time, delta) {
+        if (typeof AudioSystem === 'undefined' || !this.player) return;
+        // 轨道懒创建 (音频异步加载完成后 cache 才有) + 场景退出清理
+        if (!this._sz3Up && this.cache.audio.exists('bgm_SZ3_Upper')) { this._sz3Up = this.sound.add('bgm_SZ3_Upper', { loop: true, volume: 0 }); try { this._sz3Up.play(); } catch (e) {} }
+        if (!this._sz3Low && this.cache.audio.exists('bgm_SZ3_Lower')) { this._sz3Low = this.sound.add('bgm_SZ3_Lower', { loop: true, volume: 0 }); try { this._sz3Low.play(); } catch (e) {} }
+        if (!this._sz3BgmCleanHooked) {
+            this._sz3BgmCleanHooked = true;
+            this.events.once('shutdown', () => {
+                [this._sz3Up, this._sz3Low].forEach(snd => { if (snd) { try { snd.stop(); snd.destroy(); } catch (e) {} } });
+                this._sz3Up = this._sz3Low = null; this._sz3SkinWalls = null; this._sz3YellowSet = null; this._sz3BgmCleanHooked = false;
+            });
+        }
+        // 0.8s 一次占比判定
+        if (!this._sz3BgmNext || time >= this._sz3BgmNext) {
+            this._sz3BgmNext = time + 800;
+            if (!this._sz3SkinWalls) {   // 墙皮缓存 — create 换皮全部完成后建一次
+                this._sz3SkinWalls = [];
+                this._sz3YellowSet = new Set();   // (用户) 脚步声查询: 黄土格 'x,y'
+                this.children.list.forEach(o => {
+                    const k = o && o.texture && o.texture.key;
+                    if (!k) return;
+                    if (k.startsWith('Yellow_dirt_')) { this._sz3SkinWalls.push({ x: o.x, y: o.y, yl: true }); this._sz3YellowSet.add(o.x + ',' + o.y); }
+                    else if (k.startsWith('Cavetile_wall_')) this._sz3SkinWalls.push({ x: o.x, y: o.y, yl: false });
+                });
+            }
+            const R2 = 160 * 160;   // 5 格半径
+            let ny = 0, nc = 0;
+            const px = this.player.x, py = this.player.y;
+            for (let i = 0; i < this._sz3SkinWalls.length; i++) {
+                const w = this._sz3SkinWalls[i];
+                const dx = w.x - px, dy = w.y - py;
+                if (dx * dx + dy * dy > R2) continue;
+                if (w.yl) ny++; else nc++;
+            }
+            if (ny > nc) this._sz3BgmWant = 'up';
+            else if (ny < nc) this._sz3BgmWant = 'low';
+            // ny === nc (含两者皆 0) → 维持上次判定
+        }
+        // 每帧朝目标音量推进 (0↔满 各 5000ms; 目标实时跟随设置音量)
+        const maxV = AudioSystem.bgmVolume;
+        const step = (delta / 5000) * Math.max(0.0001, maxV);
+        const move = (snd, on) => {
+            if (!snd) return;
+            const tgt = on ? maxV : 0;
+            const v = snd.volume;
+            if (Math.abs(v - tgt) <= step) { if (v !== tgt) snd.setVolume(tgt); return; }
+            snd.setVolume(v + (tgt > v ? step : -step));
+        };
+        move(this._sz3Up,  this._sz3BgmWant === 'up');
+        move(this._sz3Low, this._sz3BgmWant === 'low');
+    }
+
     update(time, delta) {
+        this._sz3BgmUpdate(time, delta);
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 

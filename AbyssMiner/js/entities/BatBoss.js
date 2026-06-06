@@ -307,6 +307,7 @@ class BatBoss {
     }
 
     _spawnRing() {
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, Math.random() < 0.5 ? 'ForceWingsFlap' : 'ForceWingsFlap2');   // (用户) 冲击波音效 2选1 随机
         const g = this.scene.add.circle(this.x, this.y, 8, 0x66ccff, 0).setStrokeStyle(3, 0x88ddff, 0.9).setDepth(19);
         if (this.scene.uiCam) { try { this.scene.uiCam.ignore(g); } catch (e) {} }
         this._rings.push({ g, r: 8, cx: this.x, cy: this.y, hit: false });
@@ -459,6 +460,7 @@ class BatBoss {
         if (this._t >= this._chargeDur) {
             if (this._chargeFx) { try { this._chargeFx.destroy(); } catch (e) {} this._chargeFx = null; }
             this._setState('dash_go');
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'Bat_Dash');   // (用户) 冲刺音效
             this._dashHit = false;
             this._dashFromX = this.x; this._dashFromY = this.y;
             const spd = this._phase2 ? this.DASH_SPEED2 : this.DASH_SPEED;   // 冲刺速度 (跟小蝙蝠 480 不同)
@@ -495,6 +497,7 @@ class BatBoss {
         this._faceTowards(p.x);
         if (!this._roarStarted) {
             this._roarStarted = true;
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'Bat_Scream');   // (用户) 召唤钟乳石的咆哮音效
             // 咆哮 2s + 震动 2s
             if (this.scene.cameras && this.scene.cameras.main) {
                 try { this.scene.cameras.main.shake(2000, this.SHAKE_INTENSITY); } catch (e) {}
@@ -548,6 +551,12 @@ class BatBoss {
     takeDamage(dmg) {
         if (this.dead) return;
         this.hp = Math.max(0, this.hp - (dmg || 0));
+        // (用户) 受伤音效 2选1 随机, 两种共用 1 秒 CD
+        const _sfxNow = this.scene.time.now;
+        if (_sfxNow - (this._hurtSfxAt || 0) >= 1000) {
+            this._hurtSfxAt = _sfxNow;
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, Math.random() < 0.5 ? 'Bat_hurt' : 'Bat_hurt2');
+        }
         // 受击红闪
         if (this.sprite && this.sprite.setTint) {
             this.sprite.setTint(0xff5555);

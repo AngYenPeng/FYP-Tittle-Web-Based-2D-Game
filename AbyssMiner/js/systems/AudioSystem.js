@@ -73,6 +73,8 @@ class AudioSystem {
 
     // 播放循环 BGM (全局单例, 切场景自动停旧的). 同一首在播则不重启
     static bgm(scene, key, opts) {
+        // (用户) 切新 BGM 时顺手停掉 GameOver 短曲 (永久死亡→Hub 等场景切换兜底)
+        if (AudioSystem._gameOver && key && key !== 'bgm_GameOver') { try { AudioSystem._gameOver.stop(); } catch (e) {} AudioSystem._gameOver = null; }
         if (AudioSystem._bgmKey === key && AudioSystem._bgm && AudioSystem._bgm.isPlaying) return;
         AudioSystem.stopBGM();
         AudioSystem._bgmKey = key || null;
@@ -90,6 +92,19 @@ class AudioSystem {
             }
         } catch (e) {}
     }
+
+    // (用户) GameOver 短曲: 死亡瞬间播一遍; 复活守门 (HealthSystem/_sz25Respawn) 等它播完
+    static playGameOver(scene) {
+        try {
+            if (AudioSystem._gameOver) { try { AudioSystem._gameOver.stop(); AudioSystem._gameOver.destroy(); } catch (e) {} AudioSystem._gameOver = null; }
+            if (!scene || !scene.sound || !scene.cache.audio.exists('bgm_GameOver')) return;
+            const g = scene.sound.add('bgm_GameOver', { loop: false, volume: AudioSystem.bgmVolume });
+            AudioSystem._gameOver = g;
+            g.once('complete', () => { if (AudioSystem._gameOver === g) AudioSystem._gameOver = null; });
+            g.play();
+        } catch (e) {}
+    }
+    static gameOverPlaying() { return !!(AudioSystem._gameOver && AudioSystem._gameOver.isPlaying); }
 
     // 停止当前 BGM (跨场景, this.sound 是全局 SoundManager)
     static stopBGM() {
@@ -153,8 +168,41 @@ AudioSystem._shakePatched = false;
 
 // ---- 音频清单: key → audio/ 下的相对路径 ----
 AudioSystem.MANIFEST = {
+    // (用户) BatBoss 音效 (.wav, audio/Batboss/)
+    'Bat_Dash':           'Batboss/Bat_Dash.wav',
+    'Bat_Death':          'Batboss/Bat_Death.wav',
+    'Bat_Scream':         'Batboss/Bat_Scream.wav',
+    'ForceWingsFlap':     'Batboss/ForceWingsFlap.wav',
+    'ForceWingsFlap2':    'Batboss/ForceWingsFlap2.wav',
+    'Stalactite_Shatter': 'Batboss/Stalactite_Shatter.wav',
+    'Bat_hurt':           'Batboss/Bat_hurt.wav',
+    'Bat_hurt2':          'Batboss/Bat_hurt2.wav',
+    // (用户) Miner 音效 (.wav, audio/Miner/)
+    'Dash':              'Miner/Dash.wav',
+    'DrinkPotion':       'Miner/DrinkPotion.wav',
+    'Death_Grow':        'Miner/Death_Grow.wav',
+    'EatPills':          'Miner/EatPills.wav',
+    'EnteringEntrance':  'Miner/EnteringEntrance.wav',
+    'GrassCrouch':       'Miner/GrassCrouch.wav',
+    'GrassRun':          'Miner/GrassRun.wav',
+    'LoseALife':         'Miner/LoseALife.wav',
+    'Pickup1':           'Miner/Pickup1.wav',
+    'Pickup2':           'Miner/Pickup2.wav',
+    'ThrowGrappler':     'Miner/ThrowGrappler.wav',
+    // (用户) Mobs 音效 (.wav, audio/Mobs/)
+    'Earthworm_Death':   'Mobs/Earthworm_Death.wav',
+    'Earthworm_Hurt':    'Mobs/Earthworm_Hurt.wav',
+    'Beetle_Death':      'Mobs/Beetle_Death.wav',
+    'Beetle_Hurt':       'Mobs/Beetle_Hurt.wav',
+    // (用户) 商店音效 (.wav, audio/TraderShop/)
+    'Buy':               'TraderShop/Buy.wav',
+    'CantBuy':           'TraderShop/CantBuy.wav',
     // BGM (key 加 bgm_ 前缀避免与音效冲突)
     'bgm_BatBossFight':   'BGM/BatBossFight.mp3',
+    'bgm_GameOver':       'BGM/GameOver.mp3',
+    'bgm_SafeZone25':     'BGM/SafeZone2.5.mp3',
+    'bgm_SZ3_Upper':      'BGM/SafeZone3_UpperHalf.mp3',
+    'bgm_SZ3_Lower':      'BGM/SafeZone3_LowerHalf.mp3',
     'bgm_GolemBossFight': 'BGM/GolemBossFight.mp3',
     'bgm_SafeZone1':      'BGM/SafeZone1.mp3',
     'bgm_SafeZone2':      'BGM/SafeZone2.mp3',

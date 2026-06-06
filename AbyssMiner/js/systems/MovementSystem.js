@@ -32,7 +32,14 @@ class MovementSystem {
                 s._petSpider.update(time, delta);
             }
             const _movingX = _grounded && Math.abs(_b.velocity.x) > 40 && !s.isDead;
-            const _wantKey = _movingX ? (s.isCrouching ? 'CrouchWalking' : 'Walking') : null;
+            // (用户) 踩 yellowdirt → 草地脚步声; 原皮 wall/platform → 旧音效
+            let _onYellow = false;
+            if (s._sz3YellowSet && s.player && s.player.body) {
+                const _fx = Math.floor(s.player.x / 32) * 32 + 16;
+                const _fy = Math.floor((s.player.body.bottom + 2) / 32) * 32 + 16;
+                _onYellow = s._sz3YellowSet.has(_fx + ',' + _fy);
+            }
+            const _wantKey = _movingX ? (s.isCrouching ? (_onYellow ? 'GrassCrouch' : 'CrouchWalking') : (_onYellow ? 'GrassRun' : 'Walking')) : null;
             if (s._stepKey !== _wantKey) {
                 if (s._stepSnd) { try { s._stepSnd.stop(); s._stepSnd.destroy(); } catch (e) {} s._stepSnd = null; }
                 s._stepKey = _wantKey;

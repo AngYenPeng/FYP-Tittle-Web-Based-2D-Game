@@ -107,6 +107,7 @@ class HardrockBeetle extends Phaser.Physics.Arcade.Sprite {
     takeDamage(amount) {
         if (this.hp <= 0) return;
         this.hp -= amount;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, this.hp > 0 ? 'Beetle_Hurt' : 'Beetle_Death');   // (用户) 受伤/死亡音效
         this.forceAggroTimer = 5000;
         // 受击红色（甲虫不击退）
         this.setTint(0xff0000);

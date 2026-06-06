@@ -216,6 +216,7 @@ class Stalactite {
         if (this._done) return;
         this._done = true;
         const s = this.scene;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Stalactite_Shatter');   // (用户) 落地碎裂音效 (几个落地几声)
         const ix = this.sprite ? this.sprite.x : this.x;
         const iy = this.sprite ? this.sprite.y : this.groundY;
         if (this.sprite) { try { this.sprite.destroy(); } catch (e) {} this.sprite = null; }

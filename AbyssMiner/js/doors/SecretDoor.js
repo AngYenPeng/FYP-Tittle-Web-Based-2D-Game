@@ -191,6 +191,7 @@ class SecretDoor {
             }
             if (scene.diseaseSystem) data.corrosionPct = scene.diseaseSystem.corrosionPct;
 
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(scene, 'EnteringEntrance');   // (用户) 进暗门音效
             scene.scene.start(targetScene, data);
         });
     }

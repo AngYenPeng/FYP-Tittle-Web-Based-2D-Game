@@ -17,6 +17,7 @@ class DashSystem {
         s.dashCooldown = (0.3 + Math.max(0, 0.9 - interval)) * 1000;
 
         s.isDashing = true;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Dash');   // (用户) 冲刺音效, 一次一播
         s.lastDashTime = now;
 
         // 【贴墙判定】检测面向方向 1px 内是否紧贴墙：贴墙→速度0（原地冲刺无敌+CD），不贴墙→正常冲刺

@@ -667,6 +667,7 @@ class SafeZone4Scene extends MainGameScene {
                 const lx = (data && data.x != null) ? data.x : (boss ? boss.x : 0);
                 const ly = (data && data.y != null) ? data.y : (boss ? boss.y : 0);
                 // #6 最后咆哮 1 秒: 震屏 1s, 不掉钟乳石
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Bat_Death');   // (用户) 死亡音效 (最后咆哮→死亡)
                 if (this.cameras && this.cameras.main) this.cameras.main.shake(1000, 0.012);
                 if (boss && boss.sprite) {
                     // (用户) 死亡咆哮配 Bat_boss_roar (播完定格末帧当瘫软); 小蝙蝠 fallback 皮才用 bat_injuried
@@ -696,7 +697,7 @@ class SafeZone4Scene extends MainGameScene {
                     }
                     // boss 坠机: 开重力下落, update 里检测撞 cavetilewall 落地
                     if (boss && boss.sprite && boss.sprite.body) {
-                        if (this.anims.exists('bat_dead')) boss.sprite.play('bat_dead', true);
+                        // (用户) 坠机不再播死亡动画 — 保持咆哮定格的末帧姿态下坠
                         boss.sprite.body.setAllowGravity(true);
                         boss.sprite.body.setVelocity(0, 100);
                         this._batBossCrashing = true;

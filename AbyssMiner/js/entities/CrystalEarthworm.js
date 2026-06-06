@@ -165,6 +165,7 @@ class CrystalEarthworm extends Phaser.Physics.Arcade.Sprite {
         if (this.state === 'hidden') this._finishSurface();
 
         this.hp -= amount;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, this.hp > 0 ? 'Earthworm_Hurt' : 'Earthworm_Death');   // (用户) 受伤/死亡音效
         this.forceAggroTimer = 5000;
         if (srcX !== undefined) {
             let d = this.x >= srcX ? 1 : -1;

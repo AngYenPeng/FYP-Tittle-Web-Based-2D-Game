@@ -255,7 +255,7 @@ class ShopSystem {
             return;
         }
         s.hudSystem.spendCrystal(item.price);
-        s.inventorySystem.addItem(item.id, 1);
+        s.inventorySystem.addItem(item.id, 1, { silent: true });   // (用户) 购买不是拾取, 不播 Pickup
         // 防御性: 强制刷新右下角 hotbar (修 UI 偶尔不同步的 bug)
         if (s.backpackSystem && s.backpackSystem.refreshQuick) {
             s.backpackSystem.refreshQuick();
@@ -273,6 +273,8 @@ class ShopSystem {
 
     _flashMessage(text, hexColor) {
         const s = this.scene;
+        // (用户) 红=交易失败→CantBuy, 绿=购买成功→Buy; 速度 ×2
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, hexColor === 0xff4444 ? 'CantBuy' : 'Buy', { rate: 2 });
         let cx = s.cameras.main.width / 2;
         let cy = s.cameras.main.height / 2;
         let cssColor = '#' + hexColor.toString(16).padStart(6, '0');

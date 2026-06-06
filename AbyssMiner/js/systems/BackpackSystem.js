@@ -333,13 +333,14 @@ class BackpackSystem {
 
         if (qs.type === 'healing_potion') {
             if (s.healthSystem.canHeal()) {
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'DrinkPotion');   // (用户) 治疗药水音效
                 s.healthSystem.heal(1);
                 this._consumeFromInventory(qs.type, 1);
                 this.refreshQuick();
                 this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000);
             } else {
                 s.hudSystem.showConfirm('You are already at full HP — no effect.', (yes) => {
-                    if (yes) { this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000); }
+                    if (yes) { if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'DrinkPotion'); this._consumeFromInventory(qs.type, 1); this.refreshQuick(); this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000); }
                 });
             }
         } else if (qs.type === 'health_potion') {
@@ -347,6 +348,7 @@ class BackpackSystem {
             const apply = () => {
                 s._diseaseImmuneUntil = now + 30000;   // (用户) 健康药水免疫 60s → 30s
                 if (s.diseaseSystem && s.diseaseSystem.cure) s.diseaseSystem.cure();
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'EatPills');   // (用户) 健康药水音效
                 this._consumeFromInventory(qs.type, 1);
                 this.refreshQuick();
                 this.startCooldown(window.AbyssDiff ? AbyssDiff.get().potionCd : 60000);

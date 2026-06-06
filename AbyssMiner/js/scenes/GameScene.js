@@ -981,6 +981,7 @@ class MainGameScene extends Phaser.Scene {
     }
 
     _deathShowHearts(n, onComplete) {
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'LoseALife');   // (用户) 爱心列队出现瞬间
         const cam = this.cameras.main;
         const cw = cam.width, ch = cam.height;
         const spacing = 128;   // (用户) 爱心放大 2 倍, 间距同步翻倍

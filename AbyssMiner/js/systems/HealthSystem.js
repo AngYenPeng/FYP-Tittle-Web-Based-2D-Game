@@ -195,6 +195,8 @@ class HealthSystem {
         s.isDead = true;
         s.isPlayerStunned = true;
         s.isPlayerInvincible = true;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.playGameOver(s);   // (用户) 死亡 BGM, 复活守门等它播完
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Death_Grow');   // (用户) 死亡瞬间音效
         if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 死亡清侵蚀/中毒 — 修复复活后无限扣血
 
         if (s.player) {
@@ -242,6 +244,14 @@ class HealthSystem {
 
     /** 5 秒倒计时结束 → 复活在最新存档点 */
     _doRespawnAtCheckpoint() {
+        // (用户) GameOver BGM 要完整播完才复活 — 没播完则等 complete 再走 (死亡总时长 = max(动画, 曲长))
+        if (typeof AudioSystem !== 'undefined' && AudioSystem.gameOverPlaying && AudioSystem.gameOverPlaying()) {
+            if (!this._gameOverWait) {
+                this._gameOverWait = true;
+                AudioSystem._gameOver.once('complete', () => { this._gameOverWait = false; this._doRespawnAtCheckpoint(); });
+            }
+            return;
+        }
         const s = this.scene;
         // 优先用激活的 checkpoint, 否则用 spawn 点
         const spawnX = (s._activeCheckpoint && s._activeCheckpoint.x !== undefined) ? s._activeCheckpoint.x : s.spawnX;
@@ -304,6 +314,8 @@ class HealthSystem {
         this.isDead = true;
         const s = this.scene;
         s.isDead = true;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.playGameOver(s);   // (用户) 永久死亡同样播 (回 Hub 换 BGM 时自动停)
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Death_Grow');   // (用户) 死亡瞬间音效
         s.isPlayerStunned = true;
         if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 永久死亡同样清侵蚀/中毒
 

@@ -59,6 +59,7 @@ class ThrowSystem {
         // 获取鼠标在世界中的真实绝对坐标
         let worldPoint = s.cameras.main.getWorldPoint(pointer.x, pointer.y);
 
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'ThrowGrappler', { volume: AudioSystem.sfxVolume * 2 });   // (用户) 投掷音效, 音量翻倍
         // 抛出动能 1800 — 扫掠检测保证不穿墙
         pick.fire(
             s.player.x, s.player.y,

@@ -100,7 +100,8 @@ class InventorySystem {
      * 添加物品（购买时调用）
      * @returns true=成功  false=背包满
      */
-    addItem(type, count = 1) {
+    addItem(type, count = 1, opts) {
+        const _req = count;
         // 先尝试堆叠到同种类（除铁镐外）
         if (type !== 'pickaxe') {
             for (let i = 0; i < this.SLOT_COUNT; i++) {
@@ -109,7 +110,7 @@ class InventorySystem {
                     let canAdd = Math.min(count, 64 - s.count);
                     s.count += canAdd;
                     count -= canAdd;
-                    if (count === 0) { this.refresh(); return true; }
+                    if (count === 0) { this.refresh(); this._pickupSfx(opts); return true; }
                 }
             }
         }
@@ -126,7 +127,14 @@ class InventorySystem {
             }
         }
         this.refresh();
+        if (_req - count > 0) this._pickupSfx(opts);
         return count === 0;
+    }
+
+    // (用户) 拾取音效 2选1 随机, 无 CD; opts.silent 跳过 (商店购买等非拾取入口)
+    _pickupSfx(opts) {
+        if (opts && opts.silent) return;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, Math.random() < 0.5 ? 'Pickup1' : 'Pickup2');
     }
 
     /** 背包是否还有空间装此物品 */
