@@ -1003,9 +1003,9 @@ class TutorialScene extends MainGameScene {
         // 检测石堆（用 StoneDoor entity 的 takeHit）
         if (this._stoneRubble && !this._stoneRubble.destroyed) {
             let sr = this._stoneRubble;
-            let dx = sr.x - px, dy = sr.y - py;
-            if (dx * dx + dy * dy <= RANGE * RANGE && ((facingRight && dx > 0) || (!facingRight && dx < 0))) {
+            if (MeleeSystem.inObjectRange(this, sr.x, sr.y)) {   // (用户) 原严格前方 dx>0: 背后0容差+贴脸dx≈0判空 → 统一共享判定
                 sr.takeHit();
+                if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
                 if (typeof MeleeSystem !== 'undefined') {
                     MeleeSystem.playSlashEffect(this, sr.sprite || sr, px, py);
                 }
@@ -1016,9 +1016,9 @@ class TutorialScene extends MainGameScene {
         if (this._crystalOres) {
             this._crystalOres.forEach(ore => {
                 if (ore.destroyed) return;
-                let dx = ore.x - px, dy = ore.y - py;
-                if (dx * dx + dy * dy <= RANGE * RANGE && ((facingRight && dx > 0) || (!facingRight && dx < 0))) {
+                if (MeleeSystem.inObjectRange(this, ore.x, ore.y)) {   // (用户) 同上, 统一共享判定
                     ore.takeHit(3.5);
+                    if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
                     if (typeof MeleeSystem !== 'undefined') {
                         MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);
                     }

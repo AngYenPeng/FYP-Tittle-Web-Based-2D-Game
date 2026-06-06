@@ -2639,6 +2639,7 @@ class SafeZone3Scene extends MainGameScene {
             if (facingRight && dx < -BACK) return;
             if (!facingRight && dx > BACK) return;
             ore.takeHit(3.5);
+            if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
             if (typeof MeleeSystem !== 'undefined') {
                 MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);
             }

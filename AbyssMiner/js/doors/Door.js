@@ -33,6 +33,7 @@ class Door {
         if (scene.gridSystem) {
             scene.gridSystem.markRect(x, y, w, h, GridSystem.DOOR);
         }
+
     }
 
     /** 标记打开（仅 opened 标志），子类决定何时调用 _finalizeOpen 移除碰撞 */

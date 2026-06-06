@@ -462,6 +462,12 @@ class MainGameScene extends Phaser.Scene {
                 // 防穿模 + 一定落地 — raycast 向下找 floor:
                 // 没 floor → drop 回怪物原位; 有 floor → 总是钉到 floor 顶上
                 if (this.wallRects) {
+                    // (用户) 贴墙穿模修复 ①: 落点 X 若伸进同高度侧墙体内 → 先水平挤出 (水晶半宽 10)
+                    for (const w of this.wallRects) {
+                        if (w.bottom > my - 14 && w.top < my + 14 && targetX > w.left - 10 && targetX < w.right + 10) {
+                            targetX = (mx <= (w.left + w.right) / 2) ? w.left - 10 : w.right + 10;
+                        }
+                    }
                     let nearestFloorY = Infinity;
                     for (const w of this.wallRects) {
                         if (targetX >= w.left && targetX <= w.right && w.top >= my - 4) {
@@ -473,8 +479,14 @@ class MainGameScene extends Phaser.Scene {
                         targetX = mx;
                         targetY = my;
                     } else {
-                        // 找到 floor → 总是钉 floor 顶 (不允许半空)
-                        targetY = nearestFloorY - 4;
+                        // 找到 floor → 钉 floor 顶, 半高 10 + 2px 余量 (原 -4 会嵌进地里 6px)
+                        targetY = nearestFloorY - 12;
+                    }
+                    // (用户) 贴墙穿模修复 ②: 最终位置仍与任何墙重叠 → 回方块原位 (刚打掉的格子必为空气)
+                    for (const w of this.wallRects) {
+                        if (targetX > w.left - 10 && targetX < w.right + 10 && targetY > w.top - 10 && targetY < w.bottom + 10) {
+                            targetX = mx; targetY = my; break;
+                        }
                     }
                 }
 

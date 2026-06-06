@@ -59,9 +59,9 @@ class DialogSystem {
         const bg = s.add.rectangle(0, 0, PW, PH, 0x0a0a18, 0.95)
             .setStrokeStyle(2, 0x6688aa);
         // 说话人名牌（更大）
-        this._speakerBg = s.add.rectangle(-PW / 2 + 110, -PH / 2 - 22, 220, 48, 0x1a1a2e, 1)
+        this._speakerBg = s.add.rectangle(-PW / 2 + 110, -PH / 2 - 24, 220, 48, 0x1a1a2e, 1)   // (用户) 名字框上移 2px
             .setStrokeStyle(2, 0x6688aa);
-        this._speakerText = s.add.text(-PW / 2 + 110, -PH / 2 - 22, '', {
+        this._speakerText = s.add.text(-PW / 2 + 110, -PH / 2 - 24, '', {   // (用户) 随名字框上移 2px
             fontSize: '36px', color: '#ffcc55', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 4,
             resolution: 2

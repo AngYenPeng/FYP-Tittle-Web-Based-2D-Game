@@ -20,6 +20,21 @@ class MeleeSystem {
     }
 
     /** 在 target hitbox 最靠近玩家的点显示 melee_attack_slash 特效 */
+    /** (用户) 共享物件命中判定 — 与 _dealDamage 的 inMeleeRange 完全同规:
+     *  圆心 (player.x, player.y+16), 半径 RANGE, 上下 ±(RANGE-32), 后方 BACK=40 (半身+0.5格) */
+    static inObjectRange(s, mx, my) {
+        if (!s || !s.player) return false;
+        const R = (s.meleeSystem && s.meleeSystem.RANGE) || 100;
+        const cx = s.player.x, cy = s.player.y + 16;
+        const dx = mx - cx, dy = my - cy;
+        if (dx * dx + dy * dy > R * R) return false;
+        if (Math.abs(dy) > R - 32) return false;
+        const facingRight = !s.player.flipX;
+        if (facingRight && dx < -40) return false;
+        if (!facingRight && dx > 40) return false;
+        return true;
+    }
+
     static playSlashEffect(scene, target, playerX, playerY) {
         if (!scene || !target || !scene.anims.exists('melee_attack_slash')) return;
         // 取 target hitbox
@@ -46,6 +61,7 @@ class MeleeSystem {
         slash.setFlipX(playerX > targetCenterX);
         slash.play('melee_attack_slash');
         slash.once('animationcomplete', () => slash.destroy());
+        (scene._fogPierceFx = scene._fogPierceFx || []).push(slash);   // (用户) 登记: 雾层在特效位置打洞
         if (scene.uiCam) {
             try { scene.uiCam.ignore(slash); } catch(e) {}
         }
@@ -99,8 +115,12 @@ class MeleeSystem {
         // 命中判定 + 伤害
         this._swingHit = false;
         this._dealDamage(facingRight);
-        // (用户) 挥稿音效: 命中 PickaxeHitThings / 挥空 PickaxeHitAir (共享系统 → 全场景生效)
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, this._swingHit ? 'PickaxeHitThings' : 'PickaxeHitAir', { volume: 0.5 });
+        // (用户) 挥稿音效规则: 打到"有反应"的东西才算命中 (石堆掉耐久/矿闪红/怪掉血);
+        //   KeyDoor·CrystalDoor·碎后残渣无反应 = 挥空音. 延迟一拍播放 —
+        //   场景旁路判定 (T1 石堆 / SZ 水晶矿) 在 execute() 之后同帧跑, 等它们回写 _swingHit 再定音色
+        s.time.delayedCall(0, () => {
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, this._swingHit ? 'PickaxeHitThings' : 'PickaxeHitAir', { volume: 0.5 });
+        });
         return true;
     }
 

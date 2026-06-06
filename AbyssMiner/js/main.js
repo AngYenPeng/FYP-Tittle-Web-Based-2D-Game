@@ -130,13 +130,21 @@ game.events.once('ready', () => {
 
     // (用户) 指针移出画面范围 (全屏黑边等) 时精灵会跟到镜头外 + canvas cursor:none → 两头都看不见.
     //   全局每帧把准星钳在画面边缘内: 越界时钉在边上保持可见 (标准游戏做法), 覆盖所有场景/缩放
-    game.events.on('step', () => {
+    game.events.on('step', (t, dt) => {
         const sc0 = game.scene.getScenes(true)[0];
         const ch = sc0 && sc0.crosshair;
         if (ch && ch.active) {
             const W = game.scale.width, H = game.scale.height;
             if (ch.x < 8) ch.x = 8; else if (ch.x > W - 8) ch.x = W - 8;
             if (ch.y < 8) ch.y = 8; else if (ch.y > H - 8) ch.y = H - 8;
+            // (用户) 自愈 1: 交接标志最长 1.5s — 清除定时器若被场景切换杀掉, 标志卡死会永久藏精灵
+            if (sc0._cssCursorOverlap) {
+                sc0._overlapMs = (sc0._overlapMs || 0) + (dt || 16);
+                if (sc0._overlapMs > 1500) { sc0._cssCursorOverlap = false; sc0._overlapMs = 0; }
+            } else sc0._overlapMs = 0;
+            // (用户) 自愈 2: 不在交接期却被藏 → 强制拉回可见 (未知藏匿路径的总兜底)
+            if (!sc0._cssCursorOverlap && !ch.visible) ch.setVisible(true);
+            if (ch.alpha < 1) ch.setAlpha(1);   // 自愈 3: 被透明化也拉回
         }
     });
 });

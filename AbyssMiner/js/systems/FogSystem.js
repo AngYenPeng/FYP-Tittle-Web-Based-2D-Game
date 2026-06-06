@@ -64,6 +64,19 @@ class FogSystem {
         this.gfx.setDepth(810);
         this.gfx.setPosition(this.originX, this.originY);   // fillRect 用网格本地坐标, 整体平移到原点
 
+        // (用户) 雾层打洞: 玩家+攻击特效所在圆内雾不渲染 → 等效"只对雾置顶", 不改任何深度关系.
+        //   反向 GeometryMask 仅 WebGL 生效; Canvas 渲染器下反向不支持 → 不启用 (保持原样)
+        this._pierceOk = false;
+        try {
+            if (scene.game && scene.game.renderer && scene.game.renderer.type === Phaser.WEBGL) {
+                this._pierceGfx = scene.make.graphics({}, false);   // 不进显示列表, 纯遮罩几何 (世界坐标)
+                this._pierceMask = this._pierceGfx.createGeometryMask();
+                this._pierceMask.setInvertAlpha(true);
+                this.gfx.setMask(this._pierceMask);
+                this._pierceOk = true;
+            }
+        } catch (e) {}
+
         // (用户) 性能重构: 渐变不再逐格重画 — 改用径向渐变贴图做反向遮罩 (BitmapMask invertAlpha),
         // 每帧只移动遮罩精灵; 渐变层本身只画"当前连通区=统一最暗 0.40", 由遮罩在玩家周围抠亮.
         this.gradGfx = scene.add.graphics();
@@ -273,6 +286,21 @@ class FogSystem {
     update(playerX, playerY) {
         if (this.enabled === false) return;
         if (this._maskImg) this._maskImg.setPosition(playerX, playerY);   // 每帧只有这一个精灵位移
+        // (用户) 每帧重画打洞圆: 玩家全身 + 场景登记的活跃攻击特效 (失效自动剔除)
+        if (this._pierceOk) {
+            const g = this._pierceGfx;
+            g.clear();
+            g.fillStyle(0xffffff, 1);
+            g.fillCircle(playerX, playerY, 76);
+            const fx = this.scene._fogPierceFx;
+            if (fx && fx.length) {
+                for (let i = fx.length - 1; i >= 0; i--) {
+                    const o = fx[i];
+                    if (!o || !o.active) { fx.splice(i, 1); continue; }
+                    g.fillCircle(o.x, o.y, 56);
+                }
+            }
+        }
         const col = Math.floor((playerX - this.originX) / this.cellSize);
         const row = Math.floor((playerY - this.originY) / this.cellSize);
         if (col !== this.lastPlayerCol || row !== this.lastPlayerRow) {

@@ -1195,6 +1195,7 @@ class SafeZone4Scene extends MainGameScene {
             if (facingRight && dx < -BACK) return;
             if (!facingRight && dx > BACK) return;
             ore.takeHit(3.5);
+            if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
             if (typeof MeleeSystem !== 'undefined') {
                 MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);
             }
@@ -1320,7 +1321,10 @@ class SafeZone4Scene extends MainGameScene {
                     if (this.anims.exists('idle')) this.player.play('idle', true);
                 });
             }
-            if (crystal && !crystal.destroyed && crystal.takeHit) crystal.takeHit(4);
+            if (crystal && !crystal.destroyed && crystal.takeHit) {
+                crystal.takeHit(4);
+                if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
+            }
         };
         // (用户) 靠近后先等 1 秒, 然后每 0.5 秒打 1 下 (第3下破坏 → CrystalBlock._destroy 自动掉落水晶, 玩家就地拾取)
         this.time.delayedCall(1000, hit);
