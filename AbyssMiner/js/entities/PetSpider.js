@@ -38,6 +38,17 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         if (scene.uiCam) { try { scene.uiCam.ignore(this); } catch (e) {} }
     }
 
+    /** (用户) 静止姿态: 有 idle 动画就播, 没有就停在站立帧 (run 第 0 帧) */
+    _idlePose() {
+        if (!this.anims) return;
+        if (this.scene && this.scene.anims.exists('small_spider_idle')) {
+            if (!this.anims.currentAnim || this.anims.currentAnim.key !== 'small_spider_idle') this.play('small_spider_idle');
+        } else {
+            this.anims.stop();
+            this.setFrame(0);
+        }
+    }
+
     /** 从头顶掉下来 (仅 MovementSystem 在玩家落地高度 >3 格时调用) */
     dismount() {
         if (this.state !== 'mounted') return;
@@ -55,8 +66,9 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
 
         // ── mounted: 锁在头顶 ──
         if (this.state === 'mounted') {
-            this.x = p.x;
-            this.y = p.body.top - 6;
+            const fx = p.flipX ? 1 : -1;        // (用户) 面右 → 左移 8px; 面左 → 右移 8px (坐头顶偏后)
+            this.x = p.x + fx * 8;
+            this.y = p.body.top - 1;            // (用户) 较原位再下移 5px
             this.setFlipX(p.flipX);
             return;
         }
@@ -82,7 +94,7 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         if (this.state === 'idle') {
             if (this._climbSide) { this._climbSide = null; b.setAllowGravity(true); }   // 在墙上则自然落地
             b.setVelocityX(0);
-            if (this.anims) this.anims.pause();
+            this._idlePose();
             // 玩家站着不动累计 5s → 爬上头
             const pb = p.body;
             const pStill = (pb.blocked.down || pb.touching.down) &&
@@ -93,13 +105,16 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
                 this._stillMs = 0;
                 this._climbSide = null;
                 b.enable = false;   // 头顶期间不参与物理
-                if (this.anims) this.anims.pause();   // (用户) 上头后不再动, 只跟随朝向, 掉下来才恢复
+                this._idlePose();   // (用户) 上头后不再动, 只跟随朝向, 掉下来才恢复
             }
             return;
         }
 
         // ── follow ──
-        if (this.anims) this.anims.resume();
+        if (this.anims && this.scene.anims.exists('small_spider_run') &&
+            (!this.anims.currentAnim || this.anims.currentAnim.key !== 'small_spider_run' || !this.anims.isPlaying)) {
+            this.play('small_spider_run');
+        }
         const dir = dx >= 0 ? 1 : -1;
         const wallAhead = (dir > 0 && b.blocked.right) || (dir < 0 && b.blocked.left);
 

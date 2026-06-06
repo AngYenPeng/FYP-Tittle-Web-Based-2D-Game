@@ -4,7 +4,7 @@
 class HUDSystem {
     constructor(scene) {
         this.scene = scene;
-        this.crystalCount = 0; // (用户) 开局水晶归零 (测试期曾给 1000)
+        this.crystalCount = 1000; // (用户) 开局水晶归零 (测试期曾给 1000)
         this.crystalIcon = null;
         this.crystalText = null;
         this.yellowCrystalCount = 0;  // (用户) 黄水晶归零 (测试期曾给 100)
