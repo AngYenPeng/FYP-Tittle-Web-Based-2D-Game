@@ -442,13 +442,30 @@ class SafeZone1Scene extends MainGameScene {
                 const radius = 5 + Math.random() * 10;
                 let targetX = mx + Math.cos(angle) * radius;
                 let targetY = my + Math.sin(angle) * radius;
-                // 防穿模：检查 targetX,targetY 是否在墙内
+                // (用户) 防穿模 v2 — 与 GameScene 同源:
                 if (this.wallRects) {
+                    // ① 落点 X 若伸进同高度侧墙体内 → 先水平挤出 (水晶半宽 10)
                     for (const w of this.wallRects) {
-                        if (targetX >= w.left && targetX <= w.right &&
-                            targetY >= w.top && targetY <= w.bottom) {
-                            targetY = w.top - 1;
-                            break;
+                        if (w.bottom > my - 14 && w.top < my + 14 && targetX > w.left - 10 && targetX < w.right + 10) {
+                            targetX = (mx <= (w.left + w.right) / 2) ? w.left - 10 : w.right + 10;
+                        }
+                    }
+                    // ② 垂直 raycast 找地板, 钉地板顶 (半高 10 + 2px 余量)
+                    let nearestFloorY = Infinity;
+                    for (const w of this.wallRects) {
+                        if (targetX >= w.left && targetX <= w.right && w.top >= my - 4) {
+                            if (w.top < nearestFloorY) nearestFloorY = w.top;
+                        }
+                    }
+                    if (nearestFloorY === Infinity) {
+                        targetX = mx; targetY = my;   // 该 X 列没地板 → 回方块原位
+                    } else {
+                        targetY = nearestFloorY - 12;
+                    }
+                    // ③ 最终保险: 仍与任何墙重叠 → 回方块原位 (刚打掉的格子必为空气)
+                    for (const w of this.wallRects) {
+                        if (targetX > w.left - 10 && targetX < w.right + 10 && targetY > w.top - 10 && targetY < w.bottom + 10) {
+                            targetX = mx; targetY = my; break;
                         }
                     }
                 }
@@ -2165,14 +2182,14 @@ class SafeZone1Scene extends MainGameScene {
             _spawnCrystalZone6(83, -31);
             _spawnCrystalZone6(86, -31);
             _spawnCrystalZone6(88, -5);
-            // === level_1779789581247.json — 44 个额外水晶 ===
+            // === level_1779789581247.json — 43 个额外水晶 ((39,-19) 与显式生成重复, 已删) ===
             const _jsonCrystals = [
                 [47, -55], [50, -53], [57, -52], [70, -52], [76, -51], [81, -49],
                 [49, -61], [59, -62], [69, -61], [76, -62], [83, -59], [89, -54],
                 [85, -41], [81, -38], [67, -39], [63, -44], [55, -45], [44, -41],
                 [40, -30], [57, -29], [46, -34], [51, -32],
                 [43, -13], [56, -10], [59, -21], [66, -23], [74, -21],
-                [81, -25], [87, -25], [80, -19], [39, -19],
+                [81, -25], [87, -25], [80, -19],
                 [20, -22], [31, -28], [23, -32], [14, -34], [5, -32], [-2, -31],
                 [4, -18], [12, -18], [16, -14], [6, -9],
                 [88, -11], [84, -15], [79, -12]

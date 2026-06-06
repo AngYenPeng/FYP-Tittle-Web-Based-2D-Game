@@ -20,7 +20,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         // 不用 setDisplaySize — 帧本来就 32×32, 尺寸由 anim 帧驱动
 
         this.state = 'idle'; this.hp = Math.ceil(3 * (window.AbyssDiff ? AbyssDiff.get().hpMul : 1));   // (用户) 3 击打死 → dead 动画 (melee 对水晶是无参 takeDamage, 一击一滴)
-        this.triggerRadius = 110; this.explodeRadius = 140;
+        this.triggerRadius = 110; this.explodeRadius = 70;   // (用户) 爆炸范围减半 (140 → 70)
         this.blinkTimer = 0; this.fuseTime = 2000;
         this.fuseTimer = 0; this.hasExploded = false;
         this._dying = false;
@@ -92,8 +92,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
         // (用户) 视觉: 播完 explode 表再销毁 — 旧版 play 完同帧 destroy, 爆炸动画从来没人看见过
         if (this.scene.anims.exists('volatile_crystal_explode')) {
             this.clearTint();
-            this.setScale(1.3);
-            this.y += 16;   // (用户) 爆炸动画下移 16px (伤害中心已按原坐标结算)
+            this.setScale((this.explodeRadius * 2) / 32);   // (用户) 爆炸表完整覆盖伤害半径: 帧 32px → 直径 2R, 中心对齐伤害圆心
             this.play('volatile_crystal_explode');
             this.once('animationcomplete-volatile_crystal_explode', () => { if (this.scene && this.active) this.destroy(); });
             this.scene.time.delayedCall(600, () => { if (this.scene && this.active) this.destroy(); });   // 兜底

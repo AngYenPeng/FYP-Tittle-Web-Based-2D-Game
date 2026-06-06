@@ -476,6 +476,7 @@ class SafeZone25Scene extends SafeZone3Scene {
 
         // 冻结玩家 + 无敌 + 停震动
         hs.isDead = true; this.isDead = true;
+        if (this._freezeMonstersOnDeath) this._freezeMonstersOnDeath();   // (用户) 怪物速度清零, 防死后滑行/飞出
         this.isPlayerStunned = true; this.isPlayerInvincible = true;
         if (this.cameras.main.shakeEffect && this.cameras.main.shakeEffect.reset) {
             this.cameras.main.shakeEffect.reset();

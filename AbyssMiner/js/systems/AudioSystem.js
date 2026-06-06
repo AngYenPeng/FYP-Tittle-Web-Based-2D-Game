@@ -99,7 +99,7 @@ class AudioSystem {
         try {
             if (AudioSystem._gameOver) { try { AudioSystem._gameOver.stop(); AudioSystem._gameOver.destroy(); } catch (e) {} AudioSystem._gameOver = null; }
             if (!scene || !scene.sound || !scene.cache.audio.exists('bgm_GameOver')) return;
-            const g = scene.sound.add('bgm_GameOver', { loop: false, volume: AudioSystem.bgmVolume });
+            const g = scene.sound.add('bgm_GameOver', { loop: false, volume: AudioSystem.bgmVolume, rate: 2 });   // (用户) 2 倍速 — 时长减半; 爱心动画是实时 tween 不受影响, 碎完仍等曲终才复活
             AudioSystem._gameOver = g;
             g.once('complete', () => { if (AudioSystem._gameOver === g) AudioSystem._gameOver = null; });
             g.play();

@@ -193,6 +193,7 @@ class HealthSystem {
         const s = this.scene;
         this.isDead = true;
         s.isDead = true;
+        if (s._freezeMonstersOnDeath) s._freezeMonstersOnDeath();   // (用户) 怪物速度清零, 防死后滑行/飞出
         s.isPlayerStunned = true;
         s.isPlayerInvincible = true;
         if (typeof AudioSystem !== 'undefined') AudioSystem.playGameOver(s);   // (用户) 死亡 BGM, 复活守门等它播完
@@ -209,10 +210,15 @@ class HealthSystem {
                 s.player.clearTint();
                 s.player.setAlpha(1);
                 try { s.player.play('miner_dead'); } catch (e) {}
+                // (用户) 死亡动画整体下移 16px — body offset 反向补偿, 碰撞位置在世界里不变 (纯视觉)
+                s.player.y += 16;
+                if (s.player.body && s.player.body.offset) s.player.body.setOffset(s.player.body.offset.x, s.player.body.offset.y - 16);
                 if (s.player.body) {
                     s.player.body.setVelocityX(0);
                     s.player.body.setAllowGravity(true);
-                    s.player.body.setImmovable(true);
+                    // (用户) 尸体穿墙修复: immovable 的动态体撞静态墙时分离逻辑两边都动不了 → 直接穿过.
+                    //   尸体保持可推动 (hitbox 即活体 body, 原样不变), 与墙正常碰撞落地
+                    s.player.body.setImmovable(false);
                 }
             } else {
                 s.player.setTint(0x555555);
@@ -314,6 +320,7 @@ class HealthSystem {
         this.isDead = true;
         const s = this.scene;
         s.isDead = true;
+        if (s._freezeMonstersOnDeath) s._freezeMonstersOnDeath();   // (用户) 怪物速度清零, 防死后滑行/飞出
         if (typeof AudioSystem !== 'undefined') AudioSystem.playGameOver(s);   // (用户) 永久死亡同样播 (回 Hub 换 BGM 时自动停)
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Death_Grow');   // (用户) 死亡瞬间音效
         s.isPlayerStunned = true;
@@ -329,10 +336,15 @@ class HealthSystem {
                 s.player.clearTint();
                 s.player.setAlpha(1);
                 try { s.player.play('miner_dead'); } catch (e) {}
+                // (用户) 死亡动画整体下移 16px — body offset 反向补偿, 碰撞位置在世界里不变 (纯视觉)
+                s.player.y += 16;
+                if (s.player.body && s.player.body.offset) s.player.body.setOffset(s.player.body.offset.x, s.player.body.offset.y - 16);
                 if (s.player.body) {
                     s.player.body.setVelocityX(0);
                     s.player.body.setAllowGravity(true);
-                    s.player.body.setImmovable(true);
+                    // (用户) 尸体穿墙修复: immovable 的动态体撞静态墙时分离逻辑两边都动不了 → 直接穿过.
+                    //   尸体保持可推动 (hitbox 即活体 body, 原样不变), 与墙正常碰撞落地
+                    s.player.body.setImmovable(false);
                 }
             } else {
                 s.player.setTint(0x555555);

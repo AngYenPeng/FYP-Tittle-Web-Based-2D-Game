@@ -132,6 +132,15 @@ class ShopSystem {
     open() {
         const s = this.scene;
         this.isOpen = true;
+        // (用户) 跑动中触发交互 → 立即切站立动画 (UI 锁定期不再保持跑步姿态; 仅落地时切, 防空中僵直)
+        try {
+            const _p = this.scene.player;
+            if (_p && _p.body && (_p.body.blocked.down || _p.body.touching.down) && this.scene.anims.exists('idle')) {
+                _p.setVelocityX(0);
+                _p.play('idle', true);
+            }
+        } catch (e) {}
+
         this.panel.setVisible(true);
         this._refreshCrystalDisplay();
         this._refreshBuyButtons();   // 灰化已购买/已拥有的商品

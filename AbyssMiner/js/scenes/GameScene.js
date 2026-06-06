@@ -1486,6 +1486,22 @@ class MainGameScene extends Phaser.Scene {
      *   2) chunk 剔除: 怪物的 _homeChunk 跟玩家当前 chunk 不一样 → 跳过 (顺便 velocity 归零, 防它漂)
      * 任一条件不满足都跳过 update.
      */
+    // (用户) 死亡冻结: 玩家死后怪物 AI 停更, 但残留速度让它们继续滑行/飞出 —
+    //   当场清零全部怪物速度 (保留重力, 空中怪自然落地停住); 复活后 AI 自会重新决策
+    _freezeMonstersOnDeath() {
+        const groups = [this.spiders, this.bungeeSpiders, this.bats, this.earthworms, this.slimes,
+                        this.miniSlimes, this.beetles, this.volatileCrystals, this.mimicOres, this.cowardMimics];
+        groups.forEach(grp => {
+            if (!grp || typeof grp.getChildren !== 'function') return;
+            grp.getChildren().forEach(m => {
+                try { if (m && m.body && m.body.setVelocity) m.body.setVelocity(0, 0); } catch (e) {}
+            });
+        });
+        if (Array.isArray(this._bosses)) this._bosses.forEach(b => {
+            try { if (b && b.body && b.body.setVelocity) b.body.setVelocity(0, 0); } catch (e) {}
+        });
+    }
+
     _updateMonstersFiltered(time, delta) {
         if (!this.player) return;
         const DIST_X = 20 * 32;  // 640 px

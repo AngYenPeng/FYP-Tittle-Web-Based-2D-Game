@@ -44,8 +44,7 @@ class CrystalSlime extends Phaser.Physics.Arcade.Sprite {
         this.wanderJumpsLeft = 0;
         this.wanderRestTimer = 0;
 
-        this.frozenTimer = 0;
-        this.justHitPlayer = false;
+        this.dmgCdTimer = 0;   // (用户) 命中玩家后的伤害冷却 — 期间照常跳跃, 只是不造成伤害
 
         // 立刻 pause 在 Slime_jump 首帧（防止生成时显示原始绿球纹理）
         if (scene.anims.exists('slime_jump')) {
@@ -55,14 +54,15 @@ class CrystalSlime extends Phaser.Physics.Arcade.Sprite {
     }
 
     canDamagePlayer() {
-        // 在空中跳跃时才能伤害玩家
+        // 在空中跳跃时才能伤害玩家; 命中后的 CD 期间不再伤害 (但行动不受限)
+        if (this.dmgCdTimer > 0) return false;
         let onGround = this.body.blocked.down || this.body.touching.down;
         return !onGround;
     }
 
-    /** 玩家被本怪打中后调用，进入 5 秒冻结 */
+    /** 玩家被本怪打中后调用 — (用户) 不再冻结: 立即进 5 秒伤害 CD, 期间继续正常跳跃 */
     onHitPlayer() {
-        this.justHitPlayer = true;
+        this.dmgCdTimer = 5000;
         if (this.scene && this.scene.anims.exists('slime_attack')) {
             this.play('slime_attack', true);
         }
@@ -95,17 +95,8 @@ class CrystalSlime extends Phaser.Physics.Arcade.Sprite {
             this._wasInAir = !onGround;
         }
 
-        // 落地处理 justHitPlayer
-        if (onGround && this.justHitPlayer) {
-            this.justHitPlayer = false;
-            this.frozenTimer = 5000;
-        }
-
-        if (this.frozenTimer > 0) {
-            this.frozenTimer -= delta;
-            if (onGround) this.body.setVelocityX(0);
-            return;
-        }
+        // (用户) 伤害 CD 只滴答, 不限制任何行动 (旧版落地冻结 5 秒站桩已拆除)
+        if (this.dmgCdTimer > 0) this.dmgCdTimer -= delta;
 
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
         let inRange = dist < 600 || this.forceAggroTimer > 0;
