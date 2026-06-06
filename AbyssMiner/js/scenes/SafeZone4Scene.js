@@ -353,6 +353,16 @@ class SafeZone4Scene extends MainGameScene {
         if (typeof CrystalBlock !== 'undefined') {
             this._sz4CutsceneCrystal = new CrystalBlock(this, -8 * G + G / 2, 19 * G + G / 2, { hp: 10, dropCount: 1 });
         }
+        // (用户 JSON level_1780733998857) 新增 6 颗蓝水晶 (全部原 air, 免挖)
+        if (typeof CrystalBlock !== 'undefined') {
+            [[-29,19],[-22,19],[-16,19],[-16,13],[-27,14],[-32,16]].forEach(([c, r]) => {
+                const cb = new CrystalBlock(this, c * G + G / 2, r * G + G / 2, { hp: 10, dropCount: 1 });
+                if (cb.redetectRotation) cb.redetectRotation();
+                if (!this._crystalOres) this._crystalOres = [];   // 登记近战可破坏列表 — 漏了会打不到 (L1592 同款教训)
+                this._crystalOres.push(cb);
+                if (this.uiCam && cb.sprite) { try { this.uiCam.ignore(cb.sprite); } catch (e) {} }
+            });
+        }
         // stalactite (23) — 顶部一排, ceiling 装饰
         if (typeof Stalactite !== 'undefined') {
             [[-10,-1],[-9,-2],[-8,-2],[-7,-2],[-6,-2],[-5,-2],[-4,-2],[-3,-2],[-2,-2],[-1,-2],[0,-2],[1,-2],[2,-2],[3,-2],[4,-2],[5,-2],[6,-2],[7,-2],[8,-2],[9,-2],[10,-2],[11,-2],[12,-1]]

@@ -98,6 +98,7 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE4',   action: () => this._devJump('SafeZone4Scene') },
             { label: 'SAFEZONE5',   action: () => this._devJump('SafeZone5Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
+            { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
             { label: 'CREDITS',     action: () => this._openCredits() },
             { label: 'QUIT',        action: () => { alert('Thanks for playing!'); } }
         ];

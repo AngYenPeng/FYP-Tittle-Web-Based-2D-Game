@@ -114,6 +114,7 @@ class SettingsSystem {
         const tabDefs = [
             { key: 'video',    label: '▶ DISPLAY'  },
             { key: 'audio',    label: '▶ AUDIO'    },
+            { key: 'ach',      label: '▶ ACHIEVEMENTS' },   // (用户) 成就入口 — 点击开面板, 不是内容页
             { key: 'game',     label: '▶ GAME'     },
         ];
         const tabX = -PW / 2 + 30;
@@ -127,20 +128,14 @@ class SettingsSystem {
             }).setOrigin(0, 0.5).setInteractive();
             tb.on('pointerover', () => { if (this._currentTab !== key) tb.setColor('#ffffff'); });
             tb.on('pointerout',  () => { if (this._currentTab !== key) tb.setColor('#bbbbbb'); });
-            tb.on('pointerdown', () => this._switchTab(key));
+            tb.on('pointerdown', () => {
+                if (key === 'ach') { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(s); }
+                else this._switchTab(key);
+            });
             this._tabs[key] = tb;
             this.panel.add(tb);
         }
 
-        // (用户) 成就入口 — 左栏标签下方
-        const achBtn = s.add.text(tabX, tabStartY + tabDefs.length * 52 + 26, '★ ACHIEVEMENTS', {
-            fontSize: '22px', color: '#ffcc44', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 3
-        }).setOrigin(0, 0.5).setInteractive();
-        achBtn.on('pointerover', () => achBtn.setColor('#ffe488'));
-        achBtn.on('pointerout',  () => achBtn.setColor('#ffcc44'));
-        achBtn.on('pointerdown', () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(s); });
-        this.panel.add(achBtn);
 
         // 左侧竖线 — 移到 200px 给 tab 留空间
         const sideDiv = s.add.rectangle(-PW / 2 + 200, 30, 1, PH - 100, 0x444444, 1);
