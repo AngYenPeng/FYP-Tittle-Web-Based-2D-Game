@@ -85,7 +85,7 @@ class DiseaseSystem {
         this.corrosionText = s.add.text(barX + barW / 2, barY, '0%', {
             fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
             fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
-        }).setOrigin(0.5).setDepth(204).setScrollFactor(0);
+        }).setOrigin(0.5).setDepth(204).setScrollFactor(0).setVisible(false);   // (用户) 不显示 % 数字
 
         this.setBarVisible(false);
 
@@ -100,10 +100,10 @@ class DiseaseSystem {
     setBarVisible(visible) {
         this._barVisible = visible;
         [this.corrosionBg, this.corrosionFill, this.corrosionBorder,
-         this.corrosionLine20, this.corrosionLine50, this.corrosionText].forEach(o => {
+         this.corrosionLine20, this.corrosionLine50].forEach(o => {
             if (o) o.setVisible(visible);
         });
-        if (this._imgCorBar && this.corrosionText) this.corrosionText.setVisible(false);   // (用户) 图片腐蚀条不显示 % 文本
+        // (用户) 腐蚀度不再显示 % 数字 — corrosionText 永久隐藏, 已从可见性数组除名
     }
 
     /**
@@ -305,7 +305,7 @@ class DiseaseSystem {
             if (this.damageTickAt === 0) this.damageTickAt = now + 1000;
             if (now >= this.damageTickAt) {
                 if (s.healthSystem && s.healthSystem.takeDamage) {
-                    s.healthSystem.takeDamage(Math.floor(1 * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1)), { ignoreIframe: true, triggerIframe: false });   // (用户) 腐蚀满伤害 × 难度, 向下取整
+                    s.healthSystem.takeDamage(Math.floor(1 * (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1)), { ignoreIframe: true, triggerIframe: false, noCorrosion: true });   // (用户) 腐蚀满伤害 × 难度; noCorrosion 防自喂
                 }
                 this.damageTickAt = now + 1000;
             }

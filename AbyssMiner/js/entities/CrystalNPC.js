@@ -42,6 +42,25 @@ class CrystalNpc {
         if (this._animProfile && scene.textures.exists(this._animProfile.idle)) {
             CrystalNpc.registerAnims(scene);   // 懒注册 (幂等)
             this.sprite = scene.add.sprite(this.x, this.y, this._animProfile.idle).setDepth(10);
+            // (用户) 行走声·自愈心跳 (100ms, 走 scene.time 与一切 update/事件路径解绑):
+            //   每拍检测"当前动画是否 walk" → 起/收声 + 距离调音. 动画即真相源, 任何路径
+            //   (巡逻/剧情手动 play/_cinematicMode) 一视同仁; 音频延迟加载迟到 → 下一拍自动接上
+            //   (旧事件方案只在动画开始那一刻试一次, 音频没下完 = 永久哑火, 即 CNPC 无声根因).
+            //   每个 NPC 独立音轨 — 双胞胎同走 = 两份叠加.
+            if (this._animProfile.walk) {
+                this._stepTick = scene.time.addEvent({ delay: 100, loop: true, callback: () => {
+                    const a = this.sprite && this.sprite.anims;
+                    const walking = !!(a && a.isPlaying && a.currentAnim && a.currentAnim.key === this._animProfile.walk);
+                    this._stepSound(walking);
+                    if (this._stepSnd && typeof AudioSystem !== 'undefined' && AudioSystem._mobVol) {
+                        this._stepSnd.setVolume(AudioSystem._mobVol(this.scene, this.sprite.x, this.sprite.y));
+                    }
+                }});
+                scene.events.once('shutdown', () => {
+                    if (this._stepTick) { try { this._stepTick.remove(); } catch (e) {} this._stepTick = null; }
+                    this._stepSound(false);
+                });
+            }
             if (this._animProfile.facing === 'right') this.sprite.flipX = true;
         } else if (this.texture && scene.textures.exists(this.texture)) {
             this.sprite = scene.add.sprite(this.x, this.y, this.texture)
@@ -168,6 +187,23 @@ class CrystalNpc {
             catch(e) { console.error('CrystalNpc.onInteract error:', e); }
             // 短暂节流, 不会让 E 长按一次开多个对话
             s.time.delayedCall(200, () => { this._isOpen = false; });
+        }
+    }
+
+    /** (用户) 行走声开/关 — 动画事件驱动, 独立音轨; 起声音量按当前距离, 之后 update 实时刷新 */
+    _stepSound(on) {
+        if (on) {
+            if (this._stepSnd) return;
+            const sc = this.scene;
+            if (!sc || !sc.sound || typeof AudioSystem === 'undefined' || !sc.cache.audio.exists('Walking')) return;
+            const v = AudioSystem._mobVol ? AudioSystem._mobVol(sc, this.sprite.x, this.sprite.y) : AudioSystem.sfxVolume * 0.6;
+            try {
+                this._stepSnd = sc.sound.add('Walking', { loop: true, volume: v });
+                this._stepSnd.play();
+            } catch (e) { this._stepSnd = null; }
+        } else if (this._stepSnd) {
+            try { this._stepSnd.stop(); this._stepSnd.destroy(); } catch (e) {}
+            this._stepSnd = null;
         }
     }
 

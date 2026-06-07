@@ -46,24 +46,24 @@ class StartIntroScene extends Phaser.Scene {
             {
                 image: 'Intro2',
                 lines: [
-                    "Crystalline Mining Co. — bankrupt.",
-                    "Decades of work. Hundreds of jobs.",
-                    "Mine went with them."
+                    "A company — Crystalline Mining Co. has gone bankrupt.",
+                    "Decades of work and hundreds of jobs lost.",
+                    "Reason was never announced."
                 ]
             },
             {
                 image: 'Intro3',
                 lines: [
-                    "They sealed the tunnels and walked away.",
-                    "But the crystals were still down there.",
-                    "I had to see for myself."
+                    "They sealed the mines entrance and walked away.",
+                    "But the truth lies beneath within.",
+                    "You had to see for yourself."
                 ]
             },
             {
                 image: 'Intro4',
                 lines: [
                     "One wrong step on rotten wood...",
-                    "...and the ground beneath me simply let go."
+                    "...and the floor remembered nothing of those who walked on it, letting you swallow by the abyss"
                 ]
             }
         ];
@@ -277,20 +277,20 @@ class StartIntroScene extends Phaser.Scene {
         const yesBtn = this.add.rectangle(W / 2 - 90, H / 2 + 40, 150, 46, 0x1c1828, 1)
             .setStrokeStyle(2, 0xffcc44, 0.9).setDepth(22).setInteractive();
         const yesTxt = this.add.text(W / 2 - 90, H / 2 + 40, 'YES', {
-            fontSize: '26px', color: '#ff8866', fontFamily: '"VT323", monospace',
+            fontSize: '26px', color: '#9adfa9', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 3
         }).setOrigin(0.5).setDepth(23);
         const noBtn = this.add.rectangle(W / 2 + 90, H / 2 + 40, 150, 46, 0x1c1828, 1)
             .setStrokeStyle(2, 0xffcc44, 0.9).setDepth(22).setInteractive();
         const noTxt = this.add.text(W / 2 + 90, H / 2 + 40, 'NO', {
-            fontSize: '26px', color: '#9adfa9', fontFamily: '"VT323", monospace',
+            fontSize: '26px', color: '#ff8866', fontFamily: '"VT323", monospace',
             stroke: '#000', strokeThickness: 3
         }).setOrigin(0.5).setDepth(23);
 
-        yesBtn.on('pointerover', () => { yesBtn.setFillStyle(0x2a2438); yesTxt.setColor('#ffbbaa'); });
-        yesBtn.on('pointerout',  () => { yesBtn.setFillStyle(0x1c1828); yesTxt.setColor('#ff8866'); });
-        noBtn.on('pointerover',  () => { noBtn.setFillStyle(0x2a2438); noTxt.setColor('#c8f5cf'); });
-        noBtn.on('pointerout',   () => { noBtn.setFillStyle(0x1c1828); noTxt.setColor('#9adfa9'); });
+        yesBtn.on('pointerover', () => { yesBtn.setFillStyle(0x2a2438); yesTxt.setColor('#c8f5cf'); });   // (用户) YES 绿
+        yesBtn.on('pointerout',  () => { yesBtn.setFillStyle(0x1c1828); yesTxt.setColor('#9adfa9'); });
+        noBtn.on('pointerover',  () => { noBtn.setFillStyle(0x2a2438); noTxt.setColor('#ffbbaa'); });    // (用户) NO 红
+        noBtn.on('pointerout',   () => { noBtn.setFillStyle(0x1c1828); noTxt.setColor('#ff8866'); });
 
         const closeOverlay = () => {
             try { dim.destroy(); box.destroy(); boxInner.destroy(); q.destroy(); yesBtn.destroy(); yesTxt.destroy(); noBtn.destroy(); noTxt.destroy(); } catch(e) {}

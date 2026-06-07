@@ -12,6 +12,7 @@ class TitleScene extends Phaser.Scene {
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
         // 标题页背景图（洞穴）
         this.load.image('Tittle_scene_background_image', 'assets/images/Tittle_scene_background_image.png');
+        this.load.spritesheet('Title', 'assets/images/Title.png', { frameWidth: 800, frameHeight: 400 });   // (用户) 动画大标题 11200×400 / 14 帧
         this.load.image('Mouse_cursor', 'assets/images/Mouse_cursor.png');   // (用户) Title 精灵光标用
         this.load.image('Crystal', 'assets/images/Crystal.png');   // (用户) 存档行图标 (局中蓝水晶)
         this.load.image('YCrystal', 'assets/images/YCrystal.png');   // (用户) RECORDS 图标 (通关统计为黄水晶)
@@ -81,14 +82,24 @@ class TitleScene extends Phaser.Scene {
             this.settingsSystem.close = () => { origClose(); this._modalOpen = false; };
         }
 
-        // 主标题
-        let title = this.add.text(W / 2, H * 0.30, 'ABYSS MINER', {
-            fontSize: '88px',
-            color: '#ffffff',
-            fontFamily: '"VT323", monospace',
-            stroke: '#3344aa',
-            strokeThickness: 6
-        }).setOrigin(0.5);
+        // 主标题 — (用户) 换动画图 Title (800×400×14帧), 缩放 0.5 → 400×200; 无图回退旧文字
+        let title;
+        if (this.textures.exists('Title')) {
+            if (!this.anims.exists('title_anim')) {
+                this.anims.create({ key: 'title_anim', frames: this.anims.generateFrameNumbers('Title', { start: 0, end: 13 }), frameRate: 10, repeat: 0 });   // (用户) 单次播放
+            }
+            title = this.add.sprite(W / 2, H * 0.30, 'Title').setScale(0.5);
+            // (用户) 循环节奏: 播一遍 → 停在末帧 10 秒 → 重播, 无限循环
+            title.on('animationcomplete-title_anim', () => {
+                this.time.delayedCall(10000, () => { if (title.active && title.scene) title.play('title_anim'); });
+            });
+            title.play('title_anim');
+        } else {
+            title = this.add.text(W / 2, H * 0.30, 'ABYSS MINER', {
+                fontSize: '88px', color: '#ffffff', fontFamily: '"VT323", monospace',
+                stroke: '#3344aa', strokeThickness: 6
+            }).setOrigin(0.5);
+        }
         // 标题缓慢呼吸
         this.tweens.add({
             targets: title, alpha: { from: 0.85, to: 1 },
@@ -352,26 +363,15 @@ class TitleScene extends Phaser.Scene {
                         fontSize: '13px', color: '#777788', fontFamily: '"VT323", monospace'
                     }).setOrigin(1, 0.5);
 
-                    // 删除按钮 (2 次点击确认)
-                    const del = this.add.text(PW / 2 - 56, y + 12, '\u2715', {
+                    // 删除按钮 — (用户) 下距回原 27px (y+12), 右距同步 27px (行右缘 PW/2-40 → x=PW/2-67); 点击弹确认框
+                    const del = this.add.text(PW / 2 - 67, y + 12, '\u2715', {
                         fontSize: '24px', color: '#ff5555', fontFamily: '"VT323", monospace',
                         stroke: '#000', strokeThickness: 3
                     }).setOrigin(0.5).setInteractive();
-                    let confirm = false;
                     del.on('pointerover', () => del.setAlpha(0.7));
                     del.on('pointerout',  () => del.setAlpha(1));
                     del.on('pointerdown', () => {
-                        if (!confirm) {
-                            confirm = true;
-                            del.setText('SURE?').setFontSize(16);
-                            this.time.delayedCall(1800, () => {
-                                if (del.active) { confirm = false; del.setText('\u2715').setFontSize(24); }
-                            });
-                            return;
-                        }
-                        SaveSystem.deleteSlot(i);
-                        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
-                        buildSlots();
+                        this._confirmDeleteSlot(i, (data && data.slotName) || ('SLOT ' + i), () => buildSlots());
                     });
 
                     rowBg.on('pointerdown', () => {
@@ -581,6 +581,52 @@ class TitleScene extends Phaser.Scene {
 
         buildList(activeTab);
         this.input.on('wheel', onWheel);
+    }
+
+    /** (用户) 删除存档确认框 — 显示当前槽名 (随玩家改名变化), 警示不可复原, YES/NO */
+    _confirmDeleteSlot(slotN, dispName, onDeleted) {
+        if (this._delDlgOpen) return;
+        this._delDlgOpen = true;
+        const W = this.cameras.main.width, H = this.cameras.main.height;
+        const items = [];
+        // 全屏压暗 + 吞点击 (仅按钮可关)
+        const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setDepth(5000).setInteractive();
+        items.push(dim);
+        const DW = 480, DH = 200;
+        const box = this.add.rectangle(W / 2, H / 2, DW, DH, 0x0b0b12, 0.98)
+            .setStrokeStyle(2, 0x806020).setDepth(5001);
+        const inner = this.add.rectangle(W / 2, H / 2, DW - 10, DH - 10, 0x000000, 0)
+            .setStrokeStyle(1, 0xffcc44, 0.3).setDepth(5001);
+        items.push(box, inner);
+        items.push(this.add.text(W / 2, H / 2 - 58, 'Delete "' + dispName + '" ?', {
+            fontSize: '28px', color: '#ffffff', fontFamily: '"VT323", monospace',
+            stroke: '#000', strokeThickness: 3, resolution: 2
+        }).setOrigin(0.5).setDepth(5002));
+        items.push(this.add.text(W / 2, H / 2 - 24, 'This cannot be undone.', {
+            fontSize: '20px', color: '#cc8888', fontFamily: '"VT323", monospace',
+            fontStyle: 'italic', resolution: 2
+        }).setOrigin(0.5).setDepth(5002));
+        const close = () => { this._delDlgOpen = false; items.forEach(o => { try { o.destroy(); } catch (e) {} }); };
+        // (用户) 按钮与开场跳过剧情确认同款: 金边深底药丸 150×46, YES 红 / NO 绿
+        const mkBtn = (dx, label, col, hoverCol, onClick) => {
+            const bg = this.add.rectangle(W / 2 + dx, H / 2 + 48, 150, 46, 0x1c1828, 1)
+                .setStrokeStyle(2, 0xffcc44, 0.9).setDepth(5002).setInteractive();
+            const tx = this.add.text(W / 2 + dx, H / 2 + 48, label, {
+                fontSize: '26px', color: col, fontFamily: '"VT323", monospace',
+                stroke: '#000', strokeThickness: 3, resolution: 2
+            }).setOrigin(0.5).setDepth(5003);
+            bg.on('pointerover', () => { bg.setFillStyle(0x2a2438, 1); tx.setColor(hoverCol); });
+            bg.on('pointerout',  () => { bg.setFillStyle(0x1c1828, 1); tx.setColor(col); });
+            bg.on('pointerdown', onClick);
+            items.push(bg, tx);
+        };
+        mkBtn(-90, 'YES', '#9adfa9', '#c8f5cf', () => {   // (用户) YES 绿 / NO 红
+            SaveSystem.deleteSlot(slotN);
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
+            close();
+            if (onDeleted) onDeleted();
+        });
+        mkBtn(90, 'NO', '#ff8866', '#ffbbaa', () => close());
     }
 
     /** (用户) 槽位改名 — 金色底横线输入 (无框); 只允许字母与空格;

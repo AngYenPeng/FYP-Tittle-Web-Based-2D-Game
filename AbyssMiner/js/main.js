@@ -23,7 +23,7 @@ const config = {
             debug: false   // (用户) 全局关闭物理 hitbox 显示; SZ5 在场景内单独开启
         }
     },
-    scene: [BootScene, OpeningScene, TitleScene, StartIntroScene, MainGameScene, TutorialScene, HubScene, SafeZone1Scene, SafeZone2Scene, SafeZone3Scene, SafeZone25Scene, SafeZone4Scene, SafeZone5Scene]
+    scene: [BootScene, OpeningScene, TitleScene, StartIntroScene, DeathScene, MainGameScene, TutorialScene, HubScene, SafeZone1Scene, SafeZone2Scene, SafeZone3Scene, SafeZone25Scene, SafeZone4Scene, SafeZone5Scene]
 };
 
 // (用户) 难度系统 — 中央配置. 存档记 difficulty 字段; easy = 现状不变

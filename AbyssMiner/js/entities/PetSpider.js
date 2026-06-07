@@ -66,6 +66,7 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
 
         // ── mounted: 锁在头顶 ──
         if (this.state === 'mounted') {
+            this._idlePose();   // (用户) 骑头也用 small_spider_idle 待机动画
             const fx = p.flipX ? 1 : -1;        // (用户) 面右 → 左移 8px; 面左 → 右移 8px (坐头顶偏后)
             this.x = p.x + fx * 8;
             this.y = p.body.top - 3;            // (用户) 在 -1 基础上再上移 2px

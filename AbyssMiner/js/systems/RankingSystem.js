@@ -55,31 +55,127 @@ class RankingSystem {
         this._stage1LeaveCutscene();
     }
 
-    /* ════ ① 离洞 cutscene — 占位 ════
-       (用户) 正式"玩家彻底离开矿洞"cutscene 做好后替换本方法内容, 结尾调 this._stage2Diploma() 即可 */
+    /* ════ ① 离洞 cutscene — (用户) Ending1/2/3 三联幻灯, 完全复刻 StartIntroScene 演示方式 ════
+       黑底 + 320×180 图放大 3x + Undertale 打字机字幕 + click/SPACE 推进 + SKIP. 播完 → _stage2Diploma() */
     _stage1LeaveCutscene() {
         const s = this.scene, W = this._W, H = this._H;
-        const black = s.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setInteractive();
-        const l1 = s.add.text(W / 2, H * 0.44, 'The cave falls silent.', {
-            fontSize: '26px', color: '#cfcfdd', fontFamily: '"VT323", monospace', resolution: 2
-        }).setOrigin(0.5).setAlpha(0);
-        const l2 = s.add.text(W / 2, H * 0.54, 'You climb toward the light, leaving the mine behind.', {
-            fontSize: '22px', color: '#9aa0b0', fontFamily: '"VT323", monospace', fontStyle: 'italic', resolution: 2
-        }).setOrigin(0.5).setAlpha(0);
-        const skip = this._makeSkip(() => next());
-        this._fix([black, l1, l2, ...skip]);
+        // (用户) 结局旁白 — 与 intro 同声部 (第二人称短句), 坠入↔爬出首尾呼应
+        this._endSlides = [
+            { image: 'Ending1', lines: [
+                "Your hand breaks the surface — cold air. Real air.",
+                "After the dark below, even the grey sky feels blinding."
+            ] },
+            { image: 'Ending2', lines: [
+                "The city still glows on the horizon, like nothing ever happened.",
+                "At your feet, a bag of crystals... and a truth too heavy to sell.",
+                "You're not the same person who climbed down."
+            ] },
+            { image: 'Ending3', lines: [
+                "Behind you, the mine stands silent at last.",
+                "Only one set of footprints leads away from it — yours."
+            ] }
+        ];
+        this._endSlideIdx = 0;
+        this._endLineIdx = 0;
+        this._endDone = false;
 
-        s.tweens.add({ targets: black, fillAlpha: 1, duration: 700 });
-        s.tweens.add({ targets: l1, alpha: 1, duration: 600, delay: 800 });
-        s.tweens.add({ targets: l2, alpha: 1, duration: 600, delay: 1700 });
+        const SUB_H = Math.floor(H / 4);
+        const IMG_AREA_H = H - SUB_H;
+        const imgY = IMG_AREA_H / 2;
+
+        const black = s.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setInteractive();
+        let img;
+        if (s.textures.exists('Ending1')) {
+            img = s.add.image(W / 2, imgY, 'Ending1').setScale(3).setAlpha(0);
+            try { img.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); } catch (e) {}
+        } else {
+            img = s.add.rectangle(W / 2, imgY, 960, 540, 0x16161e).setAlpha(0);
+        }
+        const subBar = s.add.rectangle(W / 2, IMG_AREA_H + SUB_H / 2, W, SUB_H, 0x000000, 0.9).setAlpha(0);
+        const sub = s.add.text(W / 2, IMG_AREA_H + SUB_H / 2, '', {
+            fontSize: '54px', color: '#ffffff', fontFamily: '"VT323", monospace',
+            align: 'center', wordWrap: { width: W - 200 }
+        }).setOrigin(0.5).setAlpha(0);
+        const hint = s.add.text(W - 30, H - 20, '[ Click / SPACE to continue ]', {
+            fontSize: '16px', color: '#666666', fontFamily: '"VT323", monospace'
+        }).setOrigin(1, 1).setAlpha(0);
+        const skip = this._makeSkip(() => finish());
+        this._fix([black, img, subBar, sub, hint, ...skip]);
+        this._endImg = img; this._endSub = sub;
+
+        // 打字机
+        const stopType = () => { if (this._endTypeEv) { this._endTypeEv.remove(); this._endTypeEv = null; } };
+        const startType = (full) => {
+            stopType();
+            this._endTypeFull = full; this._endTypeIdx = 0; this._endTyping = true;
+            sub.setText('');
+            this._endTypeEv = s.time.addEvent({ delay: 70, loop: true, callback: () => {
+                this._endTypeIdx++;
+                sub.setText(this._endTypeFull.substring(0, this._endTypeIdx));
+                if (this._endTypeIdx >= this._endTypeFull.length) { stopType(); this._endTyping = false; }
+            }});
+        };
+        const showLine = () => {
+            const sl = this._endSlides[this._endSlideIdx];
+            if (!sl) return;
+            if (img.setTexture && s.textures.exists(sl.image)) {
+                img.setTexture(sl.image);
+                try { img.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); } catch (e) {}
+            }
+            startType(sl.lines[this._endLineIdx] || '');
+        };
+        const nextLine = () => {
+            if (this._endDone) return;
+            stopType(); this._endTyping = false;
+            const sl = this._endSlides[this._endSlideIdx];
+            if (!sl) { finish(); return; }
+            if (this._endLineIdx < sl.lines.length - 1) {
+                this._endLineIdx++; showLine();
+            } else {
+                this._endSlideIdx++; this._endLineIdx = 0;
+                if (this._endSlideIdx >= this._endSlides.length) { finish(); return; }
+                // 短淡黑过渡 (intro 同款 250ms)
+                s.tweens.add({ targets: [img, sub], alpha: 0, duration: 250, onComplete: () => {
+                    showLine();
+                    s.tweens.add({ targets: [img, sub], alpha: 1, duration: 250 });
+                }});
+            }
+        };
+        const advance = () => {
+            if (this._endDone) return;
+            if (this._endTyping) { stopType(); sub.setText(this._endTypeFull); this._endTyping = false; }
+            else nextLine();
+        };
+        const onPointer = (pointer) => {
+            const sb = skip[0];
+            if (sb && sb.getBounds) {
+                const b = sb.getBounds();
+                if (pointer.x >= b.x && pointer.x <= b.x + b.width && pointer.y >= b.y && pointer.y <= b.y + b.height) return;
+            }
+            advance();
+        };
+        s.input.on('pointerdown', onPointer);
+        const onSpace = () => advance(), onEnter = () => advance();
+        s.input.keyboard.on('keydown-SPACE', onSpace);
+        s.input.keyboard.on('keydown-ENTER', onEnter);
+
         let done = false;
-        const next = () => {
-            if (done) return; done = true;
-            [l1, l2, ...skip].forEach(o => { try { o.destroy(); } catch (e) {} });
+        const finish = () => {
+            if (done) return; done = true; this._endDone = true;
+            stopType();
+            s.input.off('pointerdown', onPointer);
+            s.input.keyboard.off('keydown-SPACE', onSpace);
+            s.input.keyboard.off('keydown-ENTER', onEnter);
+            [img, subBar, sub, hint, ...skip].forEach(o => { try { o.destroy(); } catch (e) {} });
             this._black = black;   // 黑底留给后续阶段
             this._stage2Diploma();
         };
-        s.time.delayedCall(4200, next);
+
+        // 入场: 黑底盖世界 → 元素淡入 → 第一行开打
+        s.tweens.add({ targets: black, fillAlpha: 1, duration: 700, onComplete: () => {
+            s.tweens.add({ targets: [img, subBar, sub, hint], alpha: 1, duration: 400 });
+            showLine();
+        }});
     }
 
     /* 右上角 SKIP 按钮 (返回 [bg, txt]) */

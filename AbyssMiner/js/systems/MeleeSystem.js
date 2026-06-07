@@ -68,15 +68,43 @@ class MeleeSystem {
     }
 
     /** 玩家点左键时调用（已经过 paused / 持镐 等前置判断） */
+    /** (用户) 立即终止近战 — 冲刺打断用. 摘掉收尾定时器 + 复原站立 offset;
+     *  不播任何动画 (调用方紧接着会播 dash), 不留 192px 帧与 origin 戏法互殴的窗口.
+     *  根因: 冲刺中途近战的旧收尾定时器开火 → idle(128px)+站立offset 撞上 dash 的 origin 0.9
+     *  → body 后跳嵌墙 → dashGuard 每步 2px 回推 = "hitbox 快速后滑再滑回" */
+    cancelMelee() {
+        const s = this.scene;
+        if (this._endTimer) { try { this._endTimer.remove(false); } catch (e) {} this._endTimer = null; }
+        if (!s.isMeleeAttacking) return;
+        s.isMeleeAttacking = false;
+        if (s.player && s.player.body) {
+            // 既定顺序: 先切回 128px 帧, 再设站立 offset (192px帧+站立offset = body 闪移 32px)
+            // 192+72 与 128+40 是同一 body 位置的配对 — 全程零位移
+            if (s.anims.exists('idle')) s.player.play('idle', true);
+            if (s.player.flipX) { s.player.setOrigin(0.5625, 0.5); s.player.body.setOffset(56, 63); }   // (用户) 倾斜对
+            else                { s.player.setOrigin(0.4375, 0.5); s.player.body.setOffset(40, 63); }
+        }
+    }
+
     execute() {
         const s = this.scene;
         if (!s.player.body || s.isDead) return false;
         if (s.meleeCooldown > 0) return false;
+        if (s.isCrouching) {
+            // (用户) 蹲下时攻击 = 先站起来再打; 头顶被挡 (矮道) 则取消本次动作
+            const _ms = s.movementSystem;
+            if (!_ms || !_ms._headZoneFree || !_ms._headZoneFree(s)) return false;
+            s.isCrouching = false;
+            s.player.y -= 16;   // 贴图归位
+        }
         s.meleeCooldown = this.COOLDOWN;
 
         // 当前面朝方向（不转向）
         let facingRight = !s.player.flipX;
 
+        // (用户) 冲刺途中攻击: 冲刺画面立即让位 (origin/offset 复原到站立基准),
+        //   攻击动画接管; 冲刺速度/无重力/守卫/时长不动 — hitbox 全程零位移
+        if (s.isDashing && s.dashSystem && s.dashSystem.endDashVisual) s.dashSystem.endDashVisual();
         s.isMeleeAttacking = true;
         s.meleeAttackFlipX = !facingRight;
 
@@ -84,10 +112,11 @@ class MeleeSystem {
         if (s.anims.exists('melee_attack')) {
             s.player.play('melee_attack', true);
             // sprite frame 192 比 128 多 64，+32 offset 让 body 中心保持
-            if (s.player.flipX) s.player.body.setOffset(88, 47);
-            else                s.player.body.setOffset(72, 47);
+            if (s.player.flipX) { s.player.setOrigin(104 / 192, 0.5); s.player.body.setOffset(88, 63); }   // (用户) 192 帧倾斜对
+            else                { s.player.setOrigin(88 / 192, 0.5);  s.player.body.setOffset(72, 63); }
         }
-        s.time.delayedCall(this.ATTACK_DURATION, () => {
+        this._endTimer = s.time.delayedCall(this.ATTACK_DURATION, () => {
+            this._endTimer = null;
             s.isMeleeAttacking = false;
             if (s.player && s.player.body) {
                 let onGround = s.player.body.blocked.down || s.player.body.touching.down;
@@ -101,13 +130,13 @@ class MeleeSystem {
                     else if (s.anims.exists('fall')) s.player.play('fall', true);
                 }
                 // 还原 offset 到 128 frame (此时 frame 已切回 128, 对齐)
-                if (s.player.flipX) s.player.body.setOffset(56, 47);
-                else                s.player.body.setOffset(40, 47);
+                if (s.player.flipX) { s.player.setOrigin(0.5625, 0.5); s.player.body.setOffset(56, 63); }   // (用户) 倾斜对
+                else                { s.player.setOrigin(0.4375, 0.5); s.player.body.setOffset(40, 63); }
             }
         });
 
-        // 攻击时玩家小冲（贴墙不冲）
-        this._forwardLunge(facingRight);
+        // 攻击时玩家小冲（贴墙不冲; 冲刺中不冲 — 会把冲刺速度顶成小推速度）
+        if (!s.isDashing) this._forwardLunge(facingRight);
 
         // 半圆视觉特效
         // (用户) 白色范围特效已停用 (测试辅助, 不再需要; 要恢复解开本行): this._drawArcEffect(facingRight);

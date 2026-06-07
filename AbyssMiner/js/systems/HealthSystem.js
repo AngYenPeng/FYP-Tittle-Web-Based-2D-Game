@@ -123,6 +123,14 @@ class HealthSystem {
 
         this.hp = Math.max(0, this.hp - amount);
         this.playerHp = this.hp;
+        // (用户) 难度侵蚀: 每次有效受伤 normal +1% / hard +2% / extreme +3% (easy 不加).
+        //   腐蚀满自扣血调用带 noCorrosion 防自喂循环.
+        if (!opts.noCorrosion) {
+            const _ca = { normal: 1, hard: 2, extreme: 3 }[(window.AbyssDiff && AbyssDiff.mode) || 'easy'] || 0;
+            if (_ca && this.scene.diseaseSystem && this.scene.diseaseSystem.addCorrosion) {
+                this.scene.diseaseSystem.addCorrosion(_ca);
+            }
+        }
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'MinerHurt');  // 玩家受伤音效
 
         // 红闪 0.2 秒 (每次有效扣血都闪)
@@ -193,6 +201,9 @@ class HealthSystem {
         const s = this.scene;
         this.isDead = true;
         s.isDead = true;
+        // (用户) 死亡前撤冲刺/抓钩 — Miner_dead 帧替换 dash 帧时 origin/offset 失配会瞬移嵌墙坠出世界
+        if (s.dashSystem && s.dashSystem.cancelDash) s.dashSystem.cancelDash();
+        if (s.grappleSystem && s.grappleSystem.stopGrapple && (s.isGrappling || s.isHanging)) s.grappleSystem.stopGrapple();
         if (s._freezeMonstersOnDeath) s._freezeMonstersOnDeath();   // (用户) 怪物速度清零, 防死后滑行/飞出
         s.isPlayerStunned = true;
         s.isPlayerInvincible = true;
@@ -320,9 +331,13 @@ class HealthSystem {
         this.isDead = true;
         const s = this.scene;
         s.isDead = true;
+        // (用户) 同上: 永久死亡前撤冲刺/抓钩
+        if (s.dashSystem && s.dashSystem.cancelDash) s.dashSystem.cancelDash();
+        if (s.grappleSystem && s.grappleSystem.stopGrapple && (s.isGrappling || s.isHanging)) s.grappleSystem.stopGrapple();
         if (s._freezeMonstersOnDeath) s._freezeMonstersOnDeath();   // (用户) 怪物速度清零, 防死后滑行/飞出
-        if (typeof AudioSystem !== 'undefined') AudioSystem.playGameOver(s);   // (用户) 永久死亡同样播 (回 Hub 换 BGM 时自动停)
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Death_Grow');   // (用户) 死亡瞬间音效
+        // (用户) 最后一颗心: 不播旧死亡音效 (Death_Grow / GameOver BGM) — 心跳 Heartbeat 接管全部听觉舞台,
+        //   死亡 BGM 由 DeathScene 进场自己起
+        if (typeof AudioSystem !== 'undefined') AudioSystem.stopBGM();
         s.isPlayerStunned = true;
         if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) 永久死亡同样清侵蚀/中毒
 
@@ -369,15 +384,45 @@ class HealthSystem {
                 }
             }
         } catch (e) {}
-        const goTitle = () => { if (s.scene && s.scene.start) s.scene.start('TitleScene'); };
-        // 黑屏爱心动画 (最后 1 颗碎裂) → 回主页
-        if (s._deathHeartAnim) {
-            s._deathHeartAnim(1, goTitle);
-        } else {
-            this.deathPanel.setVisible(true);
-            this.deathText.setText('YOU DIED');
-            s.time.delayedCall(2500, goTitle);
+        // (用户) 最后一颗心专属序列: 世界缓黑 → LastLive 心碎动画(55帧)+Heartbeat 心跳 → 全黑 → DeathScene (两张图 cutscene → GAME OVER → Title)
+        this._lastLiveSequence();
+    }
+
+    /** (用户) 最后一心碎裂演出. LastLive 图缺失 → 回退旧黑屏爱心动画, 同样进 DeathScene */
+    _lastLiveSequence() {
+        const s = this.scene;
+        const goDeath = () => { try { s.scene.start('DeathScene'); } catch (e) { if (s.scene && s.scene.start) s.scene.start('TitleScene'); } };
+        if (!s.anims || !s.anims.exists('lastlive_anim')) {
+            if (s._deathHeartAnim) s._deathHeartAnim(1, goDeath);
+            else s.time.delayedCall(1500, goDeath);
+            return;
         }
+        const W = s.scale.width, H = s.scale.height;
+        const _pin = (o) => {
+            o.setScrollFactor(0);
+            // 只让 uiCam 画 (全屏覆盖含 HUD); 无 uiCam 场景单相机自然全覆盖
+            if (s.uiCam) { try { s.cameras.main.ignore(o); } catch (e) {} }
+            return o;
+        };
+        // ① 背后游戏逐渐黑掉 (1.4s 全黑)
+        const black = _pin(s.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setDepth(99990));
+        s.tweens.add({
+            targets: black, fillAlpha: 1, duration: 1400, ease: 'Power1',
+            onComplete: () => {
+                // ② 全黑后中央心碎动画 + 心跳 (心跳早结束无妨)
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Heartbeat', { volume: AudioSystem.sfxVolume });
+                const heart = _pin(s.add.sprite(W / 2, H / 2, 'LastLive').setScale(7).setDepth(99991));
+                try { heart.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); } catch (e) {}
+                heart.play('lastlive_anim');
+                heart.once('animationcomplete', () => {
+                    // ③ 心碎完 → 彻底黑屏一拍 → DeathScene
+                    heart.setVisible(false);
+                    s.time.delayedCall(600, goDeath);
+                });
+                // 兜底: 切后台动画事件丢失 → 5s 强制推进
+                s.time.delayedCall(5000, () => { if (heart.visible) goDeath(); });
+            }
+        });
     }
 
     /**
@@ -389,6 +434,21 @@ class HealthSystem {
         this.hp = Math.min(this.maxHp, this.hp + add);
         this.playerHp = this.hp;
         this.updateUI();
+        this.showHealFx();   // (用户) 回血特效
+    }
+
+    /** (用户) 回血特效: Healing 640×80/10帧, 完全跟随主角; 持续回血 = 持续刷新到期时间循环播放 */
+    showHealFx() {
+        const s = this.scene;
+        if (!s || !s.player || !s.anims || !s.anims.exists('healing_anim')) return;
+        if (!this._healFx || !this._healFx.scene) {
+            this._healFx = s.add.sprite(s.player.x, s.player.y, 'Healing')
+                .setDepth((s.player.depth || 10) + 1).play('healing_anim');
+            if (s.uiCam) { try { s.uiCam.ignore(this._healFx); } catch (e) {} }
+        }
+        this._healFx.setVisible(true);
+        if (!this._healFx.anims.isPlaying) this._healFx.play('healing_anim');
+        this._healFxUntil = s.time.now + 700;
     }
 
     /** 增命药水 — +1 爱心 (不超过 maxHearts) */
@@ -445,6 +505,17 @@ class HealthSystem {
 
     /** 每帧调用 — 处理 5 秒死亡倒计时 */
     update(delta) {
+        // (用户) 回血特效跟随 + 过期隐藏
+        if (this._healFx && this._healFx.scene) {
+            const _p = this.scene.player;
+            if (_p) { this._healFx.x = _p.x; this._healFx.y = _p.y; }
+            if (this.scene.time.now > (this._healFxUntil || 0)) {
+                this._healFx.setVisible(false);
+                this._healFx.anims.stop();
+            } else if (!this._healFx.anims.isPlaying) {
+                this._healFx.play('healing_anim');
+            }
+        }
         // (用户) Shrine 区: 激活的 checkpoint 5 格 (160px) 内
         //   1) 快照: 每个 checkpoint 第一次进圈记录一次当前状态 (Save&Exit 后恢复到这份快照; 离开再回来不重记)
         //   2) 回血: 每秒 +1 HP / -1% 腐蚀 (Extreme 关闭回血, 快照不受影响)
@@ -465,6 +536,7 @@ class HealthSystem {
                             this.hp = Math.min(this.maxHp, this.hp + 1);
                             this.playerHp = this.hp;
                             this.updateUI();
+                            this.showHealFx();   // (用户) 神像持续回血 → 特效持续刷新
                         }
                         if (_s.diseaseSystem && _s.diseaseSystem.corrosionPct > 0) {
                             _s.diseaseSystem.corrosionPct = Math.max(0, _s.diseaseSystem.corrosionPct - 1);

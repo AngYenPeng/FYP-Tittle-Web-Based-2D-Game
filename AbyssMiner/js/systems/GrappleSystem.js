@@ -53,7 +53,7 @@ class GrappleSystem {
         // 无论角色当前处于什么姿态，都强制使用站立时的 32x64 完整体型进行预判！
         let bw = 32;
         let bh = 64;
-        let currentXOffset = s.player.flipX ? 56 : 40;
+        let currentXOffset = 48;   // (用户) X 居中统一 — 转身零位移
         let currentYOffset = 45; // 站立时的 Y 轴偏移量
 
         let isSafe = (cx, cy) => {

@@ -12,8 +12,8 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         this.setGravityY(0);
         this.setDragX(0);
 
-        this.body.setSize(32, 64);
-        this.body.setOffset(40, 45);
+        this.body.setSize(32, 48);   // (用户·双箱制) 本体永久 32×48, 头部另由 MovementSystem 手工实体负责
+        this.body.setOffset(40, 61);
 
         // (用户) 玩家 hitbox 调试显示 — 按 H 切换 (绿=物理body, 蓝=贴图显示范围, 紫点=精灵中心)
         this._hbDebug = scene.add.graphics().setDepth(9999);
@@ -67,19 +67,21 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             if (vx < 0) this.setFlipX(true);
             else if (vx > 0) this.setFlipX(false);
             // offset 跟正常 stand 一致
+            // (用户) 图像朝向倾斜 ±8: origin 反向挪 8 (图动) + offset 配对 (箱不动, 左缘恒 x−16)
+            this.setOrigin(this.flipX ? 0.5625 : 0.4375, 0.5);
             const standOffsetX = this.flipX ? 56 : 40;
-            this.body.setOffset(standOffsetX, 47);
+            this.body.setOffset(standOffsetX, this.scene.isCrouching ? 47 : 63);   // (用户·双箱制) 蹲姿贴图+16 配 47, 底边恒 y+47
             return;
         }
 
         let isMoving = false;
 
-        let standOffsetX_Right = 40;
-        let standOffsetX_Left  = 56;
-        let standOffsetY       = 47;
+        let standOffsetX_Right = 40;   // (用户) 倾斜对: 与 origin 0.4375 配平, body 左缘 x−16
+        let standOffsetX_Left  = 56;   // 与 origin 0.5625 配平, 同为 x−16
+        let standOffsetY       = this.scene.isCrouching ? 47 : 63;   // (用户·双箱制) 蹲 47 / 站 63 — 抵消蹲姿贴图下移
         let runOffsetX_Right = 40;
         let runOffsetX_Left  = 56;
-        let runOffsetY       = 47;
+        let runOffsetY       = this.scene.isCrouching ? 47 : 63;   // 同上
 
         // 攻击中：完全不修改 offset/flipX（MeleeSystem 已经处理 offset）
         // 只允许 A/D 微调速度
@@ -103,15 +105,18 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         if (this.keys.left.isDown) {
             this.setVelocityX(-moveSpeed);
             this.setFlipX(true);
+            this.setOrigin(0.5625, 0.5);   // (用户) 图左倾 8
             this.body.setOffset(runOffsetX_Left, runOffsetY);
             isMoving = true;
         } else if (this.keys.right.isDown) {
             this.setVelocityX(moveSpeed);
             this.setFlipX(false);
+            this.setOrigin(0.4375, 0.5);   // (用户) 图右倾 8
             this.body.setOffset(runOffsetX_Right, runOffsetY);
             isMoving = true;
         } else {
             this.setVelocityX(0);
+            this.setOrigin(this.flipX ? 0.5625 : 0.4375, 0.5);   // (用户) 站立同倾
             if (this.flipX) this.body.setOffset(standOffsetX_Left, standOffsetY);
             else            this.body.setOffset(standOffsetX_Right, standOffsetY);
         }

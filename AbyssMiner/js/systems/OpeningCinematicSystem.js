@@ -247,7 +247,7 @@ class OpeningCinematicSystem {
             }
             s.dialogSystem.show({
                 speaker: '???',
-                text: "You don't smell like the ones who never made it back up. Not yet, anyway."
+                text: "You don't seem like you gone bad yet. Unlike the others..."
             });
             this._waitDialogClose(() => this._goPhase4());
         });
@@ -283,10 +283,10 @@ class OpeningCinematicSystem {
         }
 
         const sequence = [
-            { speaker: 'You', text: 'Who are you?' },
+            { speaker: 'You', text: 'Wh- who are you!?' },
             {
                 speaker: '???',
-                text: "Whoa there, easy. Name's Whisker. Been living down here a long time.",
+                text: "Whoa, easy there. The Name's Whisker. Been living down here a long time.",
                 onShow: () => {
                     if (this._moleNameTag) {
                         this._moleNameTag.setText('Whisker');
@@ -294,11 +294,11 @@ class OpeningCinematicSystem {
                     }
                 }
             },
-            { speaker: 'Whisker', text: "I trade with folks like you — whatever rare things you bring up from below, I'll take." },
-            { speaker: 'Whisker', text: 'You have an interesting feel about you, kid. Came down for those things too, didn\'t you?' },
+            { speaker: 'Whisker', text: "I'm just a wandering trader. whatever rare things you bring here from the surface, I'll bargain." },
+            { speaker: 'Whisker', text: 'I have an interesting feel about you, kido. Bet ya came down for those things too, didn\'t you?' },
             {
                 speaker: 'Whisker',
-                text: "Profit's all I care about. I can help you — but on my terms.",
+                text: "Anyways, profit's all I care about. I can help you but only in my terms.",
                 choices: [
                     { label: "What do you mean by 'those things'?", action: () => this._showClue(1) },
                     { label: "No, I'm just passing through.",       action: () => this._showClue(2) }
@@ -344,7 +344,7 @@ class OpeningCinematicSystem {
         let sequence;
         if (clueIdx === 1) {
             sequence = [
-                { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just crystals." },
+                { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just your usual crystals." },
                 { speaker: 'Whisker', text: 'They wait... they grow... down at the center of it all.' },
                 { speaker: 'Whisker', text: 'Stay alive. I only deal with the living.' }
             ];
@@ -352,7 +352,7 @@ class OpeningCinematicSystem {
             sequence = [
                 { speaker: 'Whisker', text: "Don't pretend. People don't 'pass through' here." },
                 { speaker: 'Whisker', text: 'I know what you want.' },
-                { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just crystals." },
+                { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just your usual crystals." },
                 { speaker: 'Whisker', text: 'They wait... they grow... down at the center of it all.' },
                 { speaker: 'Whisker', text: 'Stay alive. I only deal with the living.' }
             ];
@@ -525,7 +525,7 @@ class OpeningCinematicSystem {
             // 在水晶位置说一句
             s.dialogSystem.show({
                 speaker: 'Whisker',
-                text: 'Mine them. Bring them back to me.'
+                text: 'Mine and bring them to me.'
             });
             this._waitDialogClose(() => this._cdpPanBackToMole());
         });
@@ -654,7 +654,7 @@ class OpeningCinematicSystem {
         s.time.delayedCall(1600, () => {
             const seq = [
                 { speaker: 'Whisker', text: "It's the only way out for you." },
-                { speaker: 'Whisker', text: 'Now go, kid.' }
+                { speaker: 'Whisker', text: "Now go and good luck, you'll need it." }
             ];
             this._playSequence(seq, () => this._kpFinish());
         });

@@ -16,6 +16,7 @@ class PlatformBlock extends Block {
         }
         this.isPlatform = true;
         this.rect._isPlatform = true;
+        if (this.geomRect) this.geomRect.isPlatform = true;   // (用户) wallRects 标记 — 头实体按主体同款语义放行单向平台
         if (scene.gridSystem) {
             scene.gridSystem.markRect(x, y, w, h, GridSystem.PLATFORM);
         }

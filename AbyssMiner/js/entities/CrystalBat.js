@@ -18,6 +18,15 @@ class CrystalBat extends Phaser.Physics.Arcade.Sprite {
         this.setBounce(0.4);
 
         this.state = 'hanging';
+        // (用户) 修远处破图: 远离玩家时被距离过滤跳过 update, _updateAnim 从不执行,
+        //   精灵一直裸奔构造占位图 bat_img (程序生成三角). 出生即定妆: 倒挂播 bat_idle
+        //   (once + 停最后一帧 = 睡着); anim 未注册时退而求其次直接换睡觉贴图首帧.
+        if (scene.anims && scene.anims.exists('bat_idle')) {
+            this.play('bat_idle');
+            this._lastAnimKey = 'bat_idle';
+        } else if (scene.textures && scene.textures.exists('Bat_idle')) {
+            this.setTexture('Bat_idle', 0);
+        }
         this.hp = 6;
         this.homeX = x; this.homeY = y;
         this.knockbackTimer = 0;
@@ -173,15 +182,25 @@ class CrystalBat extends Phaser.Physics.Arcade.Sprite {
                     this._randomizeVelocity(Math.cos(Math.random()*Math.PI*2), Math.sin(Math.random()*Math.PI*2), this.baseSpeed);
                 if (this.wanderTimer >= 10000) this.state='returning';
                 break;
-            case 'returning':
+            case 'returning': {
                 let homeAngle = Phaser.Math.Angle.Between(this.x,this.y,this.homeX,this.homeY);
-                this.body.setVelocity(Math.cos(homeAngle)*200, Math.sin(homeAngle)*200);
+                let rvx = Math.cos(homeAngle)*200, rvy = Math.sin(homeAngle)*200;
+                // 撞墙变向: 被挡的轴改成沿墙滑动 (绕过障碍, 不卡死)
+                const rb = this.body.blocked;
+                const rBlocked = rb.left || rb.right || rb.up || rb.down;
+                if ((rb.left && rvx < 0) || (rb.right && rvx > 0)) { rvx = 0; rvy = (this.homeY < this.y ? -1 : 1) * 200; }
+                if ((rb.up && rvy < 0) || (rb.down && rvy > 0)) { rvy = 0; rvx = (this.homeX < this.x ? -1 : 1) * 200; }
+                this.body.setVelocity(rvx, rvy);
+                // 连续卡墙超过 4s 还回不去 → 就地挂着 (避免无限卡在障碍上)
+                this._retBlockT = rBlocked ? (this._retBlockT || 0) + delta : 0;
+                if (this._retBlockT > 4000) { this.body.setVelocity(0,0); this.homeX = this.x; this.homeY = this.y; this._retBlockT = 0; this.state='hanging'; break; }
                 if (Phaser.Math.Distance.Between(this.x,this.y,this.homeX,this.homeY) < 20) {
                     this.x=this.homeX; this.y=this.homeY;
                     this.body.setVelocity(0,0);
                     this.state='hanging';
                 }
                 break;
+            }
         }
 
         if (this.state!=='hanging') {

@@ -27,6 +27,7 @@ class Block {
 
         this.rect = scene.add.rectangle(x, y, w, h, color);
         scene.walls.add(this.rect);
-        scene.wallRects.push(new Phaser.Geom.Rectangle(x - w / 2, y - h / 2, w, h));
+        this.geomRect = new Phaser.Geom.Rectangle(x - w / 2, y - h / 2, w, h);
+        scene.wallRects.push(this.geomRect);
     }
 }

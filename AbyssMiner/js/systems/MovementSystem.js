@@ -39,7 +39,8 @@ class MovementSystem {
                 const _fy = Math.floor((s.player.body.bottom + 2) / 32) * 32 + 16;
                 _onYellow = s._sz3YellowSet.has(_fx + ',' + _fy);
             }
-            const _wantKey = _movingX ? (s.isCrouching ? (_onYellow ? 'GrassCrouch' : 'CrouchWalking') : (_onYellow ? 'GrassRun' : 'Walking')) : null;
+            // (用户) 剧情强制走位: s._forceStepKey 置键则借用本循环轨 (tween 走位 velocity=0, _movingX 失效)
+            const _wantKey = s._forceStepKey || (_movingX ? (s.isCrouching ? (_onYellow ? 'GrassCrouch' : 'CrouchWalking') : (_onYellow ? 'GrassRun' : 'Walking')) : null);
             if (s._stepKey !== _wantKey) {
                 if (s._stepSnd) { try { s._stepSnd.stop(); s._stepSnd.destroy(); } catch (e) {} s._stepSnd = null; }
                 s._stepKey = _wantKey;
@@ -65,7 +66,14 @@ class MovementSystem {
         // 对话期间锁定输入 + 强制站立 (不要保持奔跑帧)
         if (s.dialogSystem && s.dialogSystem.isOpen) {
             if (s.player && s.player.body) s.player.body.setVelocityX(0);
-            if (s.player && s.player.play && s.anims && s.anims.exists('idle')) {
+            // (用户) 修穿模: 近战是 192px 帧 + 专用 offset, 攻击瞬间按交互开对话时
+            //   这里每帧硬切 idle(128px) 会让 body 横移怼进面前的墙 → 分离失败坠出世界.
+            //   与 DialogSystem.show 同规: 只有 run / crouch (且着地) 才切 idle,
+            //   melee_attack 交给 MeleeSystem 自己的 delayedCall 收尾 (对话期间照常运行).
+            const _k = (s.player && s.player.anims && s.player.anims.currentAnim) ? s.player.anims.currentAnim.key : '';
+            if (s.player && s.player.play && s.anims && s.anims.exists('idle') &&
+                (_k === 'run' || _k === 'crouch') &&
+                s.player.body && (s.player.body.blocked.down || s.player.body.touching.down)) {
                 s.player.play('idle', true);
             }
             return;
@@ -87,7 +95,7 @@ class MovementSystem {
             return;
         }
 
-        let currentXOffset = s.player.flipX ? 56 : 40;
+        let currentXOffset = 48;   // (用户) X 居中统一 — 转身零位移
         let onGround = s.player.body.blocked.down || s.player.body.touching.down;
 
         // 兜底：贴墙时 Phaser blocked.down 可能漏判，用 wallRects 测脚下 2px
@@ -104,6 +112,9 @@ class MovementSystem {
             }
         }
 
+        // (用户·双箱制) 头部实体: 站立时本体顶上的 32×16 手工碰撞 (顶头清 vy / 侧闯退回)
+        if (!s.isCrouching && s.wallRects && s.wallRects.length) this._headSolidCheck(s);
+
         // (用户) 跳跃键 = SPACE 或 W — 共用同一路径; 两个 JustDown 都显式消费, 防同帧双按残留边沿下帧再触发
         const _jdSpace = Phaser.Input.Keyboard.JustDown(s.keyJump);
         const _jdW = s.keyJumpW ? Phaser.Input.Keyboard.JustDown(s.keyJumpW) : false;
@@ -114,11 +125,7 @@ class MovementSystem {
 
         if (jumpPressed) {
             if (s.isHanging) {
-                if (s.isCrouching) {
-                    s.isCrouching = false;
-                    s.player.body.setSize(32, 64);
-                    s.player.body.setOffset(currentXOffset, 45);
-                }
+                if (s.isCrouching) { s.isCrouching = false; s.player.y -= 16; }   // (用户·双箱制) 站起翻旗 + 贴图归位
                 s.isHanging = false;
                 s.isGrappling = false;
                 s.grappleSystem.hasSnapped = false;
@@ -132,18 +139,10 @@ class MovementSystem {
             }
             else if (onGround) {
                 if (s.isCrouching) {
-                    let headSpaceRect = new Phaser.Geom.Rectangle(
-                        s.player.body.x + 2, s.player.body.y - 30, 28, 30
-                    );
-                    let canStand = true;
-                    for (let w of s.wallRects) {
-                        if (Phaser.Geom.Intersects.RectangleToRectangle(headSpaceRect, w)) { canStand = false; break; }
-                    }
-                    if (canStand) {
+                    // (用户·双箱制) 站起 = 仅头区(本体顶上 32×16)净空即可; 本体 32×48 永不变形
+                    if (this._headZoneFree(s)) {
                         s.isCrouching = false;
-                        s.player.body.setSize(32, 64);
-                        s.player.body.setOffset(currentXOffset, 45);
-                        s.player.y -= 16;
+                        s.player.y -= 16;   // (用户) 贴图归位
                         s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                     }
                 } else {
@@ -154,58 +153,23 @@ class MovementSystem {
 
         // 蹲下键 = CTRL/S（也用于站在 platform 上时下穿）
         if (Phaser.Input.Keyboard.JustDown(s.keyCrouch)) {
+            // (用户) 蹲下立即打断攻击/冲刺: 先走各自的完整复原原语 (cancelMelee 复帧+offset;
+            //   cancelDash 复 origin/offset/重力/守卫), 状态干净后照常蹲下.
+            //   旧的"冲刺中禁蹲"门随之撤销 — 当年禁是因为没有安全复原, 现在有了.
+            if (s.isMeleeAttacking && s.meleeSystem && s.meleeSystem.cancelMelee) s.meleeSystem.cancelMelee();
+            if (s.isDashing && s.dashSystem && s.dashSystem.cancelDash) s.dashSystem.cancelDash();
             // 站在 platform 上 + 不在蹲下 + 按 S → 下穿
             if (!s.isCrouching && onGround && this._isStandingOnPlatform(s)) {
                 this._dropThroughPlatform(s);
                 return;
             }
             if (s.isCrouching) {
-                if (onGround) {
-                    let headSpaceRect = new Phaser.Geom.Rectangle(
-                        s.player.body.x + 2, s.player.body.y - 30, 28, 30
-                    );
-                    let canStand = true;
-                    for (let w of s.wallRects) {
-                        if (Phaser.Geom.Intersects.RectangleToRectangle(headSpaceRect, w)) { canStand = false; break; }
-                    }
-                    if (canStand) {
-                        s.isCrouching = false;
-                        s.player.body.setSize(32, 64);
-                        s.player.body.setOffset(currentXOffset, 45);
-                        s.player.y -= 16;
-                    }
-                } else {
-                    // 空中/悬挂起立：放射状安全点搜寻
-                    s.isCrouching = false;
-                    s.player.body.setSize(32, 64);
-                    s.player.body.setOffset(currentXOffset, 45);
-                    let isSafe = (cx, cy) => {
-                        let bodyLeft = cx - 64 + currentXOffset;
-                        let bodyTop  = cy - 64 + 45;
-                        let testRect = new Phaser.Geom.Rectangle(bodyLeft, bodyTop, 32, 64);
-                        for (let w of s.wallRects) {
-                            if (Phaser.Geom.Intersects.RectangleToRectangle(testRect, w)) return false;
-                        }
-                        return true;
-                    };
-                    if (!isSafe(s.player.x, s.player.y)) {
-                        let maxR = 150, stepR = 4, angleStep = Math.PI / 8;
-                        for (let r = stepR; r <= maxR; r += stepR) {
-                            let found = false;
-                            for (let a = 0; a < Math.PI * 2; a += angleStep) {
-                                let tx = s.player.x + Math.cos(a) * r;
-                                let ty = s.player.y + Math.sin(a) * r;
-                                if (isSafe(tx, ty)) { s.player.setPosition(tx, ty); found = true; break; }
-                            }
-                            if (found) break;
-                        }
-                    }
-                }
+                // (用户·双箱制) 站起 = 头区净空即可, 地面/空中同一规则;
+                //   旧的变形三连 + 放射状安全点搜寻随变形机制一并退役
+                if (this._headZoneFree(s)) { s.isCrouching = false; s.player.y -= 16; }   // (用户) 贴图归位
             } else {
-                s.isCrouching = true;
-                s.player.body.setSize(32, 48);
-                s.player.body.setOffset(currentXOffset, 45 + 16); // body 顶部往下移 16，让脚和原本的位置对齐
-                if (onGround) s.player.y += 16;
+                s.isCrouching = true;   // 蹲下 = 头实体停用, 本体 32×48 纹丝不动
+                s.player.y += 16;        // (用户) 蹲姿贴图下移 16 — offsetY 由 Player 每帧按蹲站写 47/63, 底边恒 y+47
             }
         }
 
@@ -250,6 +214,51 @@ class MovementSystem {
     }
 
     /** 玩家是否站在 platform（单向平台）顶上？ */
+    /** (用户·双箱制) 头部与主体完全同源的实墙判定 — 直接读物理组活体 (s.walls 子节点 body):
+     *  无 body / body 已禁用 / checkCollision.none / 单向平台 一律跳过.
+     *  门开 (无论是销毁还是禁用)、挖矿移除、任何运行时墙体变化 — 引擎放主体过的, 头同步放行.
+     *  禁止再用 wallRects 快照: 它是手工维护的死账, 各场景开门筛漏一次头就被幽灵墙挡一次. */
+    _headHitWall(s, hx, hy, hw, hh) {
+        // (用户) 同源总闸: 主体处于幽灵态 (抓钩飞行/创造穿墙 checkCollision.none) 时, 头同步失效 —
+        //   主体穿墙头却顶墙 = 又一处分歧, 一并堵死
+        if (s.player.body.checkCollision.none) return null;
+        if (!s.walls || !s.walls.getChildren) return null;
+        for (const c of s.walls.getChildren()) {
+            const wb = c.body;
+            if (!wb || !wb.enable || wb.checkCollision.none || c._isPlatform) continue;
+            if (hx < wb.x + wb.width && hx + hw > wb.x && hy < wb.y + wb.height && hy + hh > wb.y) return wb;
+        }
+        return null;
+    }
+
+    /** (用户·双箱制) 头区(本体顶上 32×16)是否净空 — 站起资格 */
+    _headZoneFree(s) {
+        const b = s.player.body;
+        return !this._headHitWall(s, b.x + 1, b.y - 16, b.width - 2, 16);
+    }
+
+    /** (用户·双箱制) 头部实体碰撞: 顶头 → vy 清零 + 下压让位; 侧闯 48px 缝 → 水平退回.
+     *  只动精灵 (本体由引擎下帧跟随), 16px 浅区一帧解一墙足够 */
+    _headSolidCheck(s) {
+        const b = s.player.body;
+        const hx = b.x, hy = b.y - 16, hw = b.width, hh = 16;
+        const wb = this._headHitWall(s, hx, hy, hw, hh);
+        if (!wb) return;
+        const fromBelow = (wb.y + wb.height) - hy;
+        const fromLeft  = (wb.x + wb.width) - hx;
+        const fromRight = (hx + hw) - wb.x;
+        if (fromBelow <= Math.min(fromLeft, fromRight) + 8) {
+            if (b.velocity.y < 0) b.velocity.y = 0;   // 顶头
+            s.player.y += fromBelow;
+        } else if (fromLeft < fromRight) {
+            s.player.x += fromLeft;
+            if (b.velocity.x < 0) b.velocity.x = 0;
+        } else {
+            s.player.x -= fromRight;
+            if (b.velocity.x > 0) b.velocity.x = 0;
+        }
+    }
+
     _isStandingOnPlatform(s) {
         if (!s.player.body.blocked.down && !s.player.body.touching.down) return false;
         const playerBottom = s.player.body.y + s.player.body.height;

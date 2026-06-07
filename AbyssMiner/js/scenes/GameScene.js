@@ -66,6 +66,14 @@ class MainGameScene extends Phaser.Scene {
         this.load.spritesheet('Miner_stand','assets/images/Miner_stand.png',{frameWidth:128,frameHeight:128});
         this.load.spritesheet('Miner_stand_up','assets/images/Miner_stand_up.png',{frameWidth:164,frameHeight:116});
         this.load.spritesheet('Miner_dash','assets/images/Miner_dash.png',{frameWidth:160,frameHeight:80});   // (用户) 新冲刺图 640×80 / 4 帧
+        this.load.image('Egg','assets/images/Egg.png');   // (用户) 商店神秘蛋图标 32×32
+        this.load.image('GuideButton','assets/images/GuideButton.png');   // (用户) HUD guide 按钮 32×32
+        this.load.spritesheet('Healing','assets/images/Healing.png',{frameWidth:64,frameHeight:80});   // (用户) 回血特效 640×80 / 10 帧
+        this.load.spritesheet('Small_spider_idle','assets/images/Small_spider_idle.png',{frameWidth:64,frameHeight:64});   // (用户) 宠物蜘蛛待机 384×64 / 6 帧
+        this.load.spritesheet('LastLive','assets/images/LastLive.png',{frameWidth:40,frameHeight:40});   // (用户) 最后一心碎裂 2200×40 / 55 帧
+        this.load.image('Ending1','assets/images/Ending1.png');   // (用户) 通关 cutscene 三联图 (320×180, intro 同款)
+        this.load.image('Ending2','assets/images/Ending2.png');
+        this.load.image('Ending3','assets/images/Ending3.png');
         this.load.spritesheet('melee_attack_slash','assets/images/melee_attack_slash.png',{frameWidth:256,frameHeight:256});
         this.load.spritesheet('Miner_run','assets/images/Miner_run.png',{frameWidth:128,frameHeight:128});
         this.load.spritesheet('Miner_melee_attack','assets/images/Miner_melee_attack.png',{frameWidth:192,frameHeight:128});
@@ -319,6 +327,15 @@ class MainGameScene extends Phaser.Scene {
         // 小蜘蛛动画
         if (this.textures.exists('Small_spider_run')) {
             this.anims.create({ key: 'small_spider_run', frames: this.anims.generateFrameNumbers('Small_spider_run', { start: 0, end: 3 }), frameRate: 12, repeat: -1 });
+        }
+        if (this.textures.exists('Small_spider_idle') && !this.anims.exists('small_spider_idle')) {   // (用户) 宠物待机/骑头动画
+            this.anims.create({ key: 'small_spider_idle', frames: this.anims.generateFrameNumbers('Small_spider_idle', { start: 0, end: 5 }), frameRate: 8, repeat: -1 });
+        }
+        if (this.textures.exists('Healing') && !this.anims.exists('healing_anim')) {   // (用户) 回血特效
+            this.anims.create({ key: 'healing_anim', frames: this.anims.generateFrameNumbers('Healing', { start: 0, end: 9 }), frameRate: 14, repeat: -1 });
+        }
+        if (this.textures.exists('LastLive') && !this.anims.exists('lastlive_anim')) {   // (用户) 最后一心碎裂 55 帧 ≈3.2s
+            this.anims.create({ key: 'lastlive_anim', frames: this.anims.generateFrameNumbers('LastLive', { start: 0, end: 54 }), frameRate: 17, repeat: 0 });
         }
 
         // === 钟乳石碎裂动画 (SZ3 NPC 动画由 CrystalNpc.ANIM_CATALOG 注册) ===
@@ -771,6 +788,17 @@ class MainGameScene extends Phaser.Scene {
         return false;
     }
 
+    /** (用户) 玩家主体是否与任一单向平台矩形重合 — 过板击退免疫判定用 */
+    _playerOverlapsPlatform() {
+        const b = this.player && this.player.body;
+        if (!b || !this.wallRects) return false;
+        for (let w of this.wallRects) {
+            if (!w.isPlatform) continue;
+            if (b.x < w.x + w.width && b.x + b.width > w.x && b.y < w.y + w.height && b.y + b.height > w.y) return true;
+        }
+        return false;
+    }
+
     _playerHit(player, monster) {
         if (monster && monster.hp !== undefined && monster.hp <= 0) return;
         if (this.isDashing || this.isPlayerStunned || this.isPlayerInvincible || this.isDead) return;
@@ -804,14 +832,24 @@ class MainGameScene extends Phaser.Scene {
 
         this.isPlayerStunned = true;
         // 注: isPlayerInvincible 由 HealthSystem 自己管 (0.5s), 这里不再设置
+        // (用户) 受击打断冲刺/抓钩必须完整复原: cancelDash 还 origin/offset/重力;
+        //   stopGrapple 还 checkCollision (旧版只清旗, 幽灵态 + 下面开重力 = 直坠出图)
+        if (this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
+        if (this.grappleSystem && this.grappleSystem.stopGrapple && (this.isGrappling || this.isHanging)) {
+            this.grappleSystem.stopGrapple();
+        }
         this.isGrappling = false;
         this.isHanging = false;
         this.isMeleeAttacking = false;
         player.body.setAllowGravity(true);
 
         player.setTint(0xff0000);
-        let pushDir = monster ? (player.x > monster.x ? 1 : -1) : 1;
-        player.body.setVelocity(pushDir * 120, -100);
+        // (用户) 过板击退免疫: 主体与单向平台重合期间, 外来击退一律免疫 — 扣血/红闪/眩晕照常,
+        //   防止跳上平台的瞬间被守株怪一拳打回去永远上不去
+        if (!this._playerOverlapsPlatform()) {
+            let pushDir = monster ? (player.x > monster.x ? 1 : -1) : 1;
+            player.body.setVelocity(pushDir * 120, -100);
+        }
 
         this.time.delayedCall(240, () => {
             if (!this.isDead) { this.isPlayerStunned = false; player.clearTint(); }
@@ -851,7 +889,7 @@ class MainGameScene extends Phaser.Scene {
             this._playerHit(this.player, null);
             if (!this.isDead) {
                 let a = Phaser.Math.Angle.Between(cx, cy, this.player.x, this.player.y);
-                this.player.body.setVelocity(Math.cos(a)*350, Math.sin(a)*350 - 100);
+                if (!this._playerOverlapsPlatform()) this.player.body.setVelocity(Math.cos(a)*350, Math.sin(a)*350 - 100);   // (用户) 过板击退免疫
             }
         }
         // (用户) SZ 场景不一定创建全部怪物组 (如 bats) — 逐组判空, 否则玩家旁爆炸直接宕机
@@ -1245,7 +1283,53 @@ class MainGameScene extends Phaser.Scene {
         this.throwSystem.updateUI();
     }
 
+    /** (用户·mob 声轨) 地面怪走路节拍 + 落地检测, 中央统一处理 (免逐怪改造);
+     *  音量/距离规则在 AudioSystem._mobVol; >15格的在那边直接归零, 这里无需预过滤 */
+    _mobFootAudio(delta) {
+        if (typeof AudioSystem === 'undefined' || !AudioSystem._mobVol || !this.player) return;
+        const groups = [this.spiders, this.bungeeSpiders, this.beetles, this.slimes, this.miniSlimes];
+        for (const grp of groups) {
+            if (!grp || typeof grp.getChildren !== 'function') continue;
+            for (const m of grp.getChildren()) {
+                if (!m || !m.active || !m.body) continue;
+                const onG = m.body.blocked.down || m.body.touching.down;
+                // 落地: 空中 >120ms 后触地才算 (滤掉贴地抖动); 史莱姆每跳一落都响
+                if (onG && !m._wasOnGround && (m._airMs || 0) > 120) AudioSystem.mobLandSfx(this, m.x, m.y);
+                m._airMs = onG ? 0 : (m._airMs || 0) + delta;
+                m._wasOnGround = onG;
+                // 走路: 受管循环 — 玩家真音轨 Walking, 距离实时调音; 停步/出范围/死亡即收
+                const _v = AudioSystem._mobVol(this, m.x, m.y);
+                const _walking = onG && Math.abs(m.body.velocity.x) > 25 && _v > 0;
+                if (_walking) {
+                    if (!m._stepSnd) {
+                        if (this.cache.audio.exists('Walking')) {
+                            try {
+                                m._stepSnd = this.sound.add('Walking', { loop: true, volume: _v });
+                                m._stepSnd.play();
+                                if (!this._mobStepCleanHooked) {
+                                    this._mobStepCleanHooked = true;
+                                    this.events.once('shutdown', () => {
+                                        for (const g2 of groups) {
+                                            if (!g2 || !g2.getChildren) continue;
+                                            g2.getChildren().forEach(mm => { if (mm && mm._stepSnd) { try { mm._stepSnd.stop(); mm._stepSnd.destroy(); } catch (e) {} mm._stepSnd = null; } });
+                                        }
+                                    });
+                                }
+                            } catch (e) {}
+                        }
+                    } else {
+                        m._stepSnd.setVolume(_v);
+                    }
+                } else if (m._stepSnd) {
+                    try { m._stepSnd.stop(); m._stepSnd.destroy(); } catch (e) {}
+                    m._stepSnd = null;
+                }
+            }
+        }
+    }
+
     update(time, delta) {
+        this._mobFootAudio(delta);
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 

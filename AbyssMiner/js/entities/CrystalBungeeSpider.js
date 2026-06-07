@@ -78,6 +78,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
             this.y = this.anchorY;
             if ((distToPlayer < 600 || this.forceAggroTimer > 0) && player.y > this.anchorY + 30) {
                 this.state = 'dropping';
+                this._armSilkKill();   // (用户) 蛛丝 3s 强断保险 — 距离剔除卡死也能收丝
                 this.body.setAllowGravity(true);
                 this.body.setGravityY(3800);
             }
@@ -125,6 +126,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
             if (this.earlyBounce) {
                 if (this.y <= this.earlyBounceTargetY || this.body.velocity.y >= 0) {
                     this.silkIntact = false;
+                    this._silkTimerClear();   // (用户) 自然断丝 → 撤 3s 保险
                     this.body.setAllowGravity(true);
                     this.body.setGravityY(0);
                     this.body.setVelocityY(0);
@@ -134,6 +136,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
             }
             if (this.body.velocity.y >= -10 || this.y <= this.anchorY + 200) {
                 this.silkIntact = false;
+                this._silkTimerClear();   // (用户) 自然断丝 → 撤 3s 保险
                 this.body.setAllowGravity(true);
                 this.body.setGravityY(0);
                 this.body.setVelocityY(0);
@@ -186,6 +189,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
                 this.setFlipY(false);
                 this._bungeeStartX = this.x;
                 this._bungeeStartY = this.y;
+                this._armSilkKill();   // (用户) 重垂丝同享 3s 保险
                 if (!this._bungeeLine) {
                     this._bungeeLine = this.scene.add.graphics();
                     this._bungeeLine.setDepth(9);
@@ -224,6 +228,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
                     this._bungeeLine.destroy();
                     this._bungeeLine = null;
                 }
+                this._silkTimerClear();   // (用户) 正常落地 → 撤 3s 保险
             }
             return;
         }
@@ -466,6 +471,36 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    /** (用户) 蛛丝 3s 强断保险: scene.time 计时器独立于 update — 距离剔除把蜘蛛卡死在半空时,
+     *  3 秒一到丝照样消失. 天花板待机 (idle) 的丝是埋伏设计, 不在保险范围 (计时从开始下落起算). */
+    _armSilkKill() {
+        this._silkTimerClear();
+        if (!this.scene) return;
+        this._silkKillTimer = this.scene.time.delayedCall(3000, () => this._silkExpire());
+    }
+
+    _silkTimerClear() {
+        if (this._silkKillTimer) { try { this._silkKillTimer.remove(); } catch (e) {} this._silkKillTimer = null; }
+    }
+
+    _silkExpire() {
+        this._silkKillTimer = null;
+        if (!this.scene || !this.active) return;
+        // 初始丝: 断丝 → drawSilk 停画, 蜘蛛转自由落体 (剔除中也生效, 恢复后无丝续命)
+        if (this.silkIntact && (this.state === 'dropping' || this.state === 'bouncing')) {
+            this.silkIntact = false;
+            this.body.setAllowGravity(true);
+            this.body.setGravityY(0);
+            this.state = 'falling';
+        }
+        // 重垂线: 自有图形直接销毁, 悬在线上的转自由落体
+        if (this._bungeeLine) { this._bungeeLine.destroy(); this._bungeeLine = null; }
+        if (this.state === 'bungee_redrop') {
+            this.body.setAllowGravity(true);
+            this.state = 'falling';
+        }
+    }
+
     drawSilk(graphics) {
         if (!this.silkIntact || this.hp <= 0) return;
         if (this.state === 'idle' || this.state === 'dropping' || this.state === 'bouncing') {
@@ -519,6 +554,7 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
                     this._bungeeLine.destroy();
                     this._bungeeLine = null;
                 }
+                this._silkTimerClear();   // (用户) 死亡 → 撤 3s 保险
                 if (this.scene) this.destroy();
             });
         }

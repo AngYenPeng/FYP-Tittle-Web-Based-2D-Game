@@ -44,6 +44,38 @@ class AudioSystem {
         });
     }
 
+    /** (用户·mob/NPC) 与玩家距离 → 音量: ≤5格(160px) = 玩家走路循环音量(×1.8)的 50% 封顶;
+     *  5→15格(160→480px) 线性衰减到 12%; >15格 = 0 (不发声). */
+    static _mobVol(scene, x, y) {
+        const p = scene && scene.player;
+        if (!p) return 0;
+        const d = Phaser.Math.Distance.Between(p.x, p.y, x, y);
+        if (d > 480) return 0;
+        const maxV = AudioSystem.sfxVolume * 1.8 * 0.5;
+        const t = d <= 160 ? 1 : 1 - ((d - 160) / 320) * 0.88;
+        return maxV * t;
+    }
+
+    /** (用户·mob) 怪物落地 — 玩家同款 JumpLanding, 距离衰减 */
+    static mobLandSfx(scene, x, y) {
+        const v = AudioSystem._mobVol(scene, x, y);
+        if (v <= 0) return;
+        AudioSystem.sfx(scene, 'JumpLanding', { volume: Math.min(1, v), detune: Phaser.Math.Between(-120, 0) });
+    }
+
+    /** (用户) 独走 NPC 限时走路循环 (玩家不动、NPC 自己走的剧情段): Miner 真实走路音轨,
+     *  到时自停; 返回 sound 可提前 stop. key 默认 Walking, 黄土场景传 GrassRun */
+    static npcWalkLoop(scene, durationMs, key = 'Walking', volume) {
+        if (!scene || !scene.sound || !scene.cache.audio.exists(key)) return null;
+        try {
+            const snd = scene.sound.add(key, { loop: true, volume: volume != null ? volume : AudioSystem.sfxVolume * 0.9 });
+            snd.play();
+            scene.time.delayedCall(durationMs, () => { try { snd.stop(); snd.destroy(); } catch (e) {} });
+            scene.events.once('shutdown', () => { try { snd.stop(); snd.destroy(); } catch (e) {} });
+            return snd;
+        } catch (e) { return null; }
+    }
+
     // 播放一次性音效. opts 可含 { volume, rate, detune } 等 Phaser sound config
     static sfx(scene, key, opts) {
         if (!scene || !scene.sound) return null;
@@ -191,6 +223,7 @@ AudioSystem.MANIFEST = {
     'Pickup1':           'Miner/Pickup1.wav',
     'Pickup2':           'Miner/Pickup2.wav',
     'ThrowGrappler':     'Miner/ThrowGrappler.wav',
+    'Heartbeat':         'Miner/Heartbeat.wav',   // (用户) 最后一颗心碎裂时的心跳
     // (用户) Mobs 音效 (.wav, audio/Mobs/)
     'Earthworm_Death':   'Mobs/Earthworm_Death.wav',
     'Earthworm_Hurt':    'Mobs/Earthworm_Hurt.wav',

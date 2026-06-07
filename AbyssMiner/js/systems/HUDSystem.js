@@ -68,24 +68,23 @@ class HUDSystem {
         this.guideBtn = s.add.container(60, 180)
             .setScrollFactor(0).setDepth(200);
 
-        const bg = s.add.rectangle(0, 0, 54, 54, 0x222244, 0.88)
-            .setStrokeStyle(2, 0x6688aa).setInteractive();
-        const txt = s.add.text(0, 0, '!', {
-            fontSize: '36px', color: '#ffcc55', fontStyle: 'bold',
-            fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
-        }).setOrigin(0.5);
+        // (用户) 换专属图 GuideButton 32×32 (放大到 54 与旧按钮同占位); 红点机制原样保留
+        const bg = (s.textures.exists('GuideButton')
+            ? s.add.image(0, 0, 'GuideButton').setDisplaySize(54, 54)
+            : s.add.rectangle(0, 0, 54, 54, 0x222244, 0.88).setStrokeStyle(2, 0x6688aa)
+        ).setInteractive();
 
         // 红点（右上 +3 右 +3 上）
         this.guideRedDot = s.add.circle(25, -25, 8, 0xff3333);
 
-        bg.on('pointerover', () => bg.setFillStyle(0x333366, 0.95));
-        bg.on('pointerout',  () => bg.setFillStyle(0x222244, 0.88));
+        bg.on('pointerover', () => { if (bg.setTint) bg.setTint(0xbbccff); else bg.setFillStyle(0x333366, 0.95); });
+        bg.on('pointerout',  () => { if (bg.clearTint) bg.clearTint(); else bg.setFillStyle(0x222244, 0.88); });
         bg.on('pointerdown', () => {
             if (s._cinematicLock || (s.dialogSystem && s.dialogSystem.isOpen)) return;
             if (s.guideSystem) s.guideSystem.open();
         });
 
-        this.guideBtn.add([bg, txt, this.guideRedDot]);
+        this.guideBtn.add([bg, this.guideRedDot]);
 
         // 只闪红点（不闪整个按钮）
         this._guideBlinkTween = s.tweens.add({
@@ -185,7 +184,7 @@ class HUDSystem {
             const ds = s.diseaseSystem;
             const showCorrosion = visible && ds._barVisible;
             [ds.corrosionBg, ds.corrosionFill, ds.corrosionBorder,
-             ds.corrosionLine20, ds.corrosionLine50, ds.corrosionText].forEach(o => {
+             ds.corrosionLine20, ds.corrosionLine50].forEach(o => {   // (用户) corrosionText 除名 — 不显示 % 数字
                 if (o) o.setVisible(showCorrosion);
             });
         }

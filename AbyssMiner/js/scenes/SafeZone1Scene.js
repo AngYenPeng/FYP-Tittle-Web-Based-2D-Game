@@ -1133,7 +1133,7 @@ class SafeZone1Scene extends MainGameScene {
             return;
         }
         this.dialogSystem.showSequence([
-            { speaker: 'Whisker', text: 'We meet again, kid.' },
+            { speaker: 'Whisker', text: 'We meet once again, kid.' },
             {
                 speaker: 'Whisker',
                 text: "Good to see you... I've got business to discuss. Care to trade?",
@@ -2291,7 +2291,7 @@ class SafeZone1Scene extends MainGameScene {
                     if (this.dialogSystem) {
                         this.dialogSystem.show({
                             speaker: '???',
-                            text: 'There is a book here. Open it?',
+                            text: 'There is a book here. Take a look?',
                             choices: [
                                 {
                                     label: 'Yes',

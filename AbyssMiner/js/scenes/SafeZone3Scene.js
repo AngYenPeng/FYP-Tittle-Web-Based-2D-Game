@@ -1100,9 +1100,9 @@ class SafeZone3Scene extends MainGameScene {
         s.time.delayedCall(300, () => {
             s.dialogSystem.showSequence([
                 { speaker: '???', text: 'Easy, little ones. This is a human.' },
-                { speaker: '???', text: "It's been a long time since I felt a human's presence." },
+                { speaker: '???', text: "It's been a long time since a human ever stepped foot here." },
                 { speaker: '???', text: 'Welcome, unexpected guest.' },
-                { speaker: 'Cryst', text: 'My name is Cryst. This is the Crystal City.' },
+                { speaker: 'Cryst', text: 'My name is Cryst. This is the Crystal Ville.' },
                 { speaker: 'Cryst', text: "I don't know how you got here — but you're hurt, and you'll need help." }
             ], () => {
                 s._sz3IntroPhase = 8;
@@ -1123,7 +1123,7 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s._sz3LeadToGuardian([
-            { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must seem strange to you." },
+            { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must have seem strange to you." },
             { speaker: 'Cryst', text: 'But first — let me bring you to our Guardian Crystal. It is what keeps us alive.' },
             { speaker: 'Cryst', text: 'Does the pain ease, even a little?' },
             { speaker: 'You', text: "Yes... a little. I do have questions, though. Would you answer them?" }
@@ -1135,7 +1135,7 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s.dialogSystem.showSequence([
-            { speaker: 'Cryst', text: 'Of course, my friend.' },
+            { speaker: 'Cryst', text: 'Of course, human.' },
             { speaker: 'Cryst', text: 'But as our guest, let me bring you to the Guardian Crystal first.' }
         ], () => {
             s._sz3LeadToGuardian([
@@ -1165,10 +1165,12 @@ class SafeZone3Scene extends MainGameScene {
         // 玩家也朝左走到 (-56,30)
         s.player.flipX = true;
         if (s.anims.exists('run')) { try { s.player.play('run', true); } catch(e) {} }
+        s._forceStepKey = 'GrassRun';   // (用户) 剧情走位脚步: 借用玩家走路循环轨 (SZ3 黄土面 → GrassRun)
         s.tweens.add({
             targets: s.player, x: playerTarget, duration: 2600, ease: 'Linear',
             onUpdate: () => { if (s.player.body) s.player.body.reset(s.player.x, s.player.y); },
             onComplete: () => {
+                s._forceStepKey = null;   // (用户) 走位结束收脚步
                 if (s.player.body) s.player.body.setVelocity(0, 0);
                 if (s.anims.exists('idle')) { try { s.player.play('idle'); } catch(e) {} }
                 s.player.flipX = true;
@@ -1201,11 +1203,11 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s.dialogSystem.showSequence([
-            { speaker: 'Cryst', text: 'They should be blue, yes. The yellow ones are sick — corrupted by a virus.' },
+            { speaker: 'Cryst', text: 'They should be yellow. The blue ones are corrupted, don\'t stay long exposure of it.' },
             { speaker: 'Cryst', text: 'It spreads through living things, sinking into their flesh, hollowing them out until only a walking husk remains.' },
             { speaker: 'Cryst', text: 'Once infected, there is but one cure: slay the mother that birthed it. A dreadful thing.' },
             { speaker: 'You', text: 'Where can I find it?' },
-            { speaker: 'Cryst', text: "I cannot say for certain. But press deep enough into the mines, and you may meet it." }
+            { speaker: 'Cryst', text: "I cannot say for certain. But walk deep enough into the mines, and you may encounter it." }
         ], () => s._sz3ShowQuestionMenu());
     }
 
@@ -1215,7 +1217,7 @@ class SafeZone3Scene extends MainGameScene {
         s.dialogSystem.showSequence([
             { speaker: 'Cryst', text: "Simple. You carry no raw meat." },
             { speaker: 'You', text: 'What does raw meat have to do with it?' },
-            { speaker: 'Cryst', text: 'The virus was no accident — it was farmed. Long ago, humans broke in and took our home.' },
+            { speaker: 'Cryst', text: 'The corruption was no accident — it was farmed. Long ago, humans broke in and took our home.' },
             { speaker: 'Cryst', text: 'They brought raw meat by the load, fed it to the beast in the depths, and harvested the blue crystals it made.' },
             { speaker: 'Cryst', text: "For reasons I never learned... they stopped coming, a long time ago." }
         ], () => s._sz3ShowQuestionMenu());
@@ -1226,8 +1228,8 @@ class SafeZone3Scene extends MainGameScene {
         s.dialogSystem.close();
         s.dialogSystem.showSequence([
             { speaker: 'Cryst', text: "These? So you've passed more than one." },
-            { speaker: 'Cryst', text: 'They are wards, raised by our ancestors. Their field holds the virus at bay — and soothes the wounded, mending them slowly.' },
-            { speaker: 'Cryst', text: 'They say only a kind heart can wake their protection.' }
+            { speaker: 'Cryst', text: 'They are wards, raised by our ancestors. Their field holds the corruption at bay — and soothes the wounded, mending them slowly.' },
+            { speaker: 'Cryst', text: 'They say only the kind-hearted can wake their protection.' }
         ], () => s._sz3ShowQuestionMenu());
     }
 
@@ -1337,7 +1339,7 @@ class SafeZone3Scene extends MainGameScene {
                         if (s._sz3ToyNpc) s._sz3ToyNpc._idleOverride = 'Crying_guy_happy';   // cry → happy
                         if (s.hudSystem && s.hudSystem.addYellowCrystal) s.hudSystem.addYellowCrystal(5);
                         s.dialogSystem.showSequence([
-                            { speaker: 'Child', text: "Wow! My lost toy! Thank you so much! Here, take 5 yellow crystals as thanks — please!" }
+                            { speaker: 'Child', text: "Wow! My lost toy! Thank you so much! Here, take 5 yellow crystals as thanks!" }
                         ], () => s.dialogSystem.close());
                     }},
                     { label: 'Leave', action: () => s.dialogSystem.close() }
@@ -1370,7 +1372,7 @@ class SafeZone3Scene extends MainGameScene {
             ], () => s.dialogSystem.close());
         } else {
             s.dialogSystem.showSequence([
-                { speaker: '???', text: "See that yellow crystal up ahead? I keep wondering when it'll fall." }
+                { speaker: '???', text: "See that yellow crystal up there? I keep wondering when it'll fall." }
             ], () => s.dialogSystem.close());
         }
     }
@@ -1419,7 +1421,7 @@ class SafeZone3Scene extends MainGameScene {
         if (!s._amberTalkedOnce) {
             s._amberTalkedOnce = true;
             s.dialogSystem.showSequence([
-                { speaker: 'Amber', text: "Oh? A new adventurer? The name's Amber." },
+                { speaker: 'Amber', text: "Oh? A new adventurer? My name is Amber." },
                 { speaker: 'Amber', text: "Could you collect 10 yellow crystals for me? I'll upgrade your pickaxe so it actually feels like a weapon." }
             ], () => s.dialogSystem.close());
             return;
@@ -1560,7 +1562,7 @@ class SafeZone3Scene extends MainGameScene {
             s.dialogSystem.showSequence([
                 { speaker: 'Citrine', text: "Hmm. Thinking it over... still not enough. Bring me 20 more — last time, I swear on it." },
                 { speaker: 'You',     text: "...You sure?" },
-                { speaker: 'Citrine', text: "I swear, hehe." }
+                { speaker: 'Citrine', text: "Like I said, I swear, hehe." }
             ], () => s.dialogSystem.close());
         } else if (nextPhase === 'cutscene') {
             s.dialogSystem.showSequence([
@@ -1575,8 +1577,26 @@ class SafeZone3Scene extends MainGameScene {
     // === 跑路 cutscene ===
     _sz3CitrineRunCutscene() {
         const s = this;
-        const G = 32;
         s._cinematicLock = true;
+        // (用户) 空中触发保护: 走位 tween 只动 X 且每帧 reset 清掉重力速度 — 空中触发 = 锁高度平飞.
+        //   先锁输入等玩家自然落地, 落地后再开始押送; 3s 兜底防极端卡死.
+        const b = s.player.body;
+        if (b && !b.blocked.down) {
+            b.setVelocityX(0);   // 收水平速度, 垂直交给重力自然下落
+            const ev = s.time.addEvent({ delay: 50, loop: true, callback: () => {
+                if (s.player.body && s.player.body.blocked.down) { ev.remove(); this._sz3CitrineWalkPhase(); }
+            }});
+            s.time.delayedCall(3000, () => { try { ev.remove(); } catch (e) {} this._sz3CitrineWalkPhase(); });
+            return;
+        }
+        this._sz3CitrineWalkPhase();
+    }
+
+    _sz3CitrineWalkPhase() {
+        const s = this;
+        if (s._citrineWalkStarted) return;   // 兜底与落地轮询可能双触发, 只走一次
+        s._citrineWalkStarted = true;
+        const G = 32;
         const cam = s.cameras.main;
         // 暂存原 zoom
         s._citrineSavedZoom = cam.zoom;
@@ -1590,10 +1610,12 @@ class SafeZone3Scene extends MainGameScene {
         s.player.body && s.player.body.setVelocity(0, 0);
         s.player.flipX = false;
         if (s.anims.exists('run')) { try { s.player.play('run', true); } catch(e) {} }
+        s._forceStepKey = 'GrassRun';   // (用户) 剧情走位脚步
         s.tweens.add({
             targets: s.player, x: targetX, duration: 1500, ease: 'Linear',
             onUpdate: () => { if (s.player.body) s.player.body.reset(s.player.x, s.player.y); },
             onComplete: () => {
+                s._forceStepKey = null;   // (用户) 走位结束收脚步
                 if (s.player.body) s.player.body.setVelocity(0, 0);
                 if (s.anims.exists('idle')) { try { s.player.play('idle', true); } catch(e) {} }
                 // 玩家到位后 → 第 2 步: Citrine 才开始跑
@@ -1614,6 +1636,7 @@ class SafeZone3Scene extends MainGameScene {
         const cspr = s._sz3Citrine.sprite;
         const cTargetX = -41 * G + G / 2;  // 当前 -31 → -41 (左 10 格)
         cspr.flipX = false;  // 朝左
+        if (typeof AudioSystem !== 'undefined' && AudioSystem.npcWalkLoop) AudioSystem.npcWalkLoop(s, 1000, 'GrassRun', AudioSystem.sfxVolume * 0.9);   // (用户) Citrine 跑路脚步 (玩家真音轨, 略轻)
         s.tweens.add({
             targets: cspr, x: cTargetX, duration: 1000, ease: 'Linear',
             onUpdate: () => { s._sz3Citrine.x = cspr.x; },
@@ -1707,7 +1730,7 @@ class SafeZone3Scene extends MainGameScene {
                             { speaker: 'Citrine', text: "I... I... I'm sorry... Here's what you came for — doubled, even. I was wrong... *Mysterious Key +2*" },
                             { speaker: 'You',     text: "*staring at him* ..." },
                             { speaker: 'You',     text: "Don't let it happen again." },
-                            { speaker: 'Citrine', text: "O-okay... *trembling*" }
+                            { speaker: 'Citrine', text: "O-okay..." }
                         ], () => {
                             // 给玩家 2 把钥匙 — 走背包 (跟 Tutorial 商人/SZ1 骷髅同套)
                             if (s.inventorySystem && s.inventorySystem.addItem) {
@@ -2238,15 +2261,19 @@ class SafeZone3Scene extends MainGameScene {
             else if (ny < nc) this._sz3BgmWant = 'low';
             // ny === nc (含两者皆 0) → 维持上次判定
         }
-        // 每帧朝目标音量推进 (0↔满 各 5000ms; 目标实时跟随设置音量)
+        // 每帧朝目标"混音比"推进 (0↔1 各 5000ms); 实际音量 = 混音比 × 实时设置音量
+        //   (用户修复) 旧版直接 lerp 音量且步长 ∝ 音量: 滑块调小要几十秒才跟上;
+        //   调到 0 时步长被 0.0001 地板托住 → 0.5 爬到 0 要 ~150 万帧 = 音乐永远关不掉.
+        //   解耦后: 交叉淡变节奏固定 5s, 设置滑块即时全幅生效 (含 0 = 立即静音).
         const maxV = AudioSystem.bgmVolume;
-        const step = (delta / 5000) * Math.max(0.0001, maxV);
+        const step = delta / 5000;
         const move = (snd, on) => {
             if (!snd) return;
-            const tgt = on ? maxV : 0;
-            const v = snd.volume;
-            if (Math.abs(v - tgt) <= step) { if (v !== tgt) snd.setVolume(tgt); return; }
-            snd.setVolume(v + (tgt > v ? step : -step));
+            if (snd._mix === undefined) snd._mix = snd.volume > 0 ? 1 : 0;
+            const tgt = on ? 1 : 0;
+            if (Math.abs(snd._mix - tgt) <= step) snd._mix = tgt;
+            else snd._mix += (tgt > snd._mix ? step : -step);
+            snd.setVolume(snd._mix * maxV);
         };
         move(this._sz3Up,  this._sz3BgmWant === 'up');
         move(this._sz3Low, this._sz3BgmWant === 'low');

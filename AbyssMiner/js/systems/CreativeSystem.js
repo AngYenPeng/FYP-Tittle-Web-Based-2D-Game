@@ -269,8 +269,9 @@ class CreativeSystem {
             // 清除可能的特殊状态 (蹲/挂/冲)
             if (this.scene.isCrouching) {
                 this.scene.isCrouching = false;
-                this.scene.player.body.setSize(32, 64);
-                this.scene.player.body.setOffset(this.scene.player.flipX ? 56 : 40, 45);
+                this.scene.player.body.setSize(32, 48);   // (用户·双箱制)
+                this.scene.player.setOrigin(this.scene.player.flipX ? 0.5625 : 0.4375, 0.5);
+                this.scene.player.body.setOffset(this.scene.player.flipX ? 56 : 40, 61);   // (用户) 倾斜对
             }
             this.scene.isHanging = false;
             this.scene.isGrappling = false;

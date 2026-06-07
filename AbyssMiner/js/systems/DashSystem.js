@@ -7,16 +7,58 @@ class DashSystem {
      * 执行冲刺：计算冷却、锁定重力、延迟恢复
      * @param {'left'|'right'} direction
      */
+    /** (用户) 中断冲刺并完整复原 — 受击/死亡等任何外部打断都必须走这里.
+     *  origin 0.9/0.1 的画面前移与 offset 补偿是按 "dash 帧" 配平的;
+     *  中途被换动画 (受伤/死亡帧) 时 body 会按新帧原点重算 → 横移 ±64px 级
+     *  → 嵌墙 → 分离失败坠出世界. 复原 origin/offset/重力后再换动画就安全. */
+    cancelDash() {
+        const s = this.scene;
+        if (this._dashGuard && s.physics && s.physics.world) {
+            s.physics.world.off('worldstep', this._dashGuard); this._dashGuard = null;
+        }
+        if (!s.isDashing) return;
+        s.isDashing = false;
+        if (s.player && s.player.body) {
+            try { s.player.setOrigin(0.5, 0.5); } catch (e) {}
+            if (this._origOffsetX != null) s.player.body.setOffset(this._origOffsetX, this._origOffsetY);
+            if (!s.isGrappling && !s.isHanging) s.player.body.setAllowGravity(true);
+        }
+    }
+
+    /** (用户) 结束冲刺"画面"但保留冲刺"效果" — 冲刺途中近战用.
+     *  只复原 origin/offset (让近战动画在干净基准上播, body 零位移);
+     *  速度 / 无重力 / 嵌墙守卫 / 时长定时器全部原样, _visualEnded 让收尾不再二次摆姿势. */
+    endDashVisual() {
+        const s = this.scene;
+        if (!s.isDashing || this._visualEnded) return;
+        this._visualEnded = true;
+        if (s.player && s.player.body) {
+            try { s.player.setOrigin(0.5, 0.5); } catch (e) {}
+            if (this._origOffsetX != null) s.player.body.setOffset(this._origOffsetX, this._origOffsetY);
+        }
+    }
+
     executeDash(direction) {
         const s = this.scene;
         if (!s.player.body) return;
         if (s.dashCooldown > 0) return;
-
+        if (s.isCrouching) {
+            // (用户) 蹲下时冲刺 = 先站起来再冲; 头顶被挡 (矮道) 则取消本次动作
+            const _ms = s.movementSystem;
+            if (!_ms || !_ms._headZoneFree || !_ms._headZoneFree(s)) return ;
+            s.isCrouching = false;
+            s.player.y -= 16;   // 贴图归位
+        }
+        
         let now = s.time.now;
         let interval = (now - s.lastDashTime) / 1000;
         s.dashCooldown = (0.3 + Math.max(0, 0.9 - interval)) * 1000;
 
+        // (用户) 攻击到一半点冲刺: 近战瞬断, 动作直接切成冲刺 —
+        //   必须在捕获 prevF/_origOffset 之前复原, 否则冲刺会以 192px 近战帧为基准配平
+        if (s.isMeleeAttacking && s.meleeSystem && s.meleeSystem.cancelMelee) s.meleeSystem.cancelMelee();
         s.isDashing = true;
+        this._visualEnded = false;   // (用户) 新一轮冲刺, 画面接管权复位
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Dash');   // (用户) 冲刺音效, 一次一播
         s.lastDashTime = now;
 
@@ -65,9 +107,7 @@ class DashSystem {
                 }
                 b.updateCenter();
                 b.stop();
-                s.isDashing = false;
-                if (!s.isGrappling && !s.isHanging) b.setAllowGravity(true);
-                world.off('worldstep', this._dashGuard); this._dashGuard = null;
+                this.cancelDash();   // (用户) 完整复原 origin/offset/重力 (旧版只停速度, origin 残留)
             };
             world.on('worldstep', this._dashGuard);
         }
@@ -86,6 +126,13 @@ class DashSystem {
                 //   body 顶左 = 精灵中心 − 帧/2 + offset → 帧变了 offset 须 + (新帧−旧帧)/2, 左右朝向通用, 以后换图也不会坏
                 const prevF = s.player.frame;
                 const prevW = prevF ? prevF.realWidth : 128, prevH = prevF ? prevF.realHeight : 128;
+                // (用户) 倾斜归一: 朝向倾斜 = origin≠0.5 + 配对 offset; dash 的 origin 公式按 0.5 基准设计 —
+                //   先把捕获的 offset 换算回 0.5 基准, 收尾恢复后下一帧 Player 写入器自动重新上倾
+                const _po = s.player.originX;
+                if (_po !== 0.5) {
+                    this._origOffsetX += (0.5 - _po) * prevW;
+                    s.player.setOrigin(0.5, 0.5);
+                }
                 s.player.play('dash');
                 const dashF = s.player.frame;
                 const dW = dashF ? dashF.realWidth : prevW, dH = dashF ? dashF.realHeight : prevH;
@@ -106,11 +153,12 @@ class DashSystem {
 
         // dashDuration 后恢复
         s.time.delayedCall(s.dashDuration, () => {
+            if (!s.isDashing) return;   // (用户) 已被 cancelDash 提前复原 (受击/死亡/嵌墙) — 不再二次收尾, 防覆盖死亡动画
             if (this._dashGuard && s.physics && s.physics.world) { s.physics.world.off('worldstep', this._dashGuard); this._dashGuard = null; }
             if (s.player && s.player.body) {
                 s.isDashing = false;
                 if (!s.isGrappling && !s.isHanging) s.player.body.setAllowGravity(true);
-                if (hasValidDash) {
+                if (hasValidDash && !this._visualEnded) {   // (用户) 画面已被近战接管 → 不切 idle 不动 offset, 防打断攻击动画
                     // 切回 idle
                     if (s.anims.exists('idle')) {
                         try { s.player.play('idle'); } catch(e) {}

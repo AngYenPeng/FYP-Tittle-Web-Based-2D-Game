@@ -1497,7 +1497,7 @@ class SafeZone2Scene extends MainGameScene {
                 { speaker: 'Stone Guardian', text: "Ugh... ...hmm..." },
                 {
                     speaker: 'Stone Guardian',
-                    text: "It's been... so long... since I smelled this...",
+                    text: "It's been... so long... a mere mortal to come here...",
                     onShow: () => {
                         // 第一句 dismiss → 开始 wake_part1 (frame 0-24, 停在 24)
                         if (this._golem && this._golem._setBodyState) {
@@ -1509,7 +1509,7 @@ class SafeZone2Scene extends MainGameScene {
                 { speaker: 'Stone Guardian', text: "You should not... be here..." },
                 {
                     speaker: 'Stone Guardian',
-                    text: "Let me... cleanse you...",
+                    text: "Begone!!",
                     onShow: () => this._startBossTakeoff()
                 }
             ], () => {
@@ -2902,6 +2902,7 @@ class SafeZone2Scene extends MainGameScene {
 
         // -- 4 个骷髅 Hint (corpse 视觉 + Hint 交互, 各有独特对话 + 遗物) --
         this._foundSkeletons = this._foundSkeletons || new Set();
+        for (let i = 0; i < 4; i++) if (this['sz2Skel' + i + 'DialogDone']) this._foundSkeletons.add(i);   // (用户) 读档恢复任务进度
         if (typeof Corpse !== 'undefined' && typeof Hint !== 'undefined') {
             const skeletonSpots = [
                 { col: -26, row: -33, variant: 'corpse1', yOffset: 16 },
@@ -2949,11 +2950,14 @@ class SafeZone2Scene extends MainGameScene {
                     yOffset: yOff,
                     onInteract: (firstTime) => {
                         if (!this.dialogSystem) return;
+                        // (用户) 任务记账修复: 开口即记 + plotFlag 持久化 (sz2SkelNDialogDone 入档).
+                        //   旧版把 add 挂在序列"完成回调"上, 序列夭折 (连按/打断/换图) = Hint 首次旗已翻而账未记,
+                        //   重看分支永不再记 → 任务永久死锁. 新规则: 与该骷髅对话过至少 1 次 (含重看) 即计数.
+                        this['sz2Skel' + idx + 'DialogDone'] = true;
+                        this._foundSkeletons.add(idx);
                         if (firstTime) {
                             // 首次 — 完整 4 行 + 拾取遗物
-                            this.dialogSystem.showSequence(skeletonDialogs[idx], () => {
-                                this._foundSkeletons.add(idx);
-                            });
+                            this.dialogSystem.showSequence(skeletonDialogs[idx]);
                         } else {
                             // (用户) 重看 = 完整检视文本重播 (防误点跳过永久丢剧情); 仅末行"拾取"替换为已取提示
                             const replay = skeletonDialogs[idx].slice(0, -1)
@@ -2969,8 +2973,8 @@ class SafeZone2Scene extends MainGameScene {
         // -- 1 个水晶族 NPC (43, 18) — 用 CrystalNpc entity (SZ3 也会复用)
         // yOffset: 20 - 用户要求生成位置再往下 20 pixel
         if (typeof CrystalNpc !== 'undefined') {
-            this._crystalNpcDialogState = 0;
-            this._crystalNpcRewardGiven = false;
+            this._crystalNpcRewardGiven = !!this.sz2CnpcRewardPlotDone;   // (用户) 读档恢复 — 防钥匙重复领取
+            this._crystalNpcDialogState = this._crystalNpcRewardGiven ? 1 : 0;
             const cnpc = new CrystalNpc(this, 43, 18, {
                 npcType: 'tired_guy',   // 坐着的疲惫者 (Tired_guy_sit 64×64×17帧, 原图朝左) — 贴合 "I can hardly move"
                 yOffset: 15,  // 20-5=15 (用户多次调整)
@@ -2989,6 +2993,7 @@ class SafeZone2Scene extends MainGameScene {
                     } else if (found >= 4 && !s._crystalNpcRewardGiven) {
                         // 找完 4 个骷髅 → 奖励
                         s._crystalNpcRewardGiven = true;
+                        s.sz2CnpcRewardPlotDone = true;   // (用户) 持久化 — 读档后不再重发钥匙
                         s.dialogSystem.showSequence([
                             { speaker: 'Crystal Folk', text: 'You found them all... I had hoped, but I dared not believe...' },
                             { speaker: 'Crystal Folk', text: 'A scholar... a sentinel... a wanderer... and a parent who never let go.' },
