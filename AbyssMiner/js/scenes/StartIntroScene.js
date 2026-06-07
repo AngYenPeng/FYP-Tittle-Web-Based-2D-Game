@@ -48,7 +48,7 @@ class StartIntroScene extends Phaser.Scene {
                 lines: [
                     "Crystalline Mining Co. — bankrupt.",
                     "Decades of work. Hundreds of jobs.",
-                    "Mine, gone with them."
+                    "Mine went with them."
                 ]
             },
             {
@@ -63,7 +63,7 @@ class StartIntroScene extends Phaser.Scene {
                 image: 'Intro4',
                 lines: [
                     "One wrong step on rotten wood...",
-                    "...and the floor remembered nothing of those who walked it."
+                    "...and the ground beneath me simply let go."
                 ]
             }
         ];

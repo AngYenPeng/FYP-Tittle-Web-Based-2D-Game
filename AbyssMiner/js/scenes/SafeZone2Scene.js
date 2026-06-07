@@ -2917,28 +2917,28 @@ class SafeZone2Scene extends MainGameScene {
                     { speaker: 'You',     text: 'A small crystal-folk... one hand still rests on a thin stone tablet.' },
                     { speaker: 'You',     text: 'Faint scratches cover its surface — writing, etched in their final hours.' },
                     { speaker: 'Tablet', text: '"...I record what I see, while the light still holds..."' },
-                    { speaker: 'You',     text: '* You take the Scholar\u2019s Crystal Tablet. *' }
+                    { speaker: 'You',     text: '*You take the Scholar\'s Crystal Tablet.*' }
                 ],
                 // 1 - (77, -8) 战士 (corpse2) — 断矛
                 [
                     { speaker: 'You', text: 'A larger crystal-folk, slumped against the rock, arms braced as if still holding the line.' },
                     { speaker: 'You', text: 'Their body bears the marks of a hard fight — they did not fall easy.' },
                     { speaker: 'You', text: 'Beside them lies the broken half of a crystal spear.' },
-                    { speaker: 'You', text: '* You take the Sentinel\u2019s Broken Spearhead. *' }
+                    { speaker: 'You', text: '*You take the Sentinel\'s Broken Spearhead.*' }
                 ],
                 // 2 - (83, 22) 行者 (corpse3) — 罗盘 + 地图残卷
                 [
                     { speaker: 'You', text: 'A weathered traveler. A small pouch is still strapped at their side.' },
                     { speaker: 'You', text: 'Inside: faded sketches of caves and tunnels, drawn with patient hands.' },
                     { speaker: 'You', text: 'Tucked among them, a tiny crystal compass — its needle long since stilled.' },
-                    { speaker: 'You', text: '* You take the Wanderer\u2019s Crystal Compass. *' }
+                    { speaker: 'You', text: '*You take the Wanderer\'s Crystal Compass.*' }
                 ],
                 // 3 - (-12, -2) 母亲 (corpse1) — 抱着孩子玩具
                 [
                     { speaker: 'You', text: 'A small crystal-folk, curled tight, arms wrapped around something held close.' },
-                    { speaker: 'You', text: 'Cradled against their chest: a tiny crystal carving — a child\u2019s toy, made with care.' },
+                    { speaker: 'You', text: 'Cradled against their chest: a tiny crystal carving — a child\'s toy, made with care.' },
                     { speaker: 'You', text: 'They never let it go, not even at the end.' },
-                    { speaker: 'You', text: '* You take the Keepsake of the Lost. *' }
+                    { speaker: 'You', text: '*You take the Keepsake of the Lost.*' }
                 ]
             ];
             skeletonSpots.forEach((spot, idx) => {
@@ -2953,11 +2953,12 @@ class SafeZone2Scene extends MainGameScene {
                             // 首次 — 完整 4 行 + 拾取遗物
                             this.dialogSystem.showSequence(skeletonDialogs[idx], () => {
                                 this._foundSkeletons.add(idx);
-                                // console.log('[SZ2] Skeleton #' + idx + ' relic taken. Total: ' + this._foundSkeletons.size + '/4');   // (用户) 诊断日志静默
                             });
                         } else {
-                            // 重复 — 一句话提示
-                            this.dialogSystem.show({ speaker: 'You', text: 'I\u2019ve already taken what they had.' });
+                            // (用户) 重看 = 完整检视文本重播 (防误点跳过永久丢剧情); 仅末行"拾取"替换为已取提示
+                            const replay = skeletonDialogs[idx].slice(0, -1)
+                                .concat([{ speaker: 'You', text: '(I\'ve already taken what they had.)' }]);
+                            this.dialogSystem.showSequence(replay);
                         }
                     }
                 });
@@ -2982,7 +2983,7 @@ class SafeZone2Scene extends MainGameScene {
                         s.dialogSystem.showSequence([
                             { speaker: 'Crystal Folk', text: "I never thought... I'd meet a living soul again..." },
                             { speaker: 'Crystal Folk', text: "I'm not feeling well... I can hardly move..." },
-                            { speaker: 'Crystal Folk', text: 'Can you find the remains of my 4 friends? I have something for you in return...' }
+                            { speaker: 'Crystal Folk', text: 'Can you find the remains of my four friends? I have something for you in return...' }
                         ]);
                         s._crystalNpcDialogState = 1;
                     } else if (found >= 4 && !s._crystalNpcRewardGiven) {
@@ -2993,8 +2994,8 @@ class SafeZone2Scene extends MainGameScene {
                             { speaker: 'Crystal Folk', text: 'A scholar... a sentinel... a wanderer... and a parent who never let go.' },
                             { speaker: 'Crystal Folk', text: 'Their relics — keep them, please. They are why our story did not vanish.' },
                             { speaker: 'Crystal Folk', text: 'And take this — it was meant for the one who would remember us.' },
-                            { speaker: 'You',          text: '* Mysterious Key +1 *' },
-                            { speaker: 'Crystal Folk', text: 'I am so tired now... let me rest...' }
+                            { speaker: 'You',          text: '*Mysterious Key +1*' },
+                            { speaker: 'Crystal Folk', text: 'I\'m so tired now... let me rest...' }
                         ]);
                         if (s.inventorySystem && s.inventorySystem.addItem) {
                             s.inventorySystem.addItem('key', 1);
@@ -3003,7 +3004,7 @@ class SafeZone2Scene extends MainGameScene {
                         s.dialogSystem.show({ speaker: 'Crystal Folk', text: "I'm so tired now... let me rest..." });
                     } else {
                         // 重复对话 (没找完 4 个)
-                        s.dialogSystem.show({ speaker: 'Crystal Folk', text: 'Can you find the remains of my 4 friends? I have something for you in return...' });
+                        s.dialogSystem.show({ speaker: 'Crystal Folk', text: 'Can you find the remains of my four friends? I have something for you in return...' });
                     }
                 }
             });

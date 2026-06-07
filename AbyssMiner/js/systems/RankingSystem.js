@@ -27,7 +27,7 @@ class RankingSystem {
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
 
         this._subtitle = this.scene.add.text(W/2, H * 0.27,
-            'The Spider Queen has been slain. The infection ends with her.',
+            'The Broodmother has been slain. The infection dies with her.',
             { fontSize: '18px', color: '#aaa', fontStyle: 'italic' }
         ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
 

@@ -630,7 +630,9 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
             if (this._handR_hpBar) this._handR_hpBar.setVisible(false);
         }
         // 坠机: 飞到地面更深位置 (比 boss 死亡再低 2 格 = +64 px)
-        const groundY = this._homeYground + 4 + 64;
+        // (用户) 死手下沉: 基准 1.5 格, 左手再 +1 格, 右手再 +2 格
+        const _extra = (hand === this._handL) ? 32 : 64;
+        const groundY = this._homeYground + 4 + 64 + 48 + _extra;
         this.scene.tweens.add({
             targets: hand,
             y: groundY,
@@ -653,6 +655,10 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         this.state = 'dead';
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'Golem Death');
         this.setTint(0x333333);
+        // (用户) 死亡瞬间渲染优先级压到神像 (depth -3) 之下 — 尸体不再盖住升起的神像
+        this.setDepth(-4);
+        if (this._handL && this._handL.setDepth) this._handL.setDepth(-4);
+        if (this._handR && this._handR.setDepth) this._handR.setDepth(-4);
         if (this._hpBg) this._hpBg.destroy();
         if (this._hpBar) this._hpBar.destroy();
         // 手 HP 条也销毁

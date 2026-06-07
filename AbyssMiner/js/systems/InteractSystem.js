@@ -220,7 +220,7 @@ class InteractSystem {
                         }
                     },
                     {
-                        label: 'Leaving.',
+                        label: 'Leave.',
                         action: () => s.dialogSystem.close()
                     }
                 ]

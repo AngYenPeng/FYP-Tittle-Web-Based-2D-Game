@@ -1127,12 +1127,12 @@ class TutorialScene extends MainGameScene {
                 // 检测玩家是否已上升起的台阶（x>320 且 y<1024）
                 if (this._t1Stage === 1 && this.player.x > 320 && this.player.y < 1024) {
                     this._t1Stage = 2;
-                    this._t1ShowHint('A spider awaits ahead!\nPress SHIFT to dash, Left Click to attack.');
+                    this._t1ShowHint('A spider lurks ahead!\nPress SHIFT to dash, Left Click to attack.');
                 }
                 // 石堆破了 → 进 stage 4
                 else if (this._t1Stage === 3 && this._stoneRubble && this._stoneRubble.destroyed) {
                     this._t1Stage = 4;
-                    this._t1ShowHint('Stone pile broken!\nClimb the platforms - jump from side to side.');
+                    this._t1ShowHint('Stone pile broken!\nClimb the platforms — jump from side to side.');
                 }
                 // 玩家到达二楼水晶门附近（x 在门附近 + 在二楼地板上）
                 else if (this._t1Stage === 4 && this._crystalDoor && !this._crystalDoor.opened) {

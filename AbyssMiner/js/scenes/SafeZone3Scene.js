@@ -1467,7 +1467,7 @@ class SafeZone3Scene extends MainGameScene {
         console.log('[Amber] Pickaxe upgraded — throw/recall/grapple/hand-switch unlocked. _pickaxeUpgraded =', s._pickaxeUpgraded);
         s.dialogSystem.showSequence([
             { speaker: 'Amber', text: "Thank you. Here — your pickaxe, sharpened and reinforced. Give it a swing." },
-            { speaker: 'Amber', text: "Throw it with right-click, swap hands with F. You'll feel the difference." }
+            { speaker: 'Amber', text: "Throw it with Right Click, swap hands with F. You'll feel the difference." }
         ], () => s.dialogSystem.close());
     }
 
@@ -1554,7 +1554,7 @@ class SafeZone3Scene extends MainGameScene {
         // 不同阶段不同回应
         if (nextPhase === 'collect10') {
             s.dialogSystem.showSequence([
-                { speaker: 'Citrine', text: "(*eyes roll around*) ...You took your time, didn't you. Tell you what — bring me 10 more yellow crystals, then I'll hand over what you want, hehehe." }
+                { speaker: 'Citrine', text: "*eyes darting* ...You took your time, didn't you? Tell you what — bring me 10 more yellow crystals, then I'll hand over what you want, hehehe." }
             ], () => s.dialogSystem.close());
         } else if (nextPhase === 'collect20') {
             s.dialogSystem.showSequence([
@@ -1641,7 +1641,7 @@ class SafeZone3Scene extends MainGameScene {
         s.time.delayedCall(800, () => {
             // 玩家说话
             s.dialogSystem.showSequence([
-                { speaker: 'You', text: 'Is there something here?' },
+                { speaker: 'You', text: '(Is there something here?)' },
                 { speaker: 'You', text: '...' },
                 { speaker: 'You', text: 'Citrine?' }
             ], () => {
@@ -1666,9 +1666,9 @@ class SafeZone3Scene extends MainGameScene {
                 cam.startFollow(s.player, true, 0.1, 0.1);
                 // 玩家继续说话
                 s.dialogSystem.showSequence([
-                    { speaker: 'You', text: '...where did he go?' },
-                    { speaker: 'You', text: "Damn it — I've been tricked!" },
-                    { speaker: 'You', text: "I'm hunting him down!!" }
+                    { speaker: 'You', text: '(...Where did he go?)' },
+                    { speaker: 'You', text: "(Damn it — I've been tricked!)" },
+                    { speaker: 'You', text: "(I'm hunting him down!!)" }
                 ], () => {
                     s._sz3CitrineEndCutscene();
                 });
@@ -1692,7 +1692,7 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         const G = 32;
         s.dialogSystem.showSequence([
-            { speaker: 'Citrine', text: "...How did you find me? (*trembling*)" },
+            { speaker: 'Citrine', text: "...H-how did you find me? *trembling*" },
             { speaker: 'You',     text: "...I think I deserve an explanation, don't you?" }
         ], () => {
             // Citrine 面向玩家 (玩家在右, citrine 朝右 = flipX=true), 移动到 (-43, 37)
@@ -1704,10 +1704,10 @@ class SafeZone3Scene extends MainGameScene {
                     onComplete: () => {
                         s._sz3Citrine.x = s._sz3Citrine.sprite.x;
                         s.dialogSystem.showSequence([
-                            { speaker: 'Citrine', text: "I... I... I'm sorry... Here's what you came for. Mysterious Key x2 — I doubled it. I was wrong..." },
-                            { speaker: 'You',     text: "(*staring at him*)..." },
+                            { speaker: 'Citrine', text: "I... I... I'm sorry... Here's what you came for — doubled, even. I was wrong... *Mysterious Key +2*" },
+                            { speaker: 'You',     text: "*staring at him* ..." },
                             { speaker: 'You',     text: "Don't let it happen again." },
-                            { speaker: 'Citrine', text: "O-okay... (*trembling*)" }
+                            { speaker: 'Citrine', text: "O-okay... *trembling*" }
                         ], () => {
                             // 给玩家 2 把钥匙 — 走背包 (跟 Tutorial 商人/SZ1 骷髅同套)
                             if (s.inventorySystem && s.inventorySystem.addItem) {
@@ -1740,23 +1740,23 @@ class SafeZone3Scene extends MainGameScene {
                 { speaker: '???', text: 'Hello... human?' },
                 { speaker: 'You', text: "Hello, you two. Good to meet you — what are your names?" },
                 { speaker: 'Mica', text: 'My name is Mica.' },
-                { speaker: 'Mira', text: "Um... I'm Mira. Sorry I mistook you earlier..." }
+                { speaker: 'Mira', text: "Um... I'm Mira. Sorry we mistook you for a mob earlier..." }
             ], () => {
                 s.dialogSystem.show({
                     speaker: 'You',
                     text: '',
                     choices: [
                         { label: "It's alright, I don't mind.", action: () => s._sz3SisterForgive() },
-                        { label: "It's fine — though they say misjudging things gets you snatched by monsters at night~", action: () => s._sz3SisterTease() }
+                        { label: "It's fine — though they say misjudging things gets you snatched by mobs at night~", action: () => s._sz3SisterTease() }
                     ]
                 });
             });
         } else if (s._sisterDialogState === 'scared') {
             // 被吓跑后的对话 (在 -37/-39)
             s.dialogSystem.showSequence([
-                { speaker: 'Mira', text: "Sob... I don't want the monsters to take me..." },
+                { speaker: 'Mira', text: "Sob... I don't want the mobs to take me..." },
                 { speaker: 'Mica', text: "It's okay, Mira. I'll protect you..." },
-                { speaker: 'You', text: "The monsters won't come, really. And if they do, I'll protect you both." },
+                { speaker: 'You', text: "The mobs won't come, really. And if they do, I'll protect you both." },
                 { speaker: 'Mira & Mica', text: 'Really? Thank you, mister!' },
                 { speaker: 'Mica', text: 'If you ever need anything, just tell us!' },
                 { speaker: 'Mira', text: 'Mhm mhm!' }
@@ -2298,7 +2298,7 @@ class SafeZone3Scene extends MainGameScene {
             if (near && this.keyE && Phaser.Input.Keyboard.JustDown(this.keyE) && !this._sz3ElderTalked) {
                 if (this.dialogSystem) {
                     this.dialogSystem.show([
-                        { speaker: 'Elven Elder', text: "A human, here? You followed the blue, didn't you. We all did." },
+                        { speaker: 'Elven Elder', text: "A human, here? You followed the blue, didn't you? We all did." },
                         { speaker: 'Elven Elder', text: 'This statue pushes back the corruption. It cannot cure you, but it slows the spread.' },
                         { speaker: 'Elven Elder', text: "Beyond this hall lies the spider's den. She is the mother of the blue." },
                         { speaker: 'Elven Elder', text: 'Slay her, and the cave heals. Fail, and you join us in glass and silence.' }
@@ -4265,11 +4265,11 @@ class SafeZone3Scene extends MainGameScene {
         if (typeof Corpse !== 'undefined' && typeof Hint !== 'undefined') {
             const _skel = [
                 { col: -87, row: 80, variant: 'corpse3', lines: [
-                    { speaker: 'You', text: "A skeleton, clutching the dead one's book of last words. It's huge... terrifying..." }
+                    { speaker: 'You', text: "A huge skeleton... terrifying even in death. It clutches a book of last words." }
                 ] },
                 { col: -27, row: 88, dy: 0.5, variant: 'corpse1', toy: true, lines: [   // (用户) dy=0.5 格 = 视觉下移 16px
                     { speaker: 'You', text: "A long-dead skeleton, hands still gripping a toy, refusing to let go." },
-                    { speaker: 'You', text: '* Toy +1 *' }
+                    { speaker: 'You', text: '*Toy +1*' }
                 ] },
                 { col: -70, row: 116, variant: 'corpse2', lines: [
                     { speaker: 'Last Words', text: '"I hate them... they just abandoned us, threw us away..."' }
@@ -4287,7 +4287,11 @@ class SafeZone3Scene extends MainGameScene {
                                 if (sp.toy) this._sz3HasToy = true;  // 拿到玩具 → Toy CNPC 任务可交付
                             });
                         } else {
-                            this.dialogSystem.show({ speaker: 'You', text: sp.toy ? 'I already have the toy.' : "Nothing more to find here." });
+                            // (用户) 重看 = 检视/遗言全文重播; 仅"拾取玩具"行替换为已取提示
+                            const replay = sp.toy
+                                ? sp.lines.slice(0, -1).concat([{ speaker: 'You', text: 'I already have the toy.' }])
+                                : sp.lines.slice();
+                            this.dialogSystem.showSequence(replay);
                         }
                     }
                 });

@@ -2278,7 +2278,7 @@ class SafeZone1Scene extends MainGameScene {
                     if (this.dialogSystem) {
                         this.dialogSystem.show({
                             speaker: '???',
-                            text: 'There is a note here, seemingly from one who came before:\n"I want to leave this place. This is hell..."'
+                            text: 'A note left by someone who came before:\n"I want to leave this place. This is hell..."'
                         });
                     }
                 }
@@ -2299,7 +2299,7 @@ class SafeZone1Scene extends MainGameScene {
                                         const lines = [{ speaker: '???', text: '"We should not have been so greedy..."' }];
                                         if (!this._sz1Hint2_keyGiven) {
                                             this._sz1Hint2_keyGiven = true;
-                                            lines.push({ speaker: '???', text: 'Something seems tucked in the book... Mysterious Key +1' });
+                                            lines.push({ speaker: '???', text: 'Something is tucked inside the book... *Mysterious Key +1*' });
                                             if (this.inventorySystem && this.inventorySystem.addItem) {
                                                 this.inventorySystem.addItem('key', 1);
                                             }
@@ -2343,7 +2343,7 @@ class SafeZone1Scene extends MainGameScene {
                     if (this.dialogSystem) {
                         this.dialogSystem.show({
                             speaker: '???',
-                            text: 'There is a message from a predecessor:\n"This should not exist, but should be destroyed..."'
+                            text: 'A message left by someone who came before:\n"This should not exist, but should be destroyed..."'
                         });
                     }
                 }

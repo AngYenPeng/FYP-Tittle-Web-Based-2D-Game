@@ -247,7 +247,7 @@ class OpeningCinematicSystem {
             }
             s.dialogSystem.show({
                 speaker: '???',
-                text: "You don't smell like the missing miners. Not yet, anyway."
+                text: "You don't smell like the ones who never made it back up. Not yet, anyway."
             });
             this._waitDialogClose(() => this._goPhase4());
         });
@@ -345,7 +345,7 @@ class OpeningCinematicSystem {
         if (clueIdx === 1) {
             sequence = [
                 { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just crystals." },
-                { speaker: 'Whisker', text: 'They wait... they grow... at their center.' },
+                { speaker: 'Whisker', text: 'They wait... they grow... down at the center of it all.' },
                 { speaker: 'Whisker', text: 'Stay alive. I only deal with the living.' }
             ];
         } else {
@@ -353,7 +353,7 @@ class OpeningCinematicSystem {
                 { speaker: 'Whisker', text: "Don't pretend. People don't 'pass through' here." },
                 { speaker: 'Whisker', text: 'I know what you want.' },
                 { speaker: 'Whisker', text: "Go deeper and you'll see. They're not just crystals." },
-                { speaker: 'Whisker', text: 'They wait... they grow... at their center.' },
+                { speaker: 'Whisker', text: 'They wait... they grow... down at the center of it all.' },
                 { speaker: 'Whisker', text: 'Stay alive. I only deal with the living.' }
             ];
         }
@@ -639,7 +639,7 @@ class OpeningCinematicSystem {
         s.time.delayedCall(1600, () => {
             s.dialogSystem.show({
                 speaker: 'Whisker',
-                text: 'Use that key in your hand to open it.'
+                text: 'Use the key in your hand to open it.'
             });
             this._waitDialogClose(() => this._kpPanBack());
         });
