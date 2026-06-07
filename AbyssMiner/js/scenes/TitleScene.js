@@ -34,6 +34,13 @@ class TitleScene extends Phaser.Scene {
             return;
         }
         this._doCreate();
+
+        // Pressing the number "6" key on the keyboard instantly boots into your SafeZone6Scene!
+        this.input.keyboard.on('keydown-SIX', () => {
+            console.log("Dev command sequence acknowledged. Executing warp handshake to Zone 6...");
+            this.scene.stop();
+            this.scene.start('SafeZone6Scene');
+        });
     }
 
     _doCreate() {
@@ -112,6 +119,7 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE3',   action: () => this._devJump('SafeZone3Scene') },
             { label: 'SAFEZONE4',   action: () => this._devJump('SafeZone4Scene') },
             { label: 'SAFEZONE5',   action: () => this._devJump('SafeZone5Scene') },
+            { label: 'SAFEZONE6',   action: () => this._devJump('SafeZone6Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
             { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
             { label: 'RECORDS',     action: () => this._openRecords() },   // (用户) 通关记录

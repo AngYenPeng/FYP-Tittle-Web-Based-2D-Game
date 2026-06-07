@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
@@ -9,6 +10,7 @@ require("dotenv").config();
 // middleware
 app.use(cors());
 app.use(express.json());
+app.use("/AbyssMiner", express.static(path.join(__dirname, "AbyssMiner")));
 
 // 🔗 CONNECT TO MONGODB
 mongoose.connect(process.env.MONGO_URI)
@@ -45,3 +47,5 @@ const supportRoutes = require("./routes/support");
 app.use("/api/support", supportRoutes);
 
 app.use(express.static("public"));
+
+app.use("/AbyssMiner", express.static("AbyssMiner"));

@@ -565,10 +565,15 @@
     <div class="main-grid">
       <div class="glass-card">
         <h3 class="section-title">Game Area</h3>
-        <div id="game-container" class="game-placeholder">
-          <div class="icon">🎮</div>
-          <p>The Phaser game will be placed here.</p>
-          <p>This page is ready to receive your teammate’s game file and connect it to your login, score API, and leaderboard system.</p>
+        <div id="game-container" class="game-placeholder" style="width: 100%; min-height: 500px; display: flex; align-items: center; justify-content: center;">
+          <div id="launcher-content" style="text-align: center;">
+            <div class="icon" style="font-size: 54px; margin-bottom: 10px;">🎮</div>
+            <p style="font-size: 18px; font-weight: bold; color: #00ffff; margin-bottom: 16px;">Abyss Miner Client Connected</p>
+            <p style="max-width: 500px; margin: 0 auto 24px auto; color: #cbd5e1;">Your profile token is loaded. Click below to launch the operation into the deep matrix cavern.</p>
+            <button onclick="launchGame()" class="primary-btn" style="padding: 14px 28px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 14px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);">
+              ⛏️ START RUN OPERATION
+            </button>
+          </div>
         </div>
       </div>
 
@@ -845,6 +850,22 @@ document.getElementById("welcomeText").innerText +=
     loadMyScores();
     loadMiniLeaderboard();
     loadAnnouncementPreview();
+
+    function launchGame() {
+
+      window.open("AbyssMiner/index.html", "_blank", "width=1600,height=900");
+        const container = document.getElementById("game-container");
+        container.classList.remove("game-placeholder");
+        container.style.padding = "0";
+        
+        // Change "/AbyssMiner/index.html" to "AbyssMiner/index.html" 
+        // (Removing the first / often fixes local server loading)
+        container.innerHTML = `
+            <iframe src="AbyssMiner/index.html" 
+                    style="width: 100%; height: 550px; border: none; border-radius: 20px; background: #000;" 
+                    allow="autoplay">
+            </iframe>`;
+    }
   </script>
 </body>
 </html>
