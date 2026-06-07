@@ -92,6 +92,33 @@ window.AbyssDiff = {
     }
 }
 
+// (用户) 统一加载层 — 开局与进局内共用: 黑底 + 金色进度条 + 百分比 (id 与旧逻辑一致, 摘除机制不变)
+window.AzmLoading = {
+    show(label) {
+        let div = document.getElementById('azm-scene-loading');
+        if (!div) {
+            div = document.createElement('div');
+            div.id = 'azm-scene-loading';
+            div.style.cssText = 'position:fixed;inset:0;background:#000;color:#cfcfcf;display:flex;flex-direction:column;align-items:center;justify-content:center;font:20px monospace;z-index:9999;letter-spacing:2px;';
+            div.innerHTML = '<div id="azm-load-label" style="margin-bottom:14px;">Loading...</div>'
+                + '<div style="width:320px;height:14px;background:#222230;border:2px solid #806020;">'
+                + '<div id="azm-load-fill" style="width:0%;height:100%;background:#ffd86a;"></div></div>'
+                + '<div id="azm-load-pct" style="margin-top:10px;font-size:14px;color:#8a8a99;">0%</div>';
+            document.body.appendChild(div);
+        }
+        if (label) window.AzmLoading.setLabel(label);
+        return div;
+    },
+    setLabel(t) { const e = document.getElementById('azm-load-label'); if (e) e.textContent = t; },
+    setProgress(p) {
+        const v = Math.round((p || 0) * 100) + '%';
+        const f = document.getElementById('azm-load-fill'); if (f) f.style.width = v;
+        const e = document.getElementById('azm-load-pct'); if (e) e.textContent = v;
+    },
+    hide() { const d = document.getElementById('azm-scene-loading'); if (d) d.remove(); }
+};
+window.AzmLoading.show('Loading...');
+
 const game = new Phaser.Game(config);
 
 // (用户) 切出网页再切回: canvas cursor='none' + 精灵光标停在旧位置, 玩家动鼠标前看不到任何指针.

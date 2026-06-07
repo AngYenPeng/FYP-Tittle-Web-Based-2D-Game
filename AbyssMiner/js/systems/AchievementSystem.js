@@ -193,7 +193,7 @@ const AchievementSystem = {
                 try { maskG.destroy(); } catch (e) {}
                 items.forEach(o => { try { o.destroy(); } catch (e) {} });
             };
-            dim.on('pointerdown', close);
+            // (用户) 点面板外空地不再关闭 — 仅 \u2715 可关 (dim 保持 interactive 吞点击)
             closeB.on('pointerdown', close);
             closeB.on('pointerover', () => closeB.setColor('#ff2222'));
             closeB.on('pointerout',  () => closeB.setColor('#ff5555'));

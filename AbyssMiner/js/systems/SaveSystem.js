@@ -72,6 +72,8 @@ class SaveSystem {
         return {
             scene:             (scene.scene && scene.scene.key) || null,
             crystalCount:      scene.hudSystem ? scene.hudSystem.crystalCount : 0,
+            yellowCrystalCount: scene.hudSystem ? (scene.hudSystem.yellowCrystalCount || 0) : 0,   // (用户) 黄水晶入档
+            yellowCrystalShown: scene.hudSystem ? !!scene.hudSystem.yellowCrystalShown : false,
             hp:                scene.healthSystem ? scene.healthSystem.hp : 100,
             maxHp:             scene.healthSystem ? scene.healthSystem.maxHp : 100,
             hearts:            scene.healthSystem ? scene.healthSystem.hearts : 5,

@@ -24,7 +24,7 @@ class HUDSystem {
 
         // 水晶 UI — 中心 (60, 120) 与心形 (60, 60) 上下对齐，间距 60
         const crystalTex = s.textures.exists('Crystal') ? 'Crystal' : 'drop_crystal_img';
-        this.crystalIcon = s.add.image(60, 120, crystalTex)
+        this.crystalIcon = s.add.image(60, 123, crystalTex)   // (用户) 水晶贴图下移 3px
             .setDepth(200).setScrollFactor(0).setScale(1.5);
 
         this.crystalText = s.add.text(90, 108, 'x ' + this.crystalCount, {
@@ -34,7 +34,7 @@ class HUDSystem {
 
         // 黄水晶 UI — (60, 180), 首次获得后才显示 (用 YCrystal 黄色货币图, 不染色)
         const yCrystalTex = s.textures.exists('YCrystal') ? 'YCrystal' : crystalTex;
-        this.yellowCrystalIcon = s.add.image(60, 180, yCrystalTex)
+        this.yellowCrystalIcon = s.add.image(60, 183, yCrystalTex)   // (用户) 水晶贴图下移 3px
             .setDepth(200).setScrollFactor(0).setScale(1.5)
             .setVisible(false);
         if (yCrystalTex !== 'YCrystal') this.yellowCrystalIcon.setTint(0xffcc33);  // 仅贴图缺失时回退染色
@@ -260,12 +260,12 @@ class HUDSystem {
         // 起始 y (蓝水晶位置): 有 detector → 180, 否则 → 120
         let y = hasDetector ? 180 : 120;
         if (!this._blueHidden) {   // (用户) 通关后蓝行隐藏 → 跳过, 黄/guide 自动上移
-            this.crystalIcon.y = y;
+            this.crystalIcon.y = y + 3;   // (用户) 贴图下移 3px (文字不动)
             this.crystalText.y = y - 12;
             y += 60;
         }
         if (this.yellowCrystalShown) {
-            this.yellowCrystalIcon.y = y;
+            this.yellowCrystalIcon.y = y + 3;   // (用户) 贴图下移 3px (文字不动)
             this.yellowCrystalText.y = y - 12;
             y += 60;
         }

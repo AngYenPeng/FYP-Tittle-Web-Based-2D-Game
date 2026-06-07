@@ -7,6 +7,8 @@ class TitleScene extends Phaser.Scene {
     constructor() { super('TitleScene'); }
 
     preload() {
+        // (用户) boot 加载层进度驱动
+        this.load.on('progress', p => { if (window.AzmLoading) window.AzmLoading.setProgress(p); });
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
         // 标题页背景图（洞穴）
         this.load.image('Tittle_scene_background_image', 'assets/images/Tittle_scene_background_image.png');
@@ -135,6 +137,9 @@ class TitleScene extends Phaser.Scene {
             txt.on('pointerdown', () => { if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select'); mi.action(); });
         });
 
+        // (用户) 开局加载层撤除 — Title 此刻已渲染
+        this.time.delayedCall(50, () => { if (window.AzmLoading) window.AzmLoading.hide(); });
+
         // 底部版本号
         this.add.text(W - 20, H - 20, 'v0.1', {
             fontSize: '18px', color: '#555555',
@@ -177,11 +182,11 @@ class TitleScene extends Phaser.Scene {
             // (用户) 大场景 create 同步重建几千墙体+皮肤, 主线程冻结几秒 — 黑屏像卡死.
             //   垫一个 DOM "Loading..." 层 (不依赖被冻结的 canvas), 等浏览器画出来再切场景;
             //   setInterval 冻结期不跑, 解冻后探测到新场景 RUNNING 自动摘掉.
-            let div = document.getElementById('azm-scene-loading');
-            if (!div) {
-                div = document.createElement('div');
-                div.id = 'azm-scene-loading';
-                div.style.cssText = 'position:fixed;inset:0;background:#000;color:#cfcfcf;display:flex;align-items:center;justify-content:center;font:20px monospace;z-index:9999;letter-spacing:2px;cursor:url(assets/images/Mouse_cursor.png) 32 32, default;';   // (用户修复) 过场鼠标可见
+            // (用户) 统一加载层 (带进度条) — 新场景 preload 进度实时驱动; 摘除机制沿用下方原逻辑
+            let div = (window.AzmLoading ? window.AzmLoading.show('Loading...') : null);
+            if (window.AzmLoading) window.AzmLoading.setProgress(0);
+            if (div) {
+                div.style.cursor = 'url(assets/images/Mouse_cursor.png) 32 32, default';   // (用户修复) 过场鼠标可见
                 try {
                     // (用户修复) 动态密度: 局内精灵 = 64 游戏px × 画布缩放; 这里按同公式算 CSS 显示尺寸, 逐像素一致
                     const _cv = this.game.canvas;
@@ -189,8 +194,6 @@ class TitleScene extends Phaser.Scene {
                     const _hot = Math.round(32 * _sc);
                     div.style.cursor = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / _sc).toFixed(3) + 'x) ' + _hot + ' ' + _hot + ', default';
                 } catch (e) {}
-                div.textContent = 'Loading...';
-                document.body.appendChild(div);
             }
             const removeDiv = () => {
                 const d = document.getElementById('azm-scene-loading'); if (d) d.remove();
@@ -289,12 +292,23 @@ class TitleScene extends Phaser.Scene {
                         }).setOrigin(0, 0.5);
                         let ix = x0 + 130;
                         const ci = this.textures.exists('Crystal')
-                            ? this.add.image(ix, y + 14, 'Crystal').setDisplaySize(18, 18)
+                            ? this.add.image(ix, y + 17, 'Crystal').setDisplaySize(18, 18)   // (用户) 水晶贴图下移 3px
                             : this.add.text(ix, y + 14, '\u25C6', { fontSize: '18px', color: '#88ccff', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
                         const cN = this.add.text(ix + 14, y + 14, String(data.crystalCount || 0), {
                             fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
                         }).setOrigin(0, 0.5);
-                        ix += 80;
+                        ix += 62;
+                        if ((data.yellowCrystalCount | 0) > 0) {   // (用户) 档内已获得黄水晶 → 槽位也显示
+                            const yi = this.textures.exists('YCrystal')
+                                ? this.add.image(ix, y + 17, 'YCrystal').setDisplaySize(18, 18)   // 贴图下移 3px
+                                : this.add.text(ix, y + 14, '\u25C6', { fontSize: '18px', color: '#ffcc33', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
+                            const yN = this.add.text(ix + 14, y + 14, String(data.yellowCrystalCount | 0), {
+                                fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
+                            }).setOrigin(0, 0.5);
+                            rowItems.push(yi, yN);
+                            ix += 62;
+                        }
+                        ix += 18;
                         const hi = this.textures.exists('Heart')
                             ? this.add.image(ix, y + 14, 'Heart').setDisplaySize(18, 18)
                             : this.add.text(ix, y + 14, '\u2665', { fontSize: '18px', color: '#ff5577', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
@@ -303,8 +317,10 @@ class TitleScene extends Phaser.Scene {
                         }).setOrigin(0, 0.5);
                         rowItems.push(ci, cN, hi, hN);
                         if (data.difficulty) {
+                            // (用户) 难度标签着色 — 与选难度页同色
+                            const _dc = { easy: '#88ff88', normal: '#ffee88', hard: '#ffaa66', extreme: '#ff6666' }[String(data.difficulty).toLowerCase()] || '#dddddd';
                             const dT = this.add.text(ix + 80, y + 14, '[' + String(data.difficulty).toUpperCase() + ']', {
-                                fontSize: '18px', color: '#dddddd', fontFamily: '"VT323", monospace'
+                                fontSize: '18px', color: _dc, fontFamily: '"VT323", monospace'
                             }).setOrigin(0, 0.5);
                             rowItems.push(dT);
                         }
@@ -386,7 +402,7 @@ class TitleScene extends Phaser.Scene {
             items.forEach(o => { try { o.destroy(); } catch (e) {} });
             this._modalOpen = false;
         };
-        dim.on('pointerdown', close);
+        // (用户) 点面板外空地不再关闭 — 仅 \u2715 可关 (dim 保持 interactive 吞点击)
         const bg = this.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.97).setStrokeStyle(2, 0x806020).setInteractive();   // 吞内部点击
         const inner = this.add.rectangle(0, 0, PW - 10, PH - 10, 0x000000, 0).setStrokeStyle(1, 0xffcc44, 0.3);
         const title = this.add.text(0, -PH / 2 + 34, '\u2605 RECORDS \u2605', {
@@ -463,21 +479,27 @@ class TitleScene extends Phaser.Scene {
                 const card = this.add.rectangle(0, ry, PW - 70, ROW_H, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a);
                 const bar = this.add.rectangle(-(PW - 70) / 2 + 3, ry, 4, ROW_H, 0xffcc44, 1);
                 const gT = this.add.text(-(PW - 70) / 2 + 34, ry, r.grade || '-', {
-                    fontSize: '34px', color: gColor(r.grade), fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
+                    fontSize: '32px', color: gColor(r.grade), fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4, resolution: 2
                 }).setOrigin(0.5);
-                const main = this.add.text(-(PW - 70) / 2 + 64, ry - 11, 'CLEARED  [' + String(r.difficulty || '').toUpperCase() + ']', {
-                    fontSize: '19px', color: '#ffd86a', fontFamily: '"VT323", monospace'
+                const main = this.add.text(-(PW - 70) / 2 + 64, ry - 11, 'CLEARED  ', {
+                    fontSize: '20px', color: '#ffd86a', fontFamily: '"VT323", monospace', resolution: 2
                 }).setOrigin(0, 0.5);
+                // (用户) 难度标签着色 — 与选难度页同色
+                const _dc = { easy: '#88ff88', normal: '#ffee88', hard: '#ffaa66', extreme: '#ff6666' }[String(r.difficulty || '').toLowerCase()] || '#dddddd';
+                const diffT = this.add.text(main.x + main.width, ry - 11, '[' + String(r.difficulty || '').toUpperCase() + ']', {
+                    fontSize: '20px', color: _dc, fontFamily: '"VT323", monospace', resolution: 2
+                }).setOrigin(0, 0.5);
+                list.add(diffT);
                 const sub = this.add.text(-(PW - 70) / 2 + 64, ry + 12,
                     fmtDate(r.at) + '    Deaths ' + (r.deaths | 0) + (typeof r.timeMs === 'number' ? '    Time ' + _fmtT(r.timeMs) : ''), {
-                    fontSize: '15px', color: '#9aa0b0', fontFamily: '"VT323", monospace'
+                    fontSize: '16px', color: '#9aa0b0', fontFamily: '"VT323", monospace', resolution: 2
                 }).setOrigin(0, 0.5);
                 list.add([card, bar, gT, main, sub]);
                 const cxr = (PW - 70) / 2 - 92;
                 const _recTex = this.textures.exists('YCrystal') ? 'YCrystal' : (this.textures.exists('Crystal') ? 'Crystal' : null);
-                if (_recTex) list.add(this.add.image(cxr, ry, _recTex).setDisplaySize(20, 20));
+                if (_recTex) list.add(this.add.image(cxr, ry + 3, _recTex).setDisplaySize(20, 20));   // (用户) 水晶贴图下移 3px
                 list.add(this.add.text(cxr + 16, ry, String(r.crystals | 0), {
-                    fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace'
+                    fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace', resolution: 2
                 }).setOrigin(0, 0.5));
             });
             const contentH = arr.length * (ROW_H + GAP) + 16;
@@ -497,30 +519,40 @@ class TitleScene extends Phaser.Scene {
             }
         };
 
-        // 排序 tab 行
+        // (用户) 排序段选钮 — 金色药丸样式 (CLOSE/YES/NO 同款语言): 当前项填金 + 深色字, 一眼可辨
         let activeTab = 'latest';
-        const tabTxts = [];
+        const tabBtns = [];
+        const styleTabs = () => {
+            tabBtns.forEach(b => {
+                const on = b._key === activeTab;
+                b.bg.setFillStyle(on ? 0xffd86a : 0x1c1828, 1);
+                b.bg.setStrokeStyle(2, on ? 0xffe9a8 : 0x6a5a2a);
+                b.txt.setColor(on ? '#1a1208' : '#8a8a99');
+            });
+        };
         TABS.forEach((t, i) => {
-            const tx = this.add.text(-180 + i * 180, -PH / 2 + 80, t.label, {
-                fontSize: '20px', color: '#8a8a99', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
-            }).setOrigin(0.5).setInteractive();
-            tx._key = t.key;
-            tx.on('pointerover', () => { if (activeTab !== tx._key) tx.setColor('#cfcfdd'); });
-            tx.on('pointerout',  () => { if (activeTab !== tx._key) tx.setColor('#8a8a99'); });
-            tx.on('pointerdown', () => {
-                if (activeTab === tx._key) return;
-                activeTab = tx._key;
-                tabTxts.forEach(o => o.setColor(o._key === activeTab ? '#ffd86a' : '#8a8a99'));
+            const bx = -190 + i * 190, by = -PH / 2 + 84;
+            const bg = this.add.rectangle(bx, by, 160, 34, 0x1c1828, 1).setStrokeStyle(2, 0x6a5a2a).setInteractive();
+            const txt = this.add.text(bx, by, t.label, {
+                fontSize: '20px', color: '#8a8a99', fontFamily: '"VT323", monospace', resolution: 2
+            }).setOrigin(0.5);
+            const btn = { _key: t.key, bg, txt };
+            bg.on('pointerover', () => { if (activeTab !== btn._key) { bg.setFillStyle(0x262036, 1); txt.setColor('#cfcfdd'); } });
+            bg.on('pointerout',  () => styleTabs());
+            bg.on('pointerdown', () => {
+                if (activeTab === btn._key) return;
+                activeTab = btn._key;
+                styleTabs();
                 buildList(activeTab);
             });
-            tabTxts.push(tx);
-            panel.add(tx);
+            tabBtns.push(btn);
+            panel.add([bg, txt]);
         });
-        tabTxts[0].setColor('#ffd86a');
+        styleTabs();
 
         // 底部说明
         const note = this.add.text(0, PH / 2 - 20, 'Only the latest 30 runs are recorded.', {
-            fontSize: '15px', color: '#8a8a99', fontFamily: '"VT323", monospace'
+            fontSize: '16px', color: '#8a8a99', fontFamily: '"VT323", monospace', resolution: 2
         }).setOrigin(0.5);
         panel.add(note);
 
@@ -585,7 +617,7 @@ class TitleScene extends Phaser.Scene {
                 fontSize: '28px', color: locked ? '#555566' : d.color, fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 4
             }).setOrigin(0, 0.5);
-            const sub = this.add.text(-(PW2 - 70) / 2 + 26, y + 16, locked ? 'Locked \u2014 clear the game once to unlock.' : d.desc, {
+            const sub = this.add.text(-(PW2 - 70) / 2 + 28, y + 16, locked ? 'Locked \u2014 clear the game once to unlock.' : d.desc, {   // (用户) 描述行右移 2px — 与存档 SLOT 下信息行同规
                 fontSize: '16px', color: '#9999aa', fontFamily: '"VT323", monospace'
             }).setOrigin(0, 0.5);
             rowBg.on('pointerdown', () => {
@@ -697,7 +729,7 @@ class TitleScene extends Phaser.Scene {
         btnBg.on('pointerover', () => { btnBg.setFillStyle(0x2a2438); btnTxt.setColor('#ffffff'); });
         btnBg.on('pointerout',  () => { btnBg.setFillStyle(0x1c1828); btnTxt.setColor('#ffd86a'); });
         btnBg.on('pointerdown', doClose);
-        dim.on('pointerdown', doClose);   // 点外侧暗区也可关
+        // (用户) 点外侧暗区不再关闭 — 仅 CLOSE 按钮可关 (dim 保持 interactive 吞点击)
 
         panel.add([bg, inner, title, divider, logo, tagline, ...cardItems, foot, btnBg, btnTxt]);
     }

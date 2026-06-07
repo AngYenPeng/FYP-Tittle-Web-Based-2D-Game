@@ -52,6 +52,9 @@ class MainGameScene extends Phaser.Scene {
         this._achDiedHere = false; this._achNestBroken = false;   // (用户成就) 区内死亡/巢破坏标记每局重置
         this.uiCam = null; this.pick1 = null; this.pick2 = null;
         this.mobWalls = null; this.playerWalls = null;   // (用户) 懒建组字段 — 死组残留是重进崩溃的元凶 (MobWall children.set)   // (用户) uiCam 在 create 末段才重建, 早段读到旧轮死相机; pick 同理 (墙注册早于稿子重建时拿死稿子挂碰撞器)
+        // (用户) 过场加载层进度驱动; 资源满格后切 "Building world..." (create 同步建世界期间主线程冻结, 条停满格属预期)
+        this.load.on('progress', p => { if (window.AzmLoading) window.AzmLoading.setProgress(p); });
+        this.load.on('complete', () => { if (window.AzmLoading) { window.AzmLoading.setProgress(1); window.AzmLoading.setLabel('Building world...'); } });
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);  // 加载全部音频
         if (typeof CrystalNpc !== 'undefined' && CrystalNpc.loadAnimSheets) CrystalNpc.loadAnimSheets(this);  // 加载 CNPC 动画
         // 静默处理资源加载失败（不在 console 显示 404 红字）
