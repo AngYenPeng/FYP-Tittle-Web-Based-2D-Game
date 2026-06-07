@@ -38,7 +38,14 @@ window.AbyssDiff = {
     get() { return this.TABLE[this.mode] || this.TABLE.easy; },
     set(m) { this.mode = this.TABLE[m] ? m : 'easy'; },
     // (用户) Extreme 解锁: 通关全游戏 >=1 次 (蜘蛛皇后死亡时 markCleared)
-    isCleared() { try { return localStorage.getItem('abyssMinerCleared') === '1'; } catch (e) { return false; } },
+    isCleared() { try {
+        if (localStorage.getItem('abyssMinerCleared') === '1') return true;
+        // (用户) 旧记录补登: RECORDS 有 ≥1 场即视为已通关 (markCleared 接线前赚到的记录也认),
+        //   顺带补点通关旗 + 首次解锁演出排队
+        const recs = JSON.parse(localStorage.getItem('abyssMinerClearRecords') || '[]');
+        if (recs.length > 0) { this.markCleared(); return true; }
+        return false;
+    } catch (e) { return false; } },
     markCleared() { try {
         const first = localStorage.getItem('abyssMinerCleared') !== '1';
         localStorage.setItem('abyssMinerCleared', '1');

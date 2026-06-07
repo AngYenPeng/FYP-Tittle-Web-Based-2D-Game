@@ -70,7 +70,7 @@ class MainGameScene extends Phaser.Scene {
         this.load.image('GuideButton','assets/images/GuideButton.png');   // (用户) HUD guide 按钮 32×32
         this.load.spritesheet('Healing','assets/images/Healing.png',{frameWidth:64,frameHeight:80});   // (用户) 回血特效 640×80 / 10 帧
         this.load.spritesheet('Small_spider_idle','assets/images/Small_spider_idle.png',{frameWidth:64,frameHeight:64});   // (用户) 宠物蜘蛛待机 384×64 / 6 帧
-        this.load.spritesheet('LastLive','assets/images/LastLive.png',{frameWidth:40,frameHeight:40});   // (用户) 最后一心碎裂 2200×40 / 55 帧
+        this.load.spritesheet('LastLife','assets/images/LastLife.png',{frameWidth:40,frameHeight:40});   // (用户) 最后一心碎裂 2200×40 / 55 帧 (实际文件名 LastLife; 不再投机加载 LastLive — 404 脏控制台)
         this.load.image('Ending1','assets/images/Ending1.png');   // (用户) 通关 cutscene 三联图 (320×180, intro 同款)
         this.load.image('Ending2','assets/images/Ending2.png');
         this.load.image('Ending3','assets/images/Ending3.png');

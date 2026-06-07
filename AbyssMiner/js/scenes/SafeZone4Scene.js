@@ -1061,6 +1061,18 @@ class SafeZone4Scene extends MainGameScene {
                 }
             }
             // 区2进场剧情走路: 在 movementSystem 之后跑 (覆盖 cinematic 清零的 velocityX)
+            // (用户) 剧情绝对接管 — 每帧重申: 高速冲入时任何残余/迟到的冲刺·抓钩·近战与外来速度当帧清除,
+            //   玩家移动权 100% 归剧情走位 (cancelDash 不清速度 + 单次入场清理拦不住后续灌入, 故每帧执法)
+            if (this._sz4CutsceneActive && this.player && this.player.body) {
+                if (this.isDashing && this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
+                if (this.isMeleeAttacking && this.meleeSystem && this.meleeSystem.cancelMelee) this.meleeSystem.cancelMelee();
+                if ((this.isGrappling || this.isHanging) && this.grappleSystem && this.grappleSystem.stopGrapple) this.grappleSystem.stopGrapple();
+                if (this._sz4CutPhase !== 'walk') {
+                    this.player.body.setVelocity(0, 0);   // 非走路阶段: 完全静止 (走路阶段由 _updateSz4Cutscene 独家给速)
+                } else {
+                    this.player.body.setVelocityX(0);     // 走路阶段: 先清外来 X, 下一行剧情走位重新给 ±150
+                }
+            }
             if (this._sz4CutsceneActive) this._updateSz4Cutscene(time, delta);
         this._updateRealPickaxes(time, delta);
         }
@@ -1473,6 +1485,7 @@ class SafeZone4Scene extends MainGameScene {
         let spawned = 0;
         const spawnRing = () => {
             if (!boss.sprite || !boss.sprite.scene) return;
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, Math.random() < 0.5 ? 'ForceWingsFlap' : 'ForceWingsFlap2');   // (用户) 冲击波音效 — 真战同款 2选1
             const g = this.add.circle(boss.sprite.x, boss.sprite.y, 8, 0x66ccff, 0).setStrokeStyle(3, 0x88ddff, 0.9).setDepth(19);
             if (this.uiCam) { try { this.uiCam.ignore(g); } catch (e) {} }
             rings.push({ g, r: 8 });
@@ -1482,6 +1495,16 @@ class SafeZone4Scene extends MainGameScene {
         if (this.anims.exists('bat_boss_roar') && boss.sprite.texture && String(boss.sprite.texture.key).startsWith('Bat_boss')) {
             boss.sprite.play({ key: 'bat_boss_roar', repeat: -1 });
         }
+        // (用户) 咆哮声循环 (Bat_Scream) — 贯穿整个咆哮, 回 fly 时停
+        let roarSnd = null;
+        if (this.cache.audio.exists('Bat_Scream')) {
+            try {
+                roarSnd = this.sound.add('Bat_Scream', { loop: true, volume: (typeof AudioSystem !== 'undefined' ? AudioSystem.sfxVolume : 0.8) });
+                roarSnd.play();
+            } catch (e) { roarSnd = null; }
+        }
+        const stopRoar = () => { if (roarSnd) { try { roarSnd.stop(); roarSnd.destroy(); } catch (e) {} roarSnd = null; } };
+        this.events.once('shutdown', stopRoar);
         this.cameras.main.shake(2400, 0.01);   // 咆哮震屏贯穿 3 环释放
         spawnRing();
         this.time.delayedCall(1000, spawnRing);
@@ -1489,6 +1512,7 @@ class SafeZone4Scene extends MainGameScene {
             spawnRing();   // 最后一个冲击波
             this.time.delayedCall(1500, () => {
                 // (用户) 剧情咆哮结束 → 回 fly
+                stopRoar();   // (用户) 咆哮完成 → 吼声止
                 if (boss.sprite && boss.sprite.active && this.anims.exists('bat_boss_fly')
                     && boss.sprite.anims && boss.sprite.anims.currentAnim && boss.sprite.anims.currentAnim.key === 'bat_boss_roar') {
                     boss.sprite.play('bat_boss_fly', true);

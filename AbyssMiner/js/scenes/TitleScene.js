@@ -869,18 +869,18 @@ class TitleScene extends Phaser.Scene {
                 const RW = PW2 - 70, RH = 70;
                 const cover = this.add.rectangle(0, y, RW, RH, 0x000000, 0.5);
                 panel.add(cover); items.push(cover);
-                this.time.delayedCall(650, () => {
+                this.time.delayedCall(1300, () => {   // (用户) 演出整体放慢一倍
                     if (!rowBg.scene) return;   // 面板已关
                     // ① 震动
                     this.tweens.add({
-                        targets: [rowBg, lbl, sub, cover], x: '+=6', yoyo: true, repeat: 7, duration: 36,
+                        targets: [rowBg, lbl, sub, cover], x: '+=6', yoyo: true, repeat: 15, duration: 72,   // (用户) 震动时长×2 (repeat+duration 双倍)
                         onComplete: () => {
                             if (!rowBg.scene) return;
                             // ② 暗罩碎裂飞散
                             try { cover.destroy(); } catch (e) {}
                             const flash = this.add.rectangle(0, y, RW, RH, 0xffffff, 0.85);
                             panel.add(flash); items.push(flash);
-                            this.tweens.add({ targets: flash, fillAlpha: 0, duration: 220, onComplete: () => { try { flash.destroy(); } catch (e) {} } });
+                            this.tweens.add({ targets: flash, fillAlpha: 0, duration: 440, onComplete: () => { try { flash.destroy(); } catch (e) {} } });   // (用户) ×2
                             for (let k = 0; k < 12; k++) {
                                 const sx = Phaser.Math.Between(-RW / 2 + 10, RW / 2 - 10);
                                 const sy = y + Phaser.Math.Between(-RH / 2 + 6, RH / 2 - 6);
@@ -893,7 +893,7 @@ class TitleScene extends Phaser.Scene {
                                     y: sy + Phaser.Math.Between(-50, 95),
                                     angle: Phaser.Math.Between(-180, 180),
                                     alpha: 0,
-                                    duration: Phaser.Math.Between(450, 750),
+                                    duration: Phaser.Math.Between(900, 1500),   // (用户) 碎片飞散×2
                                     ease: 'Cubic.easeOut',
                                     onComplete: () => { try { shard.destroy(); } catch (e) {} }
                                 });

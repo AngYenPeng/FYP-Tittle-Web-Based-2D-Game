@@ -388,34 +388,35 @@ class HealthSystem {
         this._lastLiveSequence();
     }
 
-    /** (用户) 最后一心碎裂演出. LastLive 图缺失 → 回退旧黑屏爱心动画, 同样进 DeathScene */
+    /** (用户) 最后一心碎裂演出. 贴图键 LastLive/LastLife 双名兼容; 心跳 Heartbeat 无条件播 (回退路径也响);
+     *  分层与 _deathHeartAnim 完全同款 (cam 尺寸 + scrollFactor0 + depth 99999 + uiCam ignore). 图缺失 → 回退旧爱心动画, 同样进 DeathScene */
     _lastLiveSequence() {
         const s = this.scene;
         const goDeath = () => { try { s.scene.start('DeathScene'); } catch (e) { if (s.scene && s.scene.start) s.scene.start('TitleScene'); } };
-        // (用户) 动画用点现注册 — SZ 场景不跑 GameScene.create 的注册簇 (miner_dead 同款防御)
-        if (s.anims && s.textures.exists('LastLive') && !s.anims.exists('lastlive_anim')) {
-            try { s.anims.create({ key: 'lastlive_anim', frames: s.anims.generateFrameNumbers('LastLive', { start: 0, end: 54 }), frameRate: 17, repeat: 0 }); } catch (e) {}
+        // 双名解析 + 用点现注册 (SZ 场景不跑 GameScene.create 的注册簇)
+        const texKey = s.textures.exists('LastLive') ? 'LastLive' : (s.textures.exists('LastLife') ? 'LastLife' : null);
+        if (texKey && s.anims && !s.anims.exists('lastlive_anim')) {
+            try { s.anims.create({ key: 'lastlive_anim', frames: s.anims.generateFrameNumbers(texKey, { start: 0, end: 54 }), frameRate: 17, repeat: 0 }); } catch (e) {}
         }
-        if (!s.anims || !s.anims.exists('lastlive_anim')) {
+        // (用户) 心跳 — 最后一颗心的唯一听觉, 无论走主路还是回退都播
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Heartbeat', { volume: AudioSystem.sfxVolume });
+        if (!texKey || !s.anims || !s.anims.exists('lastlive_anim')) {
+            console.warn('[LastLive] 贴图缺失: 需要 assets/images/LastLive.png 或 LastLife.png (2200×40 / 55帧) — 回退旧爱心动画');
             if (s._deathHeartAnim) s._deathHeartAnim(1, goDeath);
             else s.time.delayedCall(1500, goDeath);
             return;
         }
-        const W = s.scale.width, H = s.scale.height;
-        const _pin = (o) => {
-            o.setScrollFactor(0);
-            // 只让 uiCam 画 (全屏覆盖含 HUD); 无 uiCam 场景单相机自然全覆盖
-            if (s.uiCam) { try { s.cameras.main.ignore(o); } catch (e) {} }
-            return o;
-        };
-        // ① 背后游戏逐渐黑掉 (1.4s 全黑)
-        const black = _pin(s.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setDepth(99990));
+        const cam = s.cameras.main;
+        const cw = cam.width, ch = cam.height;
+        // ① 背后游戏逐渐黑掉 (1.4s 全黑) — _deathHeartAnim 同款分层
+        const black = s.add.rectangle(cw / 2, ch / 2, cw, ch, 0x000000, 1).setScrollFactor(0).setDepth(99999).setAlpha(0);
+        if (s.uiCam) { try { cam.ignore(black); } catch (e) {} }
         s.tweens.add({
-            targets: black, fillAlpha: 1, duration: 1400, ease: 'Power1',
+            targets: black, alpha: 1, duration: 1400, ease: 'Quad.easeIn',
             onComplete: () => {
-                // ② 全黑后中央心碎动画 + 心跳 (心跳早结束无妨)
-                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Heartbeat', { volume: AudioSystem.sfxVolume });
-                const heart = _pin(s.add.sprite(W / 2, H / 2, 'LastLive').setScale(7).setDepth(99991));
+                // ② 全黑后中央心碎动画 (心跳已起播, 早结束无妨)
+                const heart = s.add.sprite(cw / 2, ch / 2, texKey).setScrollFactor(0).setDepth(100000).setScale(7);
+                if (s.uiCam) { try { cam.ignore(heart); } catch (e) {} }
                 try { heart.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); } catch (e) {}
                 heart.play('lastlive_anim');
                 heart.once('animationcomplete', () => {
