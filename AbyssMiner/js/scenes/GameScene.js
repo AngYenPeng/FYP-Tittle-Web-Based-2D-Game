@@ -1285,6 +1285,32 @@ class MainGameScene extends Phaser.Scene {
 
     /** (用户·mob 声轨) 地面怪走路节拍 + 落地检测, 中央统一处理 (免逐怪改造);
      *  音量/距离规则在 AudioSystem._mobVol; >15格的在那边直接归零, 这里无需预过滤 */
+    /** (用户) 结局总闸 — RankingSystem.show 开播即调: 背景游戏整体熄火.
+     *  负面状态全清 (中毒/DoT/减速), 但保留侵蚀度数值 (resetOnDeath 会清 → 捕获后回填);
+     *  玩家无敌+眩晕, 物理世界暂停 (怪/弹/重力全冻), 走路循环/怪步声全收. */
+    _freezeForEnding() {
+        if (this._endingActive) return;
+        this._endingActive = true;
+        this._cinematicLock = true;
+        if (this.diseaseSystem) {
+            const _pct = this.diseaseSystem.corrosionPct || 0;
+            try { this.diseaseSystem.resetOnDeath(); } catch (e) {}
+            this.diseaseSystem.corrosionPct = _pct;   // (用户) 侵蚀度数值保留, 不算清除范围
+        }
+        this.isPlayerInvincible = true;
+        this.isPlayerStunned = true;
+        if (this.player && this.player.body) { this.player.body.setVelocity(0, 0); this.player.body.setAllowGravity(false); }
+        if (this._freezeMonstersOnDeath) { try { this._freezeMonstersOnDeath(); } catch (e) {} }
+        try { this.physics.world.pause(); } catch (e) {}
+        this._forceStepKey = null;
+        if (this._stepSnd) { try { this._stepSnd.stop(); this._stepSnd.destroy(); } catch (e) {} this._stepSnd = null; this._stepKey = null; }
+        const groups = [this.spiders, this.bungeeSpiders, this.beetles, this.slimes, this.miniSlimes];
+        for (const g of groups) {
+            if (!g || !g.getChildren) continue;
+            g.getChildren().forEach(mm => { if (mm && mm._stepSnd) { try { mm._stepSnd.stop(); mm._stepSnd.destroy(); } catch (e) {} mm._stepSnd = null; } });
+        }
+    }
+
     _mobFootAudio(delta) {
         if (typeof AudioSystem === 'undefined' || !AudioSystem._mobVol || !this.player) return;
         const groups = [this.spiders, this.bungeeSpiders, this.beetles, this.slimes, this.miniSlimes];
@@ -1329,6 +1355,7 @@ class MainGameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this._endingActive) return;   // (用户) 结局总闸: 世界已熄火, 一切局内逻辑停摆
         this._mobFootAudio(delta);
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;

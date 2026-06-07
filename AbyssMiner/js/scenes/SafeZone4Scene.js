@@ -384,7 +384,7 @@ class SafeZone4Scene extends MainGameScene {
                     if (this.hudSystem && this.hudSystem.convertBlueToYellow) this.hudSystem.convertBlueToYellow();
                     if (!this._rankingSystem && typeof RankingSystem !== 'undefined') {
                         this._rankingSystem = new RankingSystem(this);
-                        this._rankingSystem.show(this.hudSystem ? (this.hudSystem.yellowCrystalCount || 0) : 0, { noRecord: true });
+                        this._rankingSystem.show(this.hudSystem ? (this.hudSystem.yellowCrystalCount || 0) : 0);   // (用户) 转正: 正常落 RECORDS + GAME CLEAR 标记
                     }
                 }
             });
@@ -1309,6 +1309,12 @@ class SafeZone4Scene extends MainGameScene {
         this._cinematicLock = true;
         this._sz4CutPhase = 'walk';
         this._sz4PanGuard = false;
+
+        // (用户) 入场硬停三连: 高速冲刺撞进触发器时, 在飞冲刺会继续灌速度把玩家带出强制走位范围
+        //   (死亡路径同款原语) — 撤冲/撤攻/收钩后再清速度, 走位阶段才真正接管
+        if (this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
+        if (this.meleeSystem && this.meleeSystem.cancelMelee) this.meleeSystem.cancelMelee();
+        if (this.grappleSystem && this.grappleSystem.stopGrapple && (this.isGrappling || this.isHanging)) this.grappleSystem.stopGrapple();
 
         // 停玩家 + idle
         if (this.player && this.player.body) {

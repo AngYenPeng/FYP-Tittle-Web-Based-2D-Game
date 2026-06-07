@@ -19,10 +19,8 @@ class DeathScene extends Phaser.Scene {
     }
 
     create() {
-        // 死亡 BGM 延续氛围 (TitleScene 启动时自动换轨)
-        if (typeof AudioSystem !== 'undefined') {
-            try { AudioSystem.bgm(this, 'bgm_GameOver'); } catch (e) {}
-        }
+        // (用户) 最后一颗心 = 旧死亡音效 (Death_Grow / GameOver 曲) 一概不播 — 心碎+心跳已是全部听觉, 此处保持静音
+        if (typeof AudioSystem !== 'undefined') { try { AudioSystem.stopBGM(); } catch (e) {} }
         const W = this.scale.width, H = this.scale.height;
 
         this._slides = [

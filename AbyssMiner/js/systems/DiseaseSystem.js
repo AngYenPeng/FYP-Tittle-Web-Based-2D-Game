@@ -233,6 +233,7 @@ class DiseaseSystem {
     }
 
     update(delta) {
+        if (this.scene && this.scene._endingActive) return;   // (用户) 结局总闸
         const s = this.scene;
         const now = s.time.now;
 

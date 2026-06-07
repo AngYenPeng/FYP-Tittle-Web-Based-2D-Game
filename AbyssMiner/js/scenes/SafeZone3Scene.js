@@ -1047,6 +1047,7 @@ class SafeZone3Scene extends MainGameScene {
             const targetX = targetCol * G + G / 2;
             // 跑左方向, flipX = false (sprite 默认朝右, 翻转 = 朝左)
             npc.sprite.flipX = false;
+            if (npc._playAnim && npc._animProfile && npc._animProfile.walk) npc._playAnim(npc._animProfile.walk);   // (用户) 跑动播 walk 动画
             s.tweens.add({
                 targets: npc.sprite,
                 x: targetX,
@@ -1055,6 +1056,7 @@ class SafeZone3Scene extends MainGameScene {
                 onUpdate: () => { npc.x = npc.sprite.x; },
                 onComplete: () => {
                     npc.x = npc.sprite.x;
+                    if (npc._playAnim && npc._animProfile) npc._playAnim(npc._animProfile.idle);   // (用户) 到位还原 idle
                     npc.sprite.flipX = true;  // 跑完转身回头看
                     doneCount++;
                     if (doneCount === 2) {
@@ -1156,10 +1158,15 @@ class SafeZone3Scene extends MainGameScene {
         // Cryst 朝左走 (-42 → -57)
         if (s._sz3Cryst && s._sz3Cryst.sprite) {
             s._sz3Cryst.sprite.flipX = false;  // 朝左
+            if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile && s._sz3Cryst._animProfile.walk) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.walk);   // (用户) 走位播 walk 动画
             s.tweens.add({
                 targets: s._sz3Cryst.sprite, x: crystTarget, duration: 2600, ease: 'Linear',
                 onUpdate: () => { s._sz3Cryst.x = s._sz3Cryst.sprite.x; },
-                onComplete: () => { s._sz3Cryst.x = s._sz3Cryst.sprite.x; s._sz3Cryst.sprite.flipX = true; }
+                onComplete: () => {
+                    s._sz3Cryst.x = s._sz3Cryst.sprite.x;
+                    if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.idle);   // (用户) 还原 idle
+                    s._sz3Cryst.sprite.flipX = true;
+                }
             });
         }
         // 玩家也朝左走到 (-56,30)
@@ -2040,6 +2047,7 @@ class SafeZone3Scene extends MainGameScene {
             s.moleTrader.body.setAllowGravity(false);
             s.moleTrader.body.enable = false;
         }
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'MoleDig');   // (用户) 钻出音效
         if (s.anims.exists('trader_dig')) {
             if (typeof s.moleTrader.playReverse === 'function') s.moleTrader.playReverse('trader_dig');
             else if (typeof s.moleTrader.play === 'function') s.moleTrader.play('trader_dig');

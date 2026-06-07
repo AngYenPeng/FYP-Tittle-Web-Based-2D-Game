@@ -392,6 +392,10 @@ class HealthSystem {
     _lastLiveSequence() {
         const s = this.scene;
         const goDeath = () => { try { s.scene.start('DeathScene'); } catch (e) { if (s.scene && s.scene.start) s.scene.start('TitleScene'); } };
+        // (用户) 动画用点现注册 — SZ 场景不跑 GameScene.create 的注册簇 (miner_dead 同款防御)
+        if (s.anims && s.textures.exists('LastLive') && !s.anims.exists('lastlive_anim')) {
+            try { s.anims.create({ key: 'lastlive_anim', frames: s.anims.generateFrameNumbers('LastLive', { start: 0, end: 54 }), frameRate: 17, repeat: 0 }); } catch (e) {}
+        }
         if (!s.anims || !s.anims.exists('lastlive_anim')) {
             if (s._deathHeartAnim) s._deathHeartAnim(1, goDeath);
             else s.time.delayedCall(1500, goDeath);
@@ -505,6 +509,7 @@ class HealthSystem {
 
     /** 每帧调用 — 处理 5 秒死亡倒计时 */
     update(delta) {
+        if (this.scene && this.scene._endingActive) return;   // (用户) 结局总闸
         // (用户) 回血特效跟随 + 过期隐藏
         if (this._healFx && this._healFx.scene) {
             const _p = this.scene.player;

@@ -47,11 +47,17 @@ class CrystalNpc {
             //   (巡逻/剧情手动 play/_cinematicMode) 一视同仁; 音频延迟加载迟到 → 下一拍自动接上
             //   (旧事件方案只在动画开始那一刻试一次, 音频没下完 = 永久哑火, 即 CNPC 无声根因).
             //   每个 NPC 独立音轨 — 双胞胎同走 = 两份叠加.
-            if (this._animProfile.walk) {
+            {
                 this._stepTick = scene.time.addEvent({ delay: 100, loop: true, callback: () => {
+                    if (this.scene && this.scene._endingActive) { this._stepSound(false); return; }   // (用户) 结局总闸
                     const a = this.sprite && this.sprite.anims;
-                    const walking = !!(a && a.isPlaying && a.currentAnim && a.currentAnim.key === this._animProfile.walk);
-                    this._stepSound(walking);
+                    const animWalk = !!(this._animProfile.walk && a && a.isPlaying && a.currentAnim && a.currentAnim.key === this._animProfile.walk);
+                    // (用户) 真相源双保险: walk 动画 OR 本拍实际位移 (>0.5px) — 剧情滑行/吓跑(fear动画)/
+                    //   _cinematicMode 跳过 update 的一切场合, 只要在动就有脚步
+                    const _lx = (this._tickLastX !== undefined) ? this._tickLastX : this.sprite.x;
+                    this._tickLastX = this.sprite.x;
+                    const moved = Math.abs(this.sprite.x - _lx) > 0.5;
+                    this._stepSound(animWalk || moved);
                     if (this._stepSnd && typeof AudioSystem !== 'undefined' && AudioSystem._mobVol) {
                         this._stepSnd.setVolume(AudioSystem._mobVol(this.scene, this.sprite.x, this.sprite.y));
                     }

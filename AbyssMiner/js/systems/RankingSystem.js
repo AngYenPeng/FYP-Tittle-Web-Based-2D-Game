@@ -27,6 +27,7 @@ class RankingSystem {
         this._all = [];
 
         const s = this.scene;
+        if (s && s._freezeForEnding) s._freezeForEnding();   // (用户) 结局开播 = 局内世界总闸
         this._W = s.cameras.main.width;
         this._H = s.cameras.main.height;
 
@@ -50,6 +51,16 @@ class RankingSystem {
             recs.unshift({ at: Date.now(), difficulty: diffMode, crystals: Math.min(99999, crystalCount | 0), grade, deaths, timeMs });   // (用户) 水晶封顶 99999
             if (recs.length > 30) recs.length = 30;   // 只留最近 30 场
             localStorage.setItem('abyssMinerClearRecords', JSON.stringify(recs));
+            // (用户) 通关: 当前存档标记 GAME CLEAR (槽位金色显示, 不可继续), 记录内容与文凭一致
+            if (typeof SaveSystem !== 'undefined' && SaveSystem.getCurrentSlot) {
+                const _slot = SaveSystem.getCurrentSlot();
+                if (_slot != null) {
+                    const _d = SaveSystem.getSlot(_slot) || SaveSystem.captureFromScene(s) || {};
+                    _d.cleared = true;
+                    _d.clearStats = { crystals: this._stats.crystals, grade, deaths, timeMs, difficulty: diffMode, at: Date.now() };
+                    SaveSystem.saveSlot(_slot, _d);
+                }
+            }
         } catch (e) {}
 
         this._stage1LeaveCutscene();

@@ -1247,6 +1247,7 @@ class SafeZone2Scene extends MainGameScene {
         this.tweens.add({ targets: cam, zoom: 2.0, duration: 600, ease: 'Quad.easeOut' });
         cam.pan(finalX, finalY, 600, 'Quad.easeOut');
 
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'MoleDig');   // (用户) 钻出音效
         // 商人钻出来动画: 反向播 trader_dig (从地底升起)
         // 整个动画往右 1 格 (+32), 往下 1.5 格 (+48), 整体放大 0.2 倍 (48 → 57.6)
         // dig 动画 Y 再往上 3+5=8 px (用户多次调整)

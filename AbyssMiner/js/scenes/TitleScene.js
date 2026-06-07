@@ -35,13 +35,6 @@ class TitleScene extends Phaser.Scene {
             return;
         }
         this._doCreate();
-
-        // Pressing the number "6" key on the keyboard instantly boots into your SafeZone6Scene!
-        this.input.keyboard.on('keydown-SIX', () => {
-            console.log("Dev command sequence acknowledged. Executing warp handshake to Zone 6...");
-            this.scene.stop();
-            this.scene.start('SafeZone6Scene');
-        });
     }
 
     _doCreate() {
@@ -130,7 +123,6 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE3',   action: () => this._devJump('SafeZone3Scene') },
             { label: 'SAFEZONE4',   action: () => this._devJump('SafeZone4Scene') },
             { label: 'SAFEZONE5',   action: () => this._devJump('SafeZone5Scene') },
-            { label: 'SAFEZONE6',   action: () => this._devJump('SafeZone6Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
             { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
             { label: 'RECORDS',     action: () => this._openRecords() },   // (用户) 通关记录
@@ -323,7 +315,12 @@ class TitleScene extends Phaser.Scene {
                     const zone = SaveSystem.zoneName(data.scene);
                     // (用户) 阵亡存档: 红色 FALLEN 标记; 普通档改图标: Crystal/Heart 贴图缩小 18px + 数字最亮白
                     let info;
-                    if (data.dead) {
+                    if (data.cleared) {
+                        // (用户) 通关存档: 金色 GAME CLEAR 标记
+                        info = this.add.text(-PW / 2 + 62, y + 14, zone + '    \u2605 GAME CLEAR', {
+                            fontSize: '18px', color: '#ffd86a', fontFamily: '"VT323", monospace'
+                        }).setOrigin(0, 0.5);
+                    } else if (data.dead) {
                         info = this.add.text(-PW / 2 + 62, y + 14, zone + '    \u2620 FALLEN', {
                             fontSize: '18px', color: '#ff6666', fontFamily: '"VT323", monospace'
                         }).setOrigin(0, 0.5);
@@ -384,6 +381,7 @@ class TitleScene extends Phaser.Scene {
 
                     rowBg.on('pointerdown', () => {
                         if (data.dead) return;   // (用户) 阵亡档不可继续 (用 ✕ 删除后可重开)
+                        if (data.cleared) return;   // (用户) 通关档同样终局, 不可继续
                         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
                         this._resumeSlot(i, data);
                     });
