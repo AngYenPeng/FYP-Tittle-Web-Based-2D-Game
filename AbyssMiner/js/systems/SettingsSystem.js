@@ -493,7 +493,7 @@ class SettingsSystem {
     }
 
     _saveAndExit() {
-        // (用户) Save&Exit 不抓当前状态 — 存档 = 最近一次快照 (入场出生点一次 + 各 checkpoint 首次进圈一次), 见 HealthSystem
+        // (用户) Save&Exit 不抓当前状态 — 存档 = 最近一次快照 (进入新图一次 + 完全死亡 FALLEN)
         this._saveSettings();
         // 注意: 不在这里抓当前状态 — 存档以"进入区域时"的快照为准 (见各场景 autoSave),
         // 否则中途捡的东西会被存进去, 但 resume 又会刷新世界 → 可无限刷. 这里只负责退出.

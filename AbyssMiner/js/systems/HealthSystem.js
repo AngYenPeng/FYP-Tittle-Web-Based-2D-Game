@@ -453,14 +453,8 @@ class HealthSystem {
             if (_cp && _s.player && _s.player.body) {
                 const _dx = _s.player.x - _cp.x, _dy = _s.player.y - _cp.y;
                 const _inCp = (_dx * _dx + _dy * _dy <= 160 * 160);
-                if (_inCp) {
-                    const _ck = Math.round(_cp.x) + ',' + Math.round(_cp.y);
-                    if (!_s._cpSnapDone) _s._cpSnapDone = new Set();
-                    if (!_s._cpSnapDone.has(_ck)) {
-                        _s._cpSnapDone.add(_ck);
-                        try { if (typeof SaveSystem !== 'undefined' && SaveSystem.autoSave) SaveSystem.autoSave(_s); } catch (e) {}
-                    }
-                }
+                // (用户) 神像进圈快照已拆除 — 存档只发生于: ① 进入新图一次 ② 完全死亡 (FALLEN);
+                //   神像只保留回血/降腐蚀功能
                 const _cpd = (window.AbyssDiff ? AbyssDiff.get() : null);
                 if (_inCp && (!_cpd || _cpd.cpRegen)) {
                     this._cpRegenAcc = (this._cpRegenAcc || 0) + delta;

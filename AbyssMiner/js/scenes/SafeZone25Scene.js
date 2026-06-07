@@ -677,6 +677,7 @@ class SafeZone25Scene extends SafeZone3Scene {
                 if (!m || !m.update) continue;
                 if (m._sz25Horde) m.forceAggroTimer = 1e12;  // 持续强制警戒
                 m.update(time, delta, this.player);          // 无距离过滤
+                if (m.checkProximity) m.checkProximity(this.player);   // (用户) 爆裂水晶接近触发 — 此循环此前漏调
             }
         }
     }

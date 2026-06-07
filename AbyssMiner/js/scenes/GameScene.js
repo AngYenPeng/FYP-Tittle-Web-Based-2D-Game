@@ -1528,6 +1528,7 @@ class MainGameScene extends Phaser.Scene {
                 if (Math.abs(m.x - px) > DIST_X) continue;
                 if (Math.abs(m.y - py) > DIST_Y) continue;
                 m.update(time, delta, this.player);
+                if (m.checkProximity) m.checkProximity(this.player);   // (用户) 爆裂水晶接近触发 — filtered 循环此前漏调, 导致 SZ 区只有打了才爆
             }
         }
     }
