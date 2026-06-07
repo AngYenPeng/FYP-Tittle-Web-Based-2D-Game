@@ -102,6 +102,7 @@ class SaveSystem {
             if (prev && typeof prev.hearts === 'number' && typeof data.hearts === 'number' && data.hearts < prev.hearts) {
                 data.hearts = prev.hearts;
             }
+            if (prev && prev.slotName) data.slotName = prev.slotName;   // (用户) 自定义槽名随快照保留
         } catch (e) {}
         return SaveSystem.saveSlot(n, data);
     }

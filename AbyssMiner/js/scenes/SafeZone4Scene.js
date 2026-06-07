@@ -377,7 +377,17 @@ class SafeZone4Scene extends MainGameScene {
         }
         // secret_door — 往右 0.5 格 (11.5→12) + 往下 0.5 格 (18.5→19)
         if (typeof SecretDoor !== 'undefined') {
-            this._sz4SecretDoor = new SecretDoor(this, 12 * G, 19 * G, { pairId: 'sz4_secret', w: 2 * G, h: 2 * G, locked: true, targetScene: 'SafeZone5Scene' });
+            // (用户·临时) 预览通关画面: 进暗门直接结算 (蓝转黄 + RankingSystem, noRecord 不写 RECORDS).
+            //   还原 = 删掉 onConfirm 整段即可恢复传送 SafeZone5Scene
+            this._sz4SecretDoor = new SecretDoor(this, 12 * G, 19 * G, { pairId: 'sz4_secret', w: 2 * G, h: 2 * G, locked: true, targetScene: 'SafeZone5Scene',
+                onConfirm: () => {
+                    if (this.hudSystem && this.hudSystem.convertBlueToYellow) this.hudSystem.convertBlueToYellow();
+                    if (!this._rankingSystem && typeof RankingSystem !== 'undefined') {
+                        this._rankingSystem = new RankingSystem(this);
+                        this._rankingSystem.show(this.hudSystem ? (this.hudSystem.yellowCrystalCount || 0) : 0, { noRecord: true });
+                    }
+                }
+            });
             if (!this._secretDoors) this._secretDoors = [];
             this._secretDoors.push(this._sz4SecretDoor);   // 注册到 InteractSystem (E 提示 + 交互)
         }

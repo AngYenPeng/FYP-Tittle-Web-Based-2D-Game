@@ -270,12 +270,35 @@ class TitleScene extends Phaser.Scene {
                 rowBg.on('pointerout',  () => rowBg.setFillStyle(has ? 0x1c1828 : 0x14202e, 1));
                 const accent = this.add.rectangle(-(PW - 80) / 2 + 3, y, 5, 78, has ? 0xffcc44 : 0x4488cc, 1);
 
-                const slotLbl = this.add.text(-PW / 2 + 60, y - 16, 'SLOT ' + i, {
+                const slotLbl = this.add.text(-PW / 2 + 60, y - 16, (data && data.slotName) ? data.slotName : ('SLOT ' + i), {
                     fontSize: '24px', color: has ? '#ffd86a' : '#88bbee', fontFamily: '"VT323", monospace',
                     stroke: '#000', strokeThickness: 3
                 }).setOrigin(0, 0.5);
+                // (用户) 字距 1px — Phaser 3.60 无 letterSpacing, 走 main.js 全局 Canvas2D 补丁的逐对象旗标
+                try { slotLbl.context._abyssLsForce = '1px'; slotLbl.updateText(); } catch (e) {}
 
                 rowItems.push(rowBg, accent, slotLbl);
+
+                // (用户) 槽名改名按钮 — 仅有档行; 字母+空格, 最多 20 字
+                if (data) {
+                    const editBtn = this.add.text(slotLbl.x + slotLbl.width + 12, y - 14, '\u270E', {   // (用户) 净下移 2px
+                        fontSize: '20px', color: '#9aa0b0', fontFamily: '"VT323", monospace',
+                        stroke: '#000', strokeThickness: 3
+                    }).setOrigin(0, 0.5).setInteractive();
+                    editBtn.on('pointerover', () => editBtn.setColor('#ffd86a'));
+                    editBtn.on('pointerout',  () => editBtn.setColor('#9aa0b0'));
+                    editBtn.on('pointerdown', () => this._openSlotRename(i, slotLbl, editBtn));
+                    rowItems.push(editBtn);
+                    // (用户) 直接点槽名也可改名; 热区 = 名字 + 空隙 + 笔 的整块长方形,
+                    //   随名字长短伸缩 (改名提交处同步 setSize)
+                    slotLbl.setInteractive(
+                        new Phaser.Geom.Rectangle(0, 0, slotLbl.width + 12 + editBtn.width + 2, slotLbl.height),
+                        Phaser.Geom.Rectangle.Contains
+                    );
+                    slotLbl.on('pointerover', () => slotLbl.setColor('#ffe9a8'));
+                    slotLbl.on('pointerout',  () => slotLbl.setColor('#ffd86a'));
+                    slotLbl.on('pointerdown', () => this._openSlotRename(i, slotLbl, editBtn));
+                }
 
                 if (data) {
                     const zone = SaveSystem.zoneName(data.scene);
@@ -292,7 +315,7 @@ class TitleScene extends Phaser.Scene {
                         }).setOrigin(0, 0.5);
                         let ix = x0 + 130;
                         const ci = this.textures.exists('Crystal')
-                            ? this.add.image(ix, y + 17, 'Crystal').setDisplaySize(18, 18)   // (用户) 水晶贴图下移 3px
+                            ? this.add.image(ix, y + 16, 'Crystal').setDisplaySize(18, 18)   // (用户) 水晶贴图净下移 2px
                             : this.add.text(ix, y + 14, '\u25C6', { fontSize: '18px', color: '#88ccff', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
                         const cN = this.add.text(ix + 14, y + 14, String(data.crystalCount || 0), {
                             fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
@@ -300,7 +323,7 @@ class TitleScene extends Phaser.Scene {
                         ix += 62;
                         if ((data.yellowCrystalCount | 0) > 0) {   // (用户) 档内已获得黄水晶 → 槽位也显示
                             const yi = this.textures.exists('YCrystal')
-                                ? this.add.image(ix, y + 17, 'YCrystal').setDisplaySize(18, 18)   // 贴图下移 3px
+                                ? this.add.image(ix, y + 16, 'YCrystal').setDisplaySize(18, 18)   // 贴图净下移 2px
                                 : this.add.text(ix, y + 14, '\u25C6', { fontSize: '18px', color: '#ffcc33', fontFamily: '"VT323", monospace' }).setOrigin(0.5);
                             const yN = this.add.text(ix + 14, y + 14, String(data.yellowCrystalCount | 0), {
                                 fontSize: '18px', color: '#ffffff', fontFamily: '"VT323", monospace'
@@ -448,7 +471,7 @@ class TitleScene extends Phaser.Scene {
         const ROW_H = 56, GAP = 6;
         const fmtDate = ts => { const d = new Date(ts); const p = n => (n < 10 ? '0' : '') + n;
             return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
-        const _fmtT = ms => { ms = ms | 0; const m = Math.floor(ms / 60000), s2 = Math.floor(ms / 1000) % 60; return m + ':' + (s2 < 10 ? '0' : '') + s2; };
+        const _fmtT = ms => { ms = ms | 0; const h = Math.floor(ms / 3600000) % 100, m = Math.floor(ms / 60000) % 60, s2 = Math.floor(ms / 1000) % 60; const p = n => (n < 10 ? '0' : '') + n; return h + ':' + p(m) + ':' + p(s2); };   // (用户) 时:分:秒, 小时 %100 循环
         const gColor = g => ({ S: '#ffcc44', A: '#88dd66', B: '#66aaff', C: '#cccccc', D: '#aa6666' })[g] || '#cccccc';
 
         const list = this.add.container(0, 0);
@@ -497,8 +520,8 @@ class TitleScene extends Phaser.Scene {
                 list.add([card, bar, gT, main, sub]);
                 const cxr = (PW - 70) / 2 - 92;
                 const _recTex = this.textures.exists('YCrystal') ? 'YCrystal' : (this.textures.exists('Crystal') ? 'Crystal' : null);
-                if (_recTex) list.add(this.add.image(cxr, ry + 3, _recTex).setDisplaySize(20, 20));   // (用户) 水晶贴图下移 3px
-                list.add(this.add.text(cxr + 16, ry, String(r.crystals | 0), {
+                if (_recTex) list.add(this.add.image(cxr, ry + 2, _recTex).setDisplaySize(20, 20));   // (用户) 水晶贴图净下移 2px
+                list.add(this.add.text(cxr + 16, ry, String(Math.min(99999, r.crystals | 0)), {   // (用户) 水晶封顶 99999
                     fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace', resolution: 2
                 }).setOrigin(0, 0.5));
             });
@@ -560,6 +583,163 @@ class TitleScene extends Phaser.Scene {
         this.input.on('wheel', onWheel);
     }
 
+    /** (用户) 槽位改名 — 金色底横线输入 (无框); 只允许字母与空格;
+     *  满 20 字后再输入整体拒收 (光标中插也不顶掉旧字);
+     *  点输入栏以外任意处 = 提交 (透明点击盾拦截, 不会穿透点到后面的按钮);
+     *  清空时显示灰色 'SLOT N...' 提示; 空提交 = 还原各槽默认名; Esc = 取消 */
+    _openSlotRename(slotN, lblObj, editBtn) {
+        if (this._renameOpen) return;
+        this._renameOpen = true;
+        // (用户) 修穿透: Phaser 鼠标监听挂在 window 上, DOM 层拦不住 — 改名期间整体关闭游戏输入
+        this.input.enabled = false;
+        if (this.input.keyboard) this.input.keyboard.enabled = false;
+        const cv = this.game.canvas;
+        const rect = cv.getBoundingClientRect();
+        const sx = rect.width / cv.width;
+        const W = this.cameras.main.width, H = this.cameras.main.height;
+        const wx = W / 2 + lblObj.x, wy = H / 2 + lblObj.y;
+
+        // 占位提示的灰色样式只能用 ::placeholder 选择器 — 注入一次
+        if (!document.getElementById('azm-rename-style')) {
+            const st = document.createElement('style');
+            st.id = 'azm-rename-style';
+            st.textContent = '#azm-rename::placeholder{color:#8a8a99;opacity:1;}';
+            document.head.appendChild(st);
+        }
+        // 透明点击盾: 吞掉输入栏以外的所有点击 (= 提交), 不穿透到游戏按钮
+        // (用户) DOM 永远盖住 canvas → 精灵准星改由"像素 CSS 光标"顶班 (过场层同款机制):
+        //   盾 + 输入栏都挂同图光标, 永远在最上层; 悬停输入栏也不再冒系统 I 形
+        let _pixCur = 'url(assets/images/Mouse_cursor.png) 32 32, default';
+        try {
+            const _hot = Math.round(32 * sx);
+            _pixCur = '-webkit-image-set(url(assets/images/Mouse_cursor.png) ' + (1 / sx).toFixed(3) + 'x) ' + _hot + ' ' + _hot + ', default';
+        } catch (e) {}
+        // (用户) 鼠标不动时新 DOM 的 cursor 不会立即生效 (浏览器 hit-test 惰性) —
+        //   先改 canvas 本体光标: 改"当前悬停元素"的样式会立即刷新, 开框瞬间无空窗
+        cv.style.cursor = _pixCur;
+        const shield = document.createElement('div');
+        shield.style.cssText = 'position:fixed;inset:0;z-index:9999;background:transparent;cursor:' + _pixCur + ';';
+        document.body.appendChild(shield);
+        // (用户) 精灵准星隐藏 (CSS 光标顶班); 旗会 1.5s 自动过期 → 心跳续旗 + 强制隐藏,
+        //   否则玩家开框后不动鼠标, watchdog 会把精灵掀回来冻在原地 = "双鼠标+残影"
+        if (this.crosshair) this.crosshair.setVisible(false);
+        // (用户) 关键: _overlapMs 是"累加器"(watchdog 每帧 += dt, 超 1500 撤旗), 不是时间戳!
+        //   之前塞 Date.now() = 瞬间过期 → watchdog 每帧强显精灵 = 残影元凶. 续旗 = 清零.
+        this._cssCursorOverlap = true; this._overlapMs = 0;
+        const _flagIv = setInterval(() => {
+            this._cssCursorOverlap = true; this._overlapMs = 0;
+            if (this.crosshair && this.crosshair.scene) this.crosshair.setVisible(false);
+        }, 400);
+        // mousemove: 续旗 + 笔的悬停检测 (Phaser 输入已禁, 悬停得自己算)
+        const _followMv = ev => {
+            this._cssCursorOverlap = true; this._overlapMs = 0;
+            if (editBtn && editBtn.scene) {
+                const r2 = cv.getBoundingClientRect();
+                const gx = (ev.clientX - r2.left) / (r2.width / cv.width);
+                const gy = (ev.clientY - r2.top) / (r2.height / cv.height);
+                const b = editBtn.getBounds();
+                const over = gx >= b.x && gx <= b.right && gy >= b.y && gy <= b.bottom;
+                editBtn.setColor(over ? '#ffd86a' : '#ffffff');   // (用户) 输入态: 悬停金, 否则常驻白
+            }
+        };
+        window.addEventListener('mousemove', _followMv);
+
+        const inp = document.createElement('input');
+        inp.id = 'azm-rename';
+        inp.type = 'text';
+        const cur = (() => { try { const d = SaveSystem.getSlot(slotN); return (d && d.slotName) || ''; } catch (e) { return ''; } })();
+        inp.value = cur;
+        inp.placeholder = 'Press anythings here...';   // (用户) 指定提示词
+        // (用户) 改回格子样式: 深底 + 金边框
+        inp.style.cssText = 'position:fixed;z-index:10000;background:#0b0b12;color:#ffd86a;'
+            + 'border:2px solid #806020;'
+            + 'outline:none;padding:0 8px;letter-spacing:' + (1 * sx) + 'px;box-sizing:border-box;'   // (用户) 字距 = 游戏 1px (随缩放换算); 锁总宽
+            + 'font-family:"VT323",monospace;cursor:' + _pixCur + ';'
+            + 'left:' + (rect.left + (wx - 4) * sx) + 'px;'
+            + 'top:'  + (rect.top  + (wy - 15) * sx) + 'px;'   // (用户) 净下移 2px
+            + 'width:' + (250 * sx) + 'px;height:' + (32 * sx) + 'px;'
+            + 'font-size:' + (22 * sx) + 'px;';
+        document.body.appendChild(inp);
+        inp.focus(); inp.select();
+        // (用户) 输入期间 ✎ 移到输入栏右侧 (左5上2 微调), 常驻白色
+        const btnOldX = editBtn ? editBtn.x : 0;
+        const btnOldY = editBtn ? editBtn.y : 0;
+        if (editBtn && editBtn.scene) {
+            editBtn.x = lblObj.x - 4 + 250 + 15;
+            editBtn.y = btnOldY - 2;
+            editBtn.setColor('#ffffff');   // 点击瞬间卡住的金色一并清掉
+        }
+
+        // 过滤 + 满 20 拒收: 非法/超长输入整体回滚到上一个合法值, 光标位置一并还原
+        let prevVal = inp.value, prevCaret = inp.value.length;
+        inp.addEventListener('input', () => {
+            const filtered = inp.value.replace(/[^A-Za-z0-9 ]/g, '');
+            if (filtered.length > 20 || filtered !== inp.value) {
+                if (filtered.length > 20) {
+                    inp.value = prevVal;                       // 整体拒收, 不顶掉旧字
+                    inp.setSelectionRange(prevCaret, prevCaret);
+                    return;
+                }
+                inp.value = filtered;                          // 仅剔除非法字符
+            }
+            prevVal = inp.value;
+            prevCaret = inp.selectionStart;
+        });
+
+        let closed = false;
+        const close = (commit) => {
+            if (closed) return; closed = true;
+            this._renameOpen = false;
+            window.removeEventListener('mousemove', _followMv);
+            clearInterval(_flagIv);                                     // (用户) 摘心跳
+            // (用户) 关框交接走 main.js refocus 同款 back() 模式: CSS 像素光标续班 (canvas 已是 _pixCur),
+            //   精灵保持隐藏 + 旗续期; 首次 pointermove/pointerdown 时精灵吸附指针真实位置再复显,
+            //   立即显示会因 hit-test 惰性 + 指针未动出现"双无"或错位
+            this._cssCursorOverlap = true; this._overlapMs = 0;
+            const _back = () => {
+                cv.removeEventListener('pointermove', _back);
+                cv.removeEventListener('pointerdown', _back);
+                this._cssCursorOverlap = false; this._overlapMs = 0;
+                if (this.crosshair && this.crosshair.scene) {
+                    const ap = this.input.activePointer;
+                    if (ap) this.crosshair.setPosition(ap.x, ap.y);
+                    this.crosshair.setVisible(true);
+                }
+                cv.style.cursor = 'none';   // 精灵复职, CSS 光标收班
+            };
+            cv.addEventListener('pointermove', _back);
+            cv.addEventListener('pointerdown', _back);
+            this.input.enabled = true;                                  // (用户) 恢复游戏输入
+            if (this.input.keyboard) this.input.keyboard.enabled = true;
+            const val = inp.value.replace(/[^A-Za-z0-9 ]/g, '').slice(0, 20).trim();
+            try { inp.remove(); } catch (e) {}
+            try { shield.remove(); } catch (e) {}
+            if (editBtn && editBtn.scene) { editBtn.y = btnOldY; editBtn.setColor('#9aa0b0'); }   // (用户) 归 y + 回常色
+            if (!commit) {
+                if (editBtn && editBtn.scene) editBtn.x = btnOldX;   // 取消 → 笔归位
+                return;
+            }
+            try {
+                const d = SaveSystem.getSlot(slotN);
+                if (!d) return;
+                if (val) d.slotName = val; else delete d.slotName;   // 空提交 = 还原默认 SLOT N (各槽编号自带)
+                SaveSystem.saveSlot(slotN, d);
+                lblObj.setText(val || ('SLOT ' + slotN));
+                if (editBtn && editBtn.scene) editBtn.x = lblObj.x + lblObj.width + 12;
+                if (lblObj.input && lblObj.input.hitArea && editBtn && editBtn.scene) {
+                    lblObj.input.hitArea.setSize(lblObj.width + 12 + editBtn.width + 2, lblObj.height);   // (用户) 热区随名字伸缩
+                }
+            } catch (e) {}
+        };
+        shield.addEventListener('mousedown', ev => { ev.preventDefault(); inp.blur(); });
+        inp.addEventListener('keydown', ev => {
+            ev.stopPropagation();
+            if (ev.key === 'Enter') close(true);
+            else if (ev.key === 'Escape') close(false);
+        });
+        inp.addEventListener('blur', () => close(true));
+    }
+
     _devJump(sceneKey) {
         if (typeof SaveSystem !== 'undefined') SaveSystem.setCurrentSlot(null);
         this._fadeAndStart(sceneKey, null, true);
@@ -604,29 +784,78 @@ class TitleScene extends Phaser.Scene {
         ];
         // (用户) Extreme 需通关全游戏 >=1 次解锁
         const _extremeLocked = !(window.AbyssDiff && AbyssDiff.isCleared && AbyssDiff.isCleared());
+        // (用户) Extreme 首次解锁演出: 通关后第一次打开本页, 该行先呈锁定态 → 震动 → 暗罩碎裂 → 变正常可选
+        let _fxPending = false;
+        try { _fxPending = !_extremeLocked && localStorage.getItem('abyssMinerExtremeFxPending') === '1'; } catch (e) {}
         defs.forEach((d, i) => {
             const y = -PH2 / 2 + 96 + i * 82;
             const locked = (d.mode === 'extreme') && _extremeLocked;
-            const rowBg = this.add.rectangle(0, y, PW2 - 70, 70, locked ? 0x101018 : 0x14142a, 1)
-                .setStrokeStyle(2, locked ? 0x333344 : 0x445577).setInteractive();
-            if (!locked) {
-                rowBg.on('pointerover', () => { rowBg.setFillStyle(0x1e1e3a, 1); rowBg.setStrokeStyle(2, 0x88aacc); });
-                rowBg.on('pointerout',  () => { rowBg.setFillStyle(0x14142a, 1); rowBg.setStrokeStyle(2, 0x445577); });
-            }
+            const ceremony = (d.mode === 'extreme') && _fxPending;
+            let selectable = !locked && !ceremony;
+            const lookLocked = locked || ceremony;
+            const rowBg = this.add.rectangle(0, y, PW2 - 70, 70, lookLocked ? 0x101018 : 0x14142a, 1)
+                .setStrokeStyle(2, lookLocked ? 0x333344 : 0x445577).setInteractive();
+            rowBg.on('pointerover', () => { if (!selectable) return; rowBg.setFillStyle(0x1e1e3a, 1); rowBg.setStrokeStyle(2, 0x88aacc); });
+            rowBg.on('pointerout',  () => { if (!selectable) return; rowBg.setFillStyle(0x14142a, 1); rowBg.setStrokeStyle(2, 0x445577); });
             const lbl = this.add.text(-(PW2 - 70) / 2 + 26, y - 14, d.label, {
-                fontSize: '28px', color: locked ? '#555566' : d.color, fontFamily: '"VT323", monospace',
+                fontSize: '28px', color: lookLocked ? '#555566' : d.color, fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 4
             }).setOrigin(0, 0.5);
-            const sub = this.add.text(-(PW2 - 70) / 2 + 28, y + 16, locked ? 'Locked \u2014 clear the game once to unlock.' : d.desc, {   // (用户) 描述行右移 2px — 与存档 SLOT 下信息行同规
+            const sub = this.add.text(-(PW2 - 70) / 2 + 28, y + 16, lookLocked ? 'Locked \u2014 clear the game once to unlock.' : d.desc, {   // (用户) 描述行右移 2px — 与存档 SLOT 下信息行同规
                 fontSize: '16px', color: '#9999aa', fontFamily: '"VT323", monospace'
             }).setOrigin(0, 0.5);
             rowBg.on('pointerdown', () => {
-                if (locked) return;   // (用户) 未解锁不可选
+                if (!selectable) return;   // (用户) 未解锁/演出中不可选
                 if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
                 items.forEach(o => { try { o.destroy(); } catch (e) {} });
                 this._startNewGameWithDifficulty(n, d.mode);
             });
             panel.add([rowBg, lbl, sub]);
+
+            if (ceremony) {
+                try { localStorage.removeItem('abyssMinerExtremeFxPending'); } catch (e) {}   // 只演一次
+                const RW = PW2 - 70, RH = 70;
+                const cover = this.add.rectangle(0, y, RW, RH, 0x000000, 0.5);
+                panel.add(cover); items.push(cover);
+                this.time.delayedCall(650, () => {
+                    if (!rowBg.scene) return;   // 面板已关
+                    // ① 震动
+                    this.tweens.add({
+                        targets: [rowBg, lbl, sub, cover], x: '+=6', yoyo: true, repeat: 7, duration: 36,
+                        onComplete: () => {
+                            if (!rowBg.scene) return;
+                            // ② 暗罩碎裂飞散
+                            try { cover.destroy(); } catch (e) {}
+                            const flash = this.add.rectangle(0, y, RW, RH, 0xffffff, 0.85);
+                            panel.add(flash); items.push(flash);
+                            this.tweens.add({ targets: flash, fillAlpha: 0, duration: 220, onComplete: () => { try { flash.destroy(); } catch (e) {} } });
+                            for (let k = 0; k < 12; k++) {
+                                const sx = Phaser.Math.Between(-RW / 2 + 10, RW / 2 - 10);
+                                const sy = y + Phaser.Math.Between(-RH / 2 + 6, RH / 2 - 6);
+                                const shard = this.add.rectangle(sx, sy, Phaser.Math.Between(10, 20), Phaser.Math.Between(8, 14), 0x101018, 1)
+                                    .setStrokeStyle(1, 0x333344);
+                                panel.add(shard); items.push(shard);
+                                this.tweens.add({
+                                    targets: shard,
+                                    x: sx + Phaser.Math.Between(-110, 110),
+                                    y: sy + Phaser.Math.Between(-50, 95),
+                                    angle: Phaser.Math.Between(-180, 180),
+                                    alpha: 0,
+                                    duration: Phaser.Math.Between(450, 750),
+                                    ease: 'Cubic.easeOut',
+                                    onComplete: () => { try { shard.destroy(); } catch (e) {} }
+                                });
+                            }
+                            // ③ 行变正常, 开放选择
+                            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select');
+                            rowBg.setFillStyle(0x14142a, 1).setStrokeStyle(2, 0x445577);
+                            lbl.setColor(d.color);
+                            sub.setText(d.desc);
+                            selectable = true;
+                        }
+                    });
+                });
+            }
         });
         const back = this.add.text(0, PH2 / 2 - 34, '[ BACK ]', {
             fontSize: '26px', color: '#ff8888', fontFamily: '"VT323", monospace',

@@ -39,7 +39,11 @@ window.AbyssDiff = {
     set(m) { this.mode = this.TABLE[m] ? m : 'easy'; },
     // (用户) Extreme 解锁: 通关全游戏 >=1 次 (蜘蛛皇后死亡时 markCleared)
     isCleared() { try { return localStorage.getItem('abyssMinerCleared') === '1'; } catch (e) { return false; } },
-    markCleared() { try { localStorage.setItem('abyssMinerCleared', '1'); } catch (e) {} }
+    markCleared() { try {
+        const first = localStorage.getItem('abyssMinerCleared') !== '1';
+        localStorage.setItem('abyssMinerCleared', '1');
+        if (first) localStorage.setItem('abyssMinerExtremeFxPending', '1');   // (用户) 首次通关 → 难度页播 Extreme 碎屏解锁演出
+    } catch (e) {} }
 };
 
 // (用户) 全局小字号字距: Phaser 3.60 没有 letterSpacing — 借 Canvas2D 的 ctx.letterSpacing (Chrome 99+)
@@ -51,6 +55,7 @@ window.AbyssDiff = {
     if (!proto._abyssLsPatched) {
         proto._abyssLsPatched = true;
         const want = (ctx) => {
+            if (ctx._abyssLsForce) return ctx._abyssLsForce;   // (用户) 逐对象 opt-in: Text 私有 context 打旗 (画布重设清状态不清 JS 属性)
             const m = /(\d+(?:\.\d+)?)px/.exec(ctx.font || '');
             return (m && parseFloat(m[1]) <= 18) ? '1px' : '0px';
         };

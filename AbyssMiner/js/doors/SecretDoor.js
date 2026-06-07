@@ -32,6 +32,7 @@ class SecretDoor {
         this.w = opts.w ?? 96;
         this.h = opts.h ?? 96;
         this.pairId = opts.pairId ?? 'default';
+        this._onConfirm = opts.onConfirm || null;   // (用户) 自定义确认动作 — 传入则替代默认传送
         this.locked = opts.locked || false;            // 锁住: 无 E 图标 + 不可交互 (如 boss 死后才解锁)
         this.targetScene = opts.targetScene || null;   // 跨场景传送目标 (无配对门时用; 默认 SafeZone1Scene)
 
@@ -150,6 +151,7 @@ class SecretDoor {
 
     /** 真正执行传送 */
     _doTeleport(player) {
+        if (this._onConfirm) { this._onConfirm(); return; }   // (用户) 钩子优先
         const partners = SecretDoor._registry.get(this.pairId) || [];
         const target = partners.find(d => d !== this && !d._destroyed);
         if (!target) {
