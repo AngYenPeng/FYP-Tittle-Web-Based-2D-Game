@@ -11,9 +11,9 @@ class ShopSystem {
 
         this.items = [
             { id: 'healing_potion',  name: 'Healing Potion',  price: 5,  desc: 'Restore 50% HP',                 tex: 'potion_heal_img' },
-            { id: 'life_potion',     name: 'Life+ Potion',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },
-            { id: 'health_potion',   name: 'Health Potion',   price: 10, desc: '-50% Corrosion + 30s immunity',  tex: 'potion_health_img' },
-            { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Adds corrosion bar (limit 1)',   tex: 'health_detector_img' },
+            { id: 'life_potion',     name: 'Life Syringe',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },   // (用户) 图为红液针筒 → 改名
+            { id: 'health_potion',   name: 'Health Pills',    price: 10, desc: '-50% Corrosion + 30s immunity',  tex: 'potion_health_img' },   // (用户) 图为药瓶+药丸 → 改名 (服用音效本就是 EatPills)
+            { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Shows corrosion bar (limit 1)',  tex: 'health_detector_img' },   // (用户) Adds → Shows
             { id: 'pet_egg',         name: 'Mysterious Egg',  price: 399, desc: '???',                            tex: 'Small_spider_run' }
             // 黄钥匙不卖 — tutorial 任务专用, 平常掉落/任务奖励获得
         ];

@@ -92,10 +92,7 @@ class YCrystalBlock {
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'CrystalBreak');  // (用户) 共用蓝水晶破碎音
         if (this.scene.gridSystem) {
             this.scene.gridSystem.unmarkRect(this.x, this.y, 32, 32);
-        }
-        // (用户) 灰罩同步消失: 通知雾系统该格已变空气
-        if (this.scene.fogSystem && this.scene.fogSystem.notifyCellCleared) {
-            this.scene.fogSystem.notifyCellCleared(this.x, this.y);
+            // (用户) 灰罩通知已按要求撤销 — 碎裂格沿用雾的原始规则
         }
         // 黄水晶掉落事件 — 跟 monster_killed 分开
         this.scene.events.emit('yellow_crystal_dropped', this.x, this.y, this.dropCount);

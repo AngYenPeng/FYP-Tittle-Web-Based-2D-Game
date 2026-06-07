@@ -194,28 +194,28 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         if (this.cd > 0) this.cd -= delta;
         if (this.vulnerableTimer > 0) this.vulnerableTimer -= delta;
 
-        // ====== HP 自动恢复: boss + 双手, 每秒 +1 (上限 maxHp/handMaxHp) ======
+        // ====== HP 自动恢复: boss + 双手, 每 10 秒 +1 (上限 maxHp/handMaxHp) ======
         // 跨房间也会累积: scene.time.now 一直跑, 玩家不在 boss 房时 boss.update 不调,
         // 等回来再 elapsed 一次性补齐.
         if (this._lastRegenTime === undefined) {
             this._lastRegenTime = time;
         }
         const elapsedRegen = time - this._lastRegenTime;
-        if (elapsedRegen >= 1000) {
-            const seconds = Math.floor(elapsedRegen / 1000);
+        if (elapsedRegen >= 10000) {
+            const ticks = Math.floor(elapsedRegen / 10000);   // (用户) 每 10 秒 1 跳
             // Boss 主体
             if (this.hp < this.maxHp) {
-                this.hp = Math.min(this.maxHp, this.hp + seconds);
+                this.hp = Math.min(this.maxHp, this.hp + ticks);
             }
             // 左手 (没死才补)
             if (this._handL && !this._handL._dead && this._handLHp < this._handLMaxHp) {
-                this._handLHp = Math.min(this._handLMaxHp, this._handLHp + seconds);
+                this._handLHp = Math.min(this._handLMaxHp, this._handLHp + ticks);
             }
             // 右手 (没死才补)
             if (this._handR && !this._handR._dead && this._handRHp < this._handRMaxHp) {
-                this._handRHp = Math.min(this._handRMaxHp, this._handRHp + seconds);
+                this._handRHp = Math.min(this._handRMaxHp, this._handRHp + ticks);
             }
-            this._lastRegenTime += seconds * 1000;
+            this._lastRegenTime += ticks * 10000;
         }
 
         this._hpBg.setPosition(this.x, this.y - 80);

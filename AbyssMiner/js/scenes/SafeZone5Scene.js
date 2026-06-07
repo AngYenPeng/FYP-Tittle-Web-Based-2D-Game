@@ -197,6 +197,7 @@ class SafeZone5Scene extends MainGameScene {
 
         // 按键
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -427,7 +428,10 @@ class SafeZone5Scene extends MainGameScene {
                 this.tweens.add({
                     targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
                     onComplete: () => this.tweens.add({
-                        targets: c, y: targetY, duration: 175, ease: 'Quad.easeIn',
+                        // (用户) 下落时长按重力换算 t=√(2d/g) — 原固定 175ms 在长落差下像瞬移, 比玩家落地还快
+                        targets: c, y: targetY,
+                        duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                        ease: 'Quad.easeIn',
                         onComplete: () => { c.angle = 0; }  // 落地后正立
                     })
                 });
@@ -560,7 +564,7 @@ class SafeZone5Scene extends MainGameScene {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         // (用户) 黄水晶继承 — 与 SZ1 同款
         if (typeof data.yellowCrystalCount === 'number' && this.hudSystem) {
@@ -1101,13 +1105,19 @@ class SafeZone5Scene extends MainGameScene {
 
         const container = this.add.container(-W, H / 2).setScrollFactor(0).setDepth(999).setScale(2.5);
 
-        // 深石色底板 (520×220)，金棕描边
-        const bg = this.add.rectangle(0, 0, 520, 220, 0x2a2218, 0.95)
-            .setStrokeStyle(4, 0xaa8855);
+        // (用户) Banner 重做: 面板同源双层金框 + BOSS 顶标 + 名字底线
+        const bg = this.add.rectangle(0, 0, 520, 220, 0x0b0b12, 0.96)
+            .setStrokeStyle(3, 0x806020);
+        const inner = this.add.rectangle(0, 0, 508, 208, 0x000000, 0)
+            .setStrokeStyle(1, 0xffcc44, 0.35);
+        const bossLabel = this.add.text(60, -78, '\u2014 BOSS \u2014', {
+            fontSize: '16px', color: '#ffd86a', fontFamily: '"VT323", monospace', resolution: 2
+        }).setOrigin(0.5);
 
         // boss 头像占位 — 灰色方块 + X 标记 (待 PNG 替换)
-        const portraitBg = this.add.rectangle(-150, 0, 140, 140, 0x444444)
-            .setStrokeStyle(3, 0x888888);
+        const portraitBg = this.add.rectangle(-150, 0, 140, 140, 0x1c1828, 1)
+            .setStrokeStyle(2, 0x806020);
+        const portraitAccent = this.add.rectangle(-150 - 68, 0, 4, 140, 0xffcc44, 1);   // 金侧条
         const px1 = this.add.rectangle(-150, 0, 100, 4, 0x222222); px1.angle = 45;
         const px2 = this.add.rectangle(-150, 0, 100, 4, 0x222222); px2.angle = -45;
 
@@ -1115,10 +1125,15 @@ class SafeZone5Scene extends MainGameScene {
         const nameText = this.add.text(60, 0, 'STONE GUARDIAN', {
             fontSize: '40px', color: '#ffffff',
             fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 5
+            stroke: '#000', strokeThickness: 5, resolution: 2
         }).setOrigin(0.5);
+        // (用户) 横线与菱形按名字实际宽度对齐
+        const underline = this.add.rectangle(60, 30, nameText.width + 12, 3, 0xffcc44, 0.9);
+        const dOff = nameText.width / 2 + 11;   // (用户) 菱形再贴近一半 (22 → 11)
+        const dL = this.add.text(60 - dOff, 0, '\u25C6', { fontSize: '20px', color: '#ffd86a', fontFamily: '"VT323", monospace', resolution: 2 }).setOrigin(0.5);
+        const dR = this.add.text(60 + dOff, 0, '\u25C6', { fontSize: '20px', color: '#ffd86a', fontFamily: '"VT323", monospace', resolution: 2 }).setOrigin(0.5);
 
-        container.add([bg, portraitBg, px1, px2, nameText]);
+        container.add([bg, inner, bossLabel, portraitBg, portraitAccent, px1, px2, nameText, underline, dL, dR]);
 
         this.time.delayedCall(20, () => {
             if (this.cameras.main && container.scene) {

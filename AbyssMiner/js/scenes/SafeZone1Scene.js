@@ -212,6 +212,7 @@ class SafeZone1Scene extends MainGameScene {
 
         // 按键
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -486,7 +487,10 @@ class SafeZone1Scene extends MainGameScene {
                 this.tweens.add({
                     targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
                     onComplete: () => this.tweens.add({
-                        targets: c, y: targetY, duration: 175, ease: 'Quad.easeIn',
+                        // (用户) 下落时长按重力换算 t=√(2d/g) — 原固定 175ms 在长落差下像瞬移, 比玩家落地还快
+                        targets: c, y: targetY,
+                        duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                        ease: 'Quad.easeIn',
                         onComplete: () => { c.angle = 0; }  // 落地后正立
                     })
                 });
@@ -636,7 +640,7 @@ class SafeZone1Scene extends MainGameScene {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
@@ -1178,7 +1182,7 @@ class SafeZone1Scene extends MainGameScene {
 
     _endSZ1MerchantCutscene() {
         this._sz1MerchantCutsceneDone = true;
-        if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // (用户) 剧情完成立即落盘
+        // (用户) 剧情完成自动存档已拆除 — 存档只发生在进区那一次与检查点; 剧情旗标随下一次存档落盘
         // 恢复镜头
         const cam = this.cameras.main;
         const z0 = this._savedCameraZoom || 1.25;

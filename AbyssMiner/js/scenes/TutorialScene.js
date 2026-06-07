@@ -233,6 +233,7 @@ class TutorialScene extends MainGameScene {
 
         // console.log('[T1] step 4: keys');   // (用户) 诊断日志静默
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyShift  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
@@ -453,7 +454,10 @@ class TutorialScene extends MainGameScene {
                     targets: c, y: peakY, duration: dur / 2, ease: 'Quad.easeOut',
                     onComplete: () => {
                         this.tweens.add({
-                            targets: c, y: targetY, duration: dur / 2, ease: 'Quad.easeIn',
+                            // (用户) 下落时长按重力换算 t=√(2d/g)
+                            targets: c, y: targetY,
+                            duration: Math.max(dur / 2, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                            ease: 'Quad.easeIn',
                             onComplete: () => { c.angle = 0; }
                         });
                     }
@@ -1102,7 +1106,7 @@ class TutorialScene extends MainGameScene {
         this.time.delayedCall(5000, () => {
             if (this._t1Stage === 0) {
                 this._t1Stage = 1;
-                this._t1ShowHint('Press SPACE to jump.\nThe ground rises ahead.');
+                this._t1ShowHint('Press SPACE or W to jump.\nThe ground rises ahead.');
             }
         });
 
@@ -1391,7 +1395,7 @@ class TutorialScene extends MainGameScene {
                             id: 'platform',
                             title: 'Platform',
                             animType: 'platform',
-                            captionText: 'Jump (SPACE) onto a platform from below. Press S while on top to drop down through it.'
+                            captionText: 'Jump (SPACE / W) onto a platform from below. Press S while on top to drop down through it.'
                         });
                     }
                     break;

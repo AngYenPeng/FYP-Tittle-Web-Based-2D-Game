@@ -53,7 +53,7 @@ class SaveSystem {
         const out = {};
         try {
             for (const k in scene) {
-                if (/(CutsceneStarted|CutsceneDone|DialogDone|TakeoffDone|IntroFinished|PlotDone|PlotPlayed)$/.test(k) && scene[k] === true) out[k] = true;
+                if (/(CutsceneDone|DialogDone|TakeoffDone|IntroFinished|PlotDone|PlotPlayed)$/.test(k) && scene[k] === true) out[k] = true;   // (用户) CutsceneStarted 是瞬态不入档 — 入档会让读档后过场不再触发
             }
         } catch (e) {}
         return out;

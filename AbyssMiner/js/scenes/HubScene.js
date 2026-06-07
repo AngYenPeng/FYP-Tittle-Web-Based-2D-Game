@@ -71,6 +71,7 @@ class HubScene extends MainGameScene {
 
         console.log('[Hub] step 4: keys');
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyShift  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);

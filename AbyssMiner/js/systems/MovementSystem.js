@@ -104,8 +104,10 @@ class MovementSystem {
             }
         }
 
-        // 跳跃键 = SPACE
-        let jumpPressed = Phaser.Input.Keyboard.JustDown(s.keyJump);
+        // (用户) 跳跃键 = SPACE 或 W — 共用同一路径; 两个 JustDown 都显式消费, 防同帧双按残留边沿下帧再触发
+        const _jdSpace = Phaser.Input.Keyboard.JustDown(s.keyJump);
+        const _jdW = s.keyJumpW ? Phaser.Input.Keyboard.JustDown(s.keyJumpW) : false;
+        let jumpPressed = _jdSpace || _jdW;
         // 蜘蛛 cling penalty: 每只贴身蜘蛛 → 跳跃力 × 0.9
         const clingCount = s._clingingSpiderCount || 0;
         const jumpForce = -725 * Math.pow(0.9, clingCount);

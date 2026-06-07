@@ -47,7 +47,7 @@ class GuideSystem {
             id: 'jumping',
             title: 'Jumping',
             animType: 'jump',
-            captionText: 'SPACE = Jump'
+            captionText: 'SPACE / W = Jump'
         });
         // 双手已解锁 (SZ3 任务解锁过 / SZ4·SZ5 进场自动解锁 / registry 跨场景带入) → 补上丢稿子系列引导
         const sc = this.scene;

@@ -246,6 +246,7 @@ class SafeZone4Scene extends MainGameScene {
 
         // 按键
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -534,7 +535,10 @@ class SafeZone4Scene extends MainGameScene {
                 this.tweens.add({
                     targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
                     onComplete: () => this.tweens.add({
-                        targets: c, y: targetY, duration: 175, ease: 'Quad.easeIn',
+                        // (用户) 下落时长按重力换算 t=√(2d/g) — 原固定 175ms 在长落差下像瞬移, 比玩家落地还快
+                        targets: c, y: targetY,
+                        duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                        ease: 'Quad.easeIn',
                         onComplete: () => { c.angle = 0; }  // 落地后正立
                     })
                 });
@@ -747,7 +751,7 @@ class SafeZone4Scene extends MainGameScene {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
@@ -1315,6 +1319,17 @@ class SafeZone4Scene extends MainGameScene {
 
     // 走路阶段 (每帧, 在 movementSystem 之后调) — 缓慢走到 (-9,18)
     _updateSz4Cutscene(time, delta) {
+        // (用户) 过场中死亡 → 中止并复位旗标, 复活后再进房重播 (否则 Started 卡死, 房间永久失效)
+        if (this.healthSystem && this.healthSystem.hp <= 0) {
+            this._sz4CutsceneActive = false;
+            this._sz4CutsceneStarted = false;
+            this._cinematicLock = false;
+            const _cam = this.cameras.main;
+            _cam.zoomTo(1, 400, 'Cubic.easeInOut');
+            _cam.setFollowOffset(0, 0);
+            if (this.hudSystem && this.hudSystem.setHUDVisible) this.hudSystem.setHUDVisible(true);
+            return;
+        }
         if (this._sz4CutPhase !== 'walk') return;
         const G = 32;
         const targetX = -9 * G + G / 2;
@@ -1488,9 +1503,15 @@ class SafeZone4Scene extends MainGameScene {
         const cam = this.cameras.main;
         const W = cam.width, H = cam.height;
         const container = this.add.container(-W, H / 2).setScrollFactor(0).setDepth(999).setScale(2.5);
-        const bg = this.add.rectangle(0, 0, 520, 220, 0x1d1424, 0.95).setStrokeStyle(4, 0x8866cc);
-        const portraitBg = this.add.rectangle(-150, 0, 140, 140, 0x222222, 0.5).setStrokeStyle(3, 0x8866cc);
-        const items = [portraitBg];
+        // (用户) Banner 重做: 双层紫框 + BOSS 顶标 + 名字底线
+        const bg = this.add.rectangle(0, 0, 520, 220, 0x0b0b12, 0.96).setStrokeStyle(3, 0x6a4a99);
+        const inner = this.add.rectangle(0, 0, 508, 208, 0x000000, 0).setStrokeStyle(1, 0xaa88ee, 0.35);
+        const bossLabel = this.add.text(60, -78, '\u2014 BOSS \u2014', {
+            fontSize: '16px', color: '#cfa8ff', fontFamily: '"VT323", monospace', resolution: 2
+        }).setOrigin(0.5);
+        const portraitBg = this.add.rectangle(-150, 0, 140, 140, 0x1c1828, 1).setStrokeStyle(2, 0x6a4a99);
+        const portraitAccent = this.add.rectangle(-150 - 68, 0, 4, 140, 0xaa88ee, 1);   // 紫侧条
+        const items = [portraitBg, portraitAccent];
         if (this.textures.exists('Bat_boss_avatar')) {
             // (用户) 专属头像 Bat_boss_avatar 144×112 — 等比 ×0.9 (129.6×100.8) 放进 140 框, 不拉伸
             items.push(this.add.image(-150, 0, 'Bat_boss_avatar').setScale(0.9));
@@ -1507,9 +1528,14 @@ class SafeZone4Scene extends MainGameScene {
         }
         const nameText = this.add.text(60, 0, 'BROODMOTHER', {
             fontSize: '40px', color: '#ffffff', fontFamily: '"VT323", monospace',
-            stroke: '#000', strokeThickness: 5
+            stroke: '#000', strokeThickness: 5, resolution: 2
         }).setOrigin(0.5);
-        container.add([bg, ...items, nameText]);
+        // (用户) 横线与菱形按名字实际宽度对齐
+        const underline = this.add.rectangle(60, 30, nameText.width + 12, 3, 0xaa88ee, 0.9);
+        const dOff = nameText.width / 2 + 11;   // (用户) 菱形再贴近一半 (22 → 11)
+        const dL = this.add.text(60 - dOff, 0, '\u25C6', { fontSize: '20px', color: '#cfa8ff', fontFamily: '"VT323", monospace', resolution: 2 }).setOrigin(0.5);
+        const dR = this.add.text(60 + dOff, 0, '\u25C6', { fontSize: '20px', color: '#cfa8ff', fontFamily: '"VT323", monospace', resolution: 2 }).setOrigin(0.5);
+        container.add([bg, inner, bossLabel, ...items, nameText, underline, dL, dR]);
         this.time.delayedCall(20, () => {
             if (this.cameras.main && container.scene) { try { this.cameras.main.ignore(container); } catch(e) {} }
         });
@@ -1544,7 +1570,7 @@ class SafeZone4Scene extends MainGameScene {
             this._sz4CutsceneActive = false;
             this._sz4CutsceneDone = true;
             this._sz4CutPhase = null;
-            if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // (用户) 剧情完成立即落盘
+            // (用户) 剧情完成自动存档已拆除 — 存档只发生在进区那一次与检查点; 剧情旗标随下一次存档落盘
             if (this.hudSystem && this.hudSystem.setHUDVisible) this.hudSystem.setHUDVisible(true);
             // 激活 boss 战斗
             this._batBossAwake = true;

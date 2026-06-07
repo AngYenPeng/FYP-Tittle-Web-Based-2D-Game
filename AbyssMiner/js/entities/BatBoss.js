@@ -181,15 +181,15 @@ class BatBoss {
         const dt = delta / 1000;
         this._t += delta;
 
-        // ====== (用户) HP 自动恢复: 跟 Golem 同款, 每秒 +1 (满血不补; 离场期间累积, 回来一次性补齐) ======
+        // ====== (用户) HP 自动恢复: 跟 Golem 同款, 每 10 秒 +1 (满血不补; 离场期间累积, 回来一次性补齐) ======
         if (this._lastRegenTime === undefined) this._lastRegenTime = time;
         const elapsedRegen = time - this._lastRegenTime;
-        if (elapsedRegen >= 1000) {
-            const seconds = Math.floor(elapsedRegen / 1000);
+        if (elapsedRegen >= 10000) {
+            const ticks = Math.floor(elapsedRegen / 10000);
             if (!this.dead && this.hp > 0 && this.hp < this.maxHp) {
-                this.hp = Math.min(this.maxHp, this.hp + seconds);
+                this.hp = Math.min(this.maxHp, this.hp + ticks);
             }
-            this._lastRegenTime += seconds * 1000;
+            this._lastRegenTime += ticks * 10000;
         }
 
         // 血条跟随 + 缩放

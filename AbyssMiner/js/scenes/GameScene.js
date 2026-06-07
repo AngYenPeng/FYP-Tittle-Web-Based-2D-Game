@@ -357,6 +357,7 @@ class MainGameScene extends Phaser.Scene {
 
         // ===== 新按键映射：SPACE=跳 / S=蹲 / F=换手 / SHIFT=冲刺 =====
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyShift  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
@@ -530,10 +531,13 @@ class MainGameScene extends Phaser.Scene {
                     ease: 'Quad.easeOut',
                     yoyo: false,
                     onComplete: () => {
+                        // (用户) 下落时长按重力换算 t=√(2d/g) — 原固定 dur/2 在长落差下像瞬移, 比玩家落地还快
+                        const _g = (this.physics && this.physics.world && this.physics.world.gravity.y) || 1200;
+                        const _fall = Math.max(dur / 2, Math.sqrt(2 * Math.max(1, targetY - peakY) / _g) * 1000);
                         this.tweens.add({
                             targets: c,
                             y: targetY,
-                            duration: dur / 2,
+                            duration: _fall,
                             ease: 'Quad.easeIn',
                             onComplete: () => {
                                 c.angle = 0;  // 落地后正立

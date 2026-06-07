@@ -43,6 +43,7 @@ class SafeZone25Scene extends SafeZone3Scene {
 
         // 按键
         this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
         this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
         this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
         this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
@@ -355,7 +356,7 @@ class SafeZone25Scene extends SafeZone3Scene {
                 this.tweens.add({ targets: c, angle: 360, duration: 350, ease: 'Linear' });
                 const peakY = Math.min(my, targetY) - 30;
                 this.tweens.add({ targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
-                    onComplete: () => this.tweens.add({ targets: c, y: targetY, duration: 175, ease: 'Quad.easeIn', onComplete: () => { c.angle = 0; } }) });
+                    onComplete: () => this.tweens.add({ targets: c, y: targetY, duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000), ease: 'Quad.easeIn', onComplete: () => { c.angle = 0; } }) });   // (用户) 下落按重力换算
             }
         });
 
