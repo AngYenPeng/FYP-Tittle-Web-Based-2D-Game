@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const multer = require("multer");
 const path = require("path");
+const addAuditLog = require("../utils/auditLogger");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -23,16 +24,30 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+
+  }
+});
 
 // REGISTER
 router.post("/register", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, otp } = req.body;
 
      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
 
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !otp) {
       return res.status(400).json({ message: "Please fill in all fields" });
     }
 
@@ -66,6 +81,14 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
+    await addAuditLog({
+  action: "REGISTER",
+  req,
+  user: newUser,
+  status: "SUCCESS",
+  details: "New account registered"
+});
+
     delete otpStore[email];
 
     res.json({ message: "User registered successfully" });
@@ -97,6 +120,14 @@ router.post("/login", async (req, res) => {
     console.log("User found:", user ? user.username : "No user found");
 
     if (!user) {
+
+      await addAuditLog({
+  action: "LOGIN",
+  req,
+  status: "FAILED",
+  details: `Login attempt with unknown account: ${loginInput}`
+});
+
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -109,8 +140,23 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      await addAuditLog({
+        action: "LOGIN",
+        req,
+        user,
+        status: "FAILED",
+        details: "Invalid password attempt"
+      });
       return res.status(400).json({ message: "Wrong password" });
     }
+
+      await addAuditLog({
+  action: "LOGIN",
+  req,
+  user,
+  status: "SUCCESS",
+  details: "User logged in successfully"
+});
 
     res.json({
       message: "Login successful",
@@ -150,6 +196,14 @@ router.put("/change-password", async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
+
+    await addAuditLog({
+  action: "CHANGE_PASSWORD",
+  req,
+  user,
+  status: "SUCCESS",
+  details: "Password changed"
+});
 
     res.json({ message: "Password changed successfully" });
   } catch (err) {
@@ -332,7 +386,7 @@ router.post("/upload-profile-picture", upload.single("profilePicture"), async (r
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔥 DELETE OLD IMAGE (IMPORTANT)
+    // DELETE OLD IMAGE
     if (user.profilePicture && user.profilePicture !== "/uploads/default-profile.png") {
       const oldPath = path.join(__dirname, "..", "public", user.profilePicture);
 
@@ -358,21 +412,7 @@ router.post("/upload-profile-picture", upload.single("profilePicture"), async (r
     res.status(500).json({ error: err.message });
   }
 
-  const upload = multer({
-  storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024
-  },
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"));
-    }
-  }
-});
-
-});
+ });
 
 
 let otpStore = {};
@@ -386,7 +426,7 @@ router.post("/send-otp", async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: "YOUR_EMAIL@gmail.com",
+      from: process.env.EMAIL_USER,
       to: email,
       subject: "Abyss Miner OTP Verification",
       text: `Your OTP is: ${otp}`
