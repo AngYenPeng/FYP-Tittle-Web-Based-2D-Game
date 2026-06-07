@@ -91,12 +91,12 @@ class SaveSystem {
     }
 
     // 自动存到当前 slot (没选 slot 则跳过)
+    // 自动存到当前 slot (没选 slot 则跳过)
     static autoSave(scene) {
         const n = SaveSystem.getCurrentSlot();
         if (n == null) return false;
         const data = SaveSystem.captureFromScene(scene);
-        // (用户) "死亡只活在本局"的结构性保证: 快照永不把比档内更低的心数写入 —
-        //   心数只会因死亡下降, 故死亡损失天生不可落盘; 药水加心(只升不降)照常入档
+        
         try {
             const prev = SaveSystem.getSlot(n);
             if (prev && typeof prev.hearts === 'number' && typeof data.hearts === 'number' && data.hearts < prev.hearts) {
@@ -104,7 +104,17 @@ class SaveSystem {
             }
             if (prev && prev.slotName) data.slotName = prev.slotName;   // (用户) 自定义槽名随快照保留
         } catch (e) {}
-        return SaveSystem.saveSlot(n, data);
+
+        // Save local browser instance parameters first
+        const localSaveSuccess = SaveSystem.saveSlot(n, data);
+
+        // 🚨 TRIGGER CLOUD DATABASE MERGE HOOK:
+        // If local storage handles correctly, dispatch a copy straight to MongoDB Atlas!
+        if (localSaveSuccess) {
+            SaveSystem.syncWithBackend(data);
+        }
+
+        return localSaveSuccess;
     }
 
     // 显示用: 场景 key → 区域名
@@ -114,7 +124,8 @@ class SaveSystem {
             'TutorialScene': 'Zone 1', 'HubScene': 'Hub',
             'SafeZone1Scene': 'Zone 2', 'SafeZone2Scene': 'Zone 3',
             'SafeZone25Scene': 'Zone 4', 'SafeZone3Scene': 'Zone 5',
-            'SafeZone4Scene': 'Zone 6', 'SafeZone5Scene': 'Zone 7'
+            'SafeZone4Scene': 'Zone 6', 'SafeZone5Scene': 'Zone 7',
+            'SafeZone6Scene': 'Zone 8'
         };
         return map[sceneKey] || sceneKey || 'Unknown';
     }
@@ -125,6 +136,47 @@ class SaveSystem {
         const d = new Date(ts);
         const pad = (x) => (x < 10 ? '0' + x : '' + x);
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // 🚨 NEW FULL-STACK SYNC METHOD: Transmits game data straight to your Express backend
+    static async syncWithBackend(data) {
+        try {
+            // Pull the user session data saved when your web platform logged in
+            // Typically stored in localStorage or sessionStorage during login response
+            const loggedInUserId = localStorage.getItem("userId") || (window.CurrentUser ? window.CurrentUser.id : null);
+            const loggedInUsername = localStorage.getItem("username") || (window.CurrentUser ? window.CurrentUser.username : "Guest Miner");
+
+            if (!loggedInUserId) {
+                console.log("No active user session found. Skipping cloud database synchronization.");
+                return;
+            }
+
+            // Map the Phaser save data parameters into the fields expected by your score model schema
+            const backendPayload = {
+                userId: loggedInUserId,
+                username: loggedInUsername,
+                score: data.crystalCount || 0,                 // Maps saved crystals to score metrics
+                time: Math.floor((data.playMs || 0) / 1000),   // Converts millisecond runtime base into seconds
+                mode: data.difficulty || "easy"                // Easy/Normal/Hard option strings
+            };
+
+            console.log("Synchronizing checkpoint to MongoDB Atlas...", backendPayload);
+
+            // Change 'localhost:3000' to your live production domain url when ready to host
+            const response = await fetch("http://localhost:3000/api/score/add", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(backendPayload)
+            });
+
+            const result = await response.json();
+            console.log("Server verification status:", result.message);
+
+        } catch (error) {
+            console.error("Cloud tracking database synchronization failed:", error.message);
+        }
     }
 }
 

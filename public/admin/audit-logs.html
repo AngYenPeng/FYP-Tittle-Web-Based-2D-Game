@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audit Logs - Abyss Miner Admin</title>
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      font-family:Arial;
+      background:#0f172a;
+      color:white;
+      padding:30px;
+    }
+
+    h1{
+      margin-bottom:20px;
+      color:#60a5fa;
+    }
+
+    .top-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    input{
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      width:250px;
+      background:#1e293b;
+      color:white;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#111827;
+      border-radius:12px;
+      overflow:hidden;
+    }
+
+    th{
+      background:#1e3a8a;
+      padding:14px;
+      text-align:left;
+      font-size:14px;
+    }
+
+    td{
+      padding:12px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    tr:hover{
+      background:#1e293b;
+    }
+
+    .success{
+      color:#22c55e;
+      font-weight:bold;
+    }
+
+    .failed{
+      color:#ef4444;
+      font-weight:bold;
+    }
+
+    .card{
+      background:#111827;
+      padding:20px;
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .small{
+      font-size:12px;
+      color:#94a3b8;
+    }
+
+    @media(max-width:900px){
+
+      body{
+        padding:10px;
+      }
+
+      table{
+        display:block;
+        overflow-x:auto;
+      }
+
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .navbar {
+        padding: 16px;
+      }
+
+  </style>
+</head>
+
+<body>
+
+  <h1>Security Audit Logs</h1>
+
+  <div class="navbar">
+
+  <div class="nav-links">
+        <a href="/admin.html" id="adminLink">Admin Dashboard</a>
+      </div>
+
+      </div>
+
+  <div class="card">
+
+    <div class="top-bar">
+
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search username / action..."
+        onkeyup="filterLogs()"
+      >
+
+    </div>
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Status</th>
+          <th>IP Address</th>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+
+      <tbody id="logTable"></tbody>
+
+    </table>
+
+  </div>
+
+<script>
+
+let allLogs = [];
+
+async function loadLogs(){
+
+  try{
+
+    const userId = localStorage.getItem("userId");
+
+    const res = await fetch("/api/admin/audit-logs",{
+      headers:{
+        userid:userId
+      }
+    });
+
+    const logs = await res.json();
+
+    allLogs = logs;
+
+    renderLogs(logs);
+
+  }catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+function renderLogs(logs){
+
+  const table = document.getElementById("logTable");
+
+  table.innerHTML = "";
+
+  logs.forEach(log=>{
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+
+      <td>
+        ${new Date(log.createdAt).toLocaleString()}
+      </td>
+
+      <td>
+        ${log.username}
+      </td>
+
+      <td>
+        ${log.role}
+      </td>
+
+      <td>
+        ${log.action}
+      </td>
+
+      <td class="${log.status === "SUCCESS" ? "success" : "failed"}">
+        ${log.status}
+      </td>
+
+      <td>
+        ${log.ipAddress}
+      </td>
+
+      <td>
+        ${log.method}
+      </td>
+
+      <td>
+        ${log.endpoint}
+      </td>
+
+      <td>
+        ${log.details}
+      </td>
+
+    `;
+
+    table.appendChild(tr);
+
+  });
+
+}
+
+function filterLogs(){
+
+  const value =
+    document
+      .getElementById("searchInput")
+      .value
+      .toLowerCase();
+
+  const filtered = allLogs.filter(log =>
+
+    log.username.toLowerCase().includes(value) ||
+    log.action.toLowerCase().includes(value)
+
+  );
+
+  renderLogs(filtered);
+
+}
+
+loadLogs();
+
+</script>
+
+</body>
+</html>

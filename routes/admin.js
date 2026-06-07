@@ -6,6 +6,7 @@ const Announcement = require("../models/Announcement");
 const SupportTicket = require("../models/SupportTicket");
 const nodemailer = require("nodemailer");
 const ActivityLog = require("../models/ActivityLog");
+const AuditLog = require("../models/AuditLog");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -173,25 +174,82 @@ router.put("/users/:id", checkAdmin, async (req, res) => {
 // Delete user and their scores
 router.delete("/users/:id", checkAdmin, async (req, res) => {
   try {
+
+    // Current logged in admin
+    const currentAdmin = await User.findById(req.headers.userid);
+
+    if (!currentAdmin) {
+      return res.status(404).json({
+        message: "Current admin not found"
+      });
+    }
+
+    // Prevent deleting own account
     if (req.params.id === req.headers.userid) {
-      return res.status(400).json({ message: "You cannot delete your own admin account" });
+      return res.status(400).json({
+        message: "You cannot delete your own account"
+      });
     }
 
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    // Find target user
+    const targetUser = await User.findById(req.params.id);
 
-    if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
+    if (!targetUser) {
+      return res.status(404).json({
+        message: "User not found"
+      });
     }
 
-    if (deletedUser.role === "superadmin") {
-  return res.status(403).json({ message: "Cannot delete superadmin account" });
-}
+    // Nobody can delete superadmin
+    if (targetUser.role === "superadmin") {
+      return res.status(403).json({
+        message: "Cannot delete superadmin account"
+      });
+    }
 
-    await Score.deleteMany({ userId: req.params.id });
+    // Only superadmin can delete admins
+    if (
+      targetUser.role === "admin" &&
+      currentAdmin.role !== "superadmin"
+    ) {
+      return res.status(403).json({
+        message: "Only superadmin can delete admin accounts"
+      });
+    }
 
-    res.json({ message: "User and related scores deleted successfully" });
+    // Delete related scores first
+    await Score.deleteMany({
+      userId: req.params.id
+    });
+
+    // Delete user
+    await User.findByIdAndDelete(req.params.id);
+
+    // Add activity log
+    await addActivityLog(
+      "DELETE_USER",
+      currentAdmin.username,
+      targetUser.username,
+      "Deleted user account"
+    );
+
+    await addAuditLog({
+  action: "DELETE_USER",
+  req,
+  user: currentAdmin,
+  target: deletedUser.username,
+  status: "SUCCESS",
+  details: "Admin deleted user"
+});
+
+    res.json({
+      message: "User and related scores deleted successfully"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
@@ -333,8 +391,6 @@ router.put("/users/:id/role", checkAdmin, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
  });
-
-module.exports = router;
 
 // Update score
 router.put("/scores/:id", checkAdmin, async (req, res) => {
@@ -621,6 +677,27 @@ router.get("/activity-logs", checkAdmin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get("/audit-logs", checkAdmin, async (req, res) => {
+
+  try {
+
+    const logs = await AuditLog
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(200);
+
+    res.json(logs);
+
+  } catch (err) {
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
 });
 
 module.exports = router;
