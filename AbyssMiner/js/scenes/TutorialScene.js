@@ -315,6 +315,7 @@ class TutorialScene extends MainGameScene {
         this.recallSystem  = new RecallSystem(this);
         this.meleeSystem   = new MeleeSystem(this);
         this.healthSystem  = new HealthSystem(this); this.healthSystem.init();
+        this.diseaseSystem = new DiseaseSystem(this); this.diseaseSystem.init();   // (用户修复) 缺实例: 蜘蛛趴身扣血/DoT/减速的宿主 — Tutorial 此前根本没有这个系统
         this.hudSystem     = new HUDSystem(this);    this.hudSystem.init();
         this.inventorySystem = new BackpackSystem(this); this.inventorySystem.init();
         this.backpackSystem  = this.inventorySystem;
@@ -1210,6 +1211,7 @@ class TutorialScene extends MainGameScene {
 
         // 死亡倒数
         if (this.healthSystem) this.healthSystem.update(delta);
+        if (this.diseaseSystem) this.diseaseSystem.update(delta);   // (用户修复) 漏调: 蜘蛛趴身扣血/中毒DoT/临时减速全靠它 tick — Tutorial 此前整段失效
 
         // E 键互动
         if (this.interactSystem) this.interactSystem.update();

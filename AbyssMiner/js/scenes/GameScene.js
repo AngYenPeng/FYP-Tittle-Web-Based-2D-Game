@@ -460,6 +460,7 @@ class MainGameScene extends Phaser.Scene {
 
         // === 新系统初始化 ===
         this.healthSystem    = new HealthSystem(this);    this.healthSystem.init();
+        this.diseaseSystem   = new DiseaseSystem(this);   this.diseaseSystem.init();   // (用户修复) 缺实例: 同 Tutorial
         this.inventorySystem = new BackpackSystem(this); this.inventorySystem.init();
         this.backpackSystem  = this.inventorySystem;
         this.hudSystem       = new HUDSystem(this);       this.hudSystem.init();
@@ -1382,6 +1383,7 @@ class MainGameScene extends Phaser.Scene {
 
         // 死亡倒数
         this.healthSystem.update(delta);
+        if (this.diseaseSystem) this.diseaseSystem.update(delta);   // (用户修复) 漏调: 同 Tutorial — 主矿洞趴身扣血/DoT 此前失效
 
         // 商人交互（必须在 paused 检查之前，因为商店打开时按 E 也要能关闭）
         this.interactSystem.update();

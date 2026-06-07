@@ -445,7 +445,12 @@ class HealthSystem {
     /** (用户) 回血特效: Healing 640×80/10帧, 完全跟随主角; 持续回血 = 持续刷新到期时间循环播放 */
     showHealFx() {
         const s = this.scene;
-        if (!s || !s.player || !s.anims || !s.anims.exists('healing_anim')) return;
+        if (!s || !s.player || !s.anims) return;
+        // (用户修复) 动画用点现注册 — 注册簇只在主矿洞 create 跑, SZ 场景全缺 → 此前静默退出, 回血特效从未显示
+        if (!s.anims.exists('healing_anim') && s.textures.exists('Healing')) {
+            try { s.anims.create({ key: 'healing_anim', frames: s.anims.generateFrameNumbers('Healing', { start: 0, end: 9 }), frameRate: 14, repeat: -1 }); } catch (e) {}
+        }
+        if (!s.anims.exists('healing_anim')) return;
         if (!this._healFx || !this._healFx.scene) {
             this._healFx = s.add.sprite(s.player.x, s.player.y, 'Healing')
                 .setDepth((s.player.depth || 10) + 1).play('healing_anim');
