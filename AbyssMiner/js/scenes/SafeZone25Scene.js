@@ -689,6 +689,7 @@ class SafeZone25Scene extends SafeZone3Scene {
             hearts: this.healthSystem?.hearts,
             hasHealthDetector: !!this._hasHealthDetector,
                 yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                playMs: (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(this) : 0,   // (用户) 局内时间跨区传递
                 yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
             corrosionPct: this.diseaseSystem?.corrosionPct,
             inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null

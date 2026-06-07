@@ -660,12 +660,16 @@ class SafeZone2Scene extends MainGameScene {
         this.time.delayedCall(900, () => {
             this._cinematicLock = false;
         });
+        // (用户) 兜底: 解锁用的是场景时钟, 进场窗口期时钟若被暂停 (guide 弹窗等) 回调会冻住 → 键盘永久失灵.
+        //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁
+        setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
     }
 
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
         if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
             if (this.hudSystem.refreshCrystal) this.hudSystem.refreshCrystal();
@@ -892,6 +896,7 @@ class SafeZone2Scene extends MainGameScene {
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
                 yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                playMs: (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(this) : 0,   // (用户) 局内时间跨区传递
                 yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null
@@ -917,6 +922,7 @@ class SafeZone2Scene extends MainGameScene {
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
                 yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                playMs: (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(this) : 0,   // (用户) 局内时间跨区传递
                 yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null

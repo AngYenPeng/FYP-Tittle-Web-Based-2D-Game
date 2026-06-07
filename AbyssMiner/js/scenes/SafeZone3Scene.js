@@ -2071,6 +2071,9 @@ class SafeZone3Scene extends MainGameScene {
 
     _applyInheritedState() {
         const data = this._inheritedData || {};
+        // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
             if (this.hudSystem.refreshCrystal) this.hudSystem.refreshCrystal();
@@ -2310,6 +2313,7 @@ class SafeZone3Scene extends MainGameScene {
                 hearts: this.healthSystem?.hearts,
                 hasHealthDetector: !!this._hasHealthDetector,
                 yellowCrystalCount: this.hudSystem ? this.hudSystem.yellowCrystalCount : undefined,
+                playMs: (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(this) : 0,   // (用户) 局内时间跨区传递
                 yellowCrystalShown: !!(this.hudSystem && this.hudSystem.yellowCrystalShown),
                 corrosionPct: this.diseaseSystem?.corrosionPct,
                 inventorySlots: this.inventorySystem?.slots ? [...this.inventorySystem.slots] : null

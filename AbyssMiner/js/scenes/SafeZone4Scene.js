@@ -739,10 +739,16 @@ class SafeZone4Scene extends MainGameScene {
         this.time.delayedCall(900, () => {
             this._cinematicLock = false;
         });
+        // (用户) 兜底: 解锁用的是场景时钟, 进场窗口期时钟若被暂停 (guide 弹窗等) 回调会冻住 → 键盘永久失灵.
+        //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁
+        setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
     }
 
     _applyInheritedState() {
         const data = this._inheritedData || {};
+        // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
+        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true) this[k] = true; } } catch (e) {} }
+        if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
             if (this.hudSystem.refreshCrystal) this.hudSystem.refreshCrystal();
@@ -1538,6 +1544,7 @@ class SafeZone4Scene extends MainGameScene {
             this._sz4CutsceneActive = false;
             this._sz4CutsceneDone = true;
             this._sz4CutPhase = null;
+            if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // (用户) 剧情完成立即落盘
             if (this.hudSystem && this.hudSystem.setHUDVisible) this.hudSystem.setHUDVisible(true);
             // 激活 boss 战斗
             this._batBossAwake = true;
@@ -2552,10 +2559,13 @@ class SafeZone4Scene extends MainGameScene {
             this._bosses.push(this._finalBoss);
             this.events.on('spider_queen_died', () => {
                 this._finalBossDead = true;
+                // (用户) 蓝水晶全数转黄 (蓝行隐藏, 黄/guide 上移); 通关统计 = 转换后的黄水晶总量
+                if (this.hudSystem && this.hudSystem.convertBlueToYellow) this.hudSystem.convertBlueToYellow();
                 this.time.delayedCall(2000, () => {
                     if (!this._rankingSystem && typeof RankingSystem !== 'undefined') {
                         this._rankingSystem = new RankingSystem(this);
-                        this._rankingSystem.show(this.crystalSystem ? this.crystalSystem.count : 0);
+                        // (用户) 通关统计 = 转换后的黄水晶总量 (蓝已并入); 旧 crystalSystem 引用无效, 已弃
+                        this._rankingSystem.show(this.hudSystem ? (this.hudSystem.yellowCrystalCount || 0) : 0);
                     }
                 });
             });

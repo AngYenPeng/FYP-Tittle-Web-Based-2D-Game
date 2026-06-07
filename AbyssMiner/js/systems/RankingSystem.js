@@ -33,11 +33,17 @@ class RankingSystem {
 
         // 评级
         let grade, gradeColor, comment;
-        if (crystalCount >= 100) { grade = 'S'; gradeColor = '#ffcc44'; comment = 'Legendary harvest!'; }
-        else if (crystalCount >= 60) { grade = 'A'; gradeColor = '#88dd66'; comment = 'Excellent work!'; }
-        else if (crystalCount >= 30) { grade = 'B'; gradeColor = '#66aaff'; comment = 'Solid haul.'; }
-        else if (crystalCount >= 10) { grade = 'C'; gradeColor = '#cccccc'; comment = 'Just scraped by.'; }
-        else { grade = 'D'; gradeColor = '#aa6666'; comment = 'You barely made it out.'; }
+        // (用户) 评级改按本局死亡数: 0=S, 1-2=A, 3-4=B, 5-6=C, 7+=D
+        const _deaths = (this.scene.registry && this.scene.registry.get('runDeaths')) || 0;
+        if (_deaths <= 0)      { grade = 'S'; gradeColor = '#ffcc44'; comment = 'Flawless descent!'; }
+        else if (_deaths <= 2) { grade = 'A'; gradeColor = '#88dd66'; comment = 'Excellent work!'; }
+        else if (_deaths <= 4) { grade = 'B'; gradeColor = '#66aaff'; comment = 'Solid run.'; }
+        else if (_deaths <= 6) { grade = 'C'; gradeColor = '#cccccc'; comment = 'Just scraped by.'; }
+        else                   { grade = 'D'; gradeColor = '#aa6666'; comment = 'You barely made it out.'; }
+        // (用户) 通关时间 (只算已保存累计的局内时间)
+        const _timeMs = (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(this.scene) : 0;
+        const _tm = Math.floor(_timeMs / 60000), _ts = Math.floor(_timeMs / 1000) % 60;
+        const _timeStr = _tm + ':' + (_ts < 10 ? '0' : '') + _ts;
 
         // (用户) 通关记录落盘 — 主菜单 RECORDS 页读取 (最多留 50 条, 新的在前)
         try {
@@ -47,9 +53,10 @@ class RankingSystem {
                 difficulty: (window.AbyssDiff ? AbyssDiff.mode : 'easy'),
                 crystals: crystalCount | 0,
                 grade: grade,
-                deaths: (this.scene.registry && this.scene.registry.get('runDeaths')) || 0
+                deaths: _deaths,
+                timeMs: _timeMs
             });
-            if (recs.length > 50) recs.length = 50;
+            if (recs.length > 30) recs.length = 30;   // (用户) 只留最近 30 场, 旧的淘汰
             localStorage.setItem('abyssMinerClearRecords', JSON.stringify(recs));
         } catch (e) {}
 
@@ -64,7 +71,7 @@ class RankingSystem {
 
         // 水晶数
         this._crystalLine = this.scene.add.text(W/2, H * 0.7,
-            `Crystals collected: ${crystalCount}`,
+            `Crystals: ${crystalCount}    Time: ${_timeStr}    Deaths: ${_deaths}`,
             { fontSize: '24px', color: '#ffffff' }
         ).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
 

@@ -240,15 +240,30 @@ class HUDSystem {
         return true;
     }
 
+    /** (用户) 通关转换: 蓝水晶全数并入黄水晶 — 蓝行隐藏, 黄水晶/guide 上移占其位 (行距 60 不变) */
+    convertBlueToYellow() {
+        const blue = this.crystalCount || 0;
+        this.crystalCount = 0;
+        if (this.crystalText) this.crystalText.setText('x 0');
+        this._blueHidden = true;
+        if (this.crystalIcon) this.crystalIcon.setVisible(false);
+        if (this.crystalText) this.crystalText.setVisible(false);
+        if (blue > 0) this.addYellowCrystal(blue);   // 触发首显逻辑 + 计数更新
+        this._restackHUD();
+        return this.yellowCrystalCount;
+    }
+
     /** 重新排 HUD 元素 y 位置 — 根据当前显示状态 (心 / 蓝 / 黄? / guide) */
     _restackHUD() {
         if (!this.crystalIcon || !this.crystalText || !this.guideBtn) return;
         const hasDetector = !!this._healthDetectorBought;
         // 起始 y (蓝水晶位置): 有 detector → 180, 否则 → 120
         let y = hasDetector ? 180 : 120;
-        this.crystalIcon.y = y;
-        this.crystalText.y = y - 12;
-        y += 60;
+        if (!this._blueHidden) {   // (用户) 通关后蓝行隐藏 → 跳过, 黄/guide 自动上移
+            this.crystalIcon.y = y;
+            this.crystalText.y = y - 12;
+            y += 60;
+        }
         if (this.yellowCrystalShown) {
             this.yellowCrystalIcon.y = y;
             this.yellowCrystalText.y = y - 12;

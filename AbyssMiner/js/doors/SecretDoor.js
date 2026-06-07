@@ -182,7 +182,9 @@ class SecretDoor {
             const data = {};
             if (scene.hudSystem) {
                 data.crystalCount = scene.hudSystem.crystalCount || 0;
+                data.yellowCrystalCount = scene.hudSystem.yellowCrystalCount || 0;   // (用户) 暗门过区也带黄水晶
             }
+            data.playMs = (typeof SaveSystem !== 'undefined' && SaveSystem._tickPlayMs) ? SaveSystem._tickPlayMs(scene) : 0;   // (用户) 局内时间跨区传递
             if (scene.inventorySystem && scene.inventorySystem.slots) {
                 data.inventorySlots = scene.inventorySystem.slots.map(s => s ? { ...s } : null);
             }

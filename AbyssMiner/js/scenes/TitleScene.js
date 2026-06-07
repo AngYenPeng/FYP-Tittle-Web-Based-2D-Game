@@ -11,7 +11,8 @@ class TitleScene extends Phaser.Scene {
         // 标题页背景图（洞穴）
         this.load.image('Tittle_scene_background_image', 'assets/images/Tittle_scene_background_image.png');
         this.load.image('Mouse_cursor', 'assets/images/Mouse_cursor.png');   // (用户) Title 精灵光标用
-        this.load.image('Crystal', 'assets/images/Crystal.png');   // (用户) 存档行/RECORDS 图标
+        this.load.image('Crystal', 'assets/images/Crystal.png');   // (用户) 存档行图标 (局中蓝水晶)
+        this.load.image('YCrystal', 'assets/images/YCrystal.png');   // (用户) RECORDS 图标 (通关统计为黄水晶)
         this.load.image('Heart', 'assets/images/Heart.png');
     }
 
@@ -412,56 +413,118 @@ class TitleScene extends Phaser.Scene {
             return;
         }
 
-        const VIEW_TOP = -PH / 2 + 76, VIEW_H = PH - 76 - 28;
+        // (用户) 三种排序: 最新 / 水晶最多 / 用时最短
+        const TABS = [
+            { key: 'latest',   label: 'LATEST' },
+            { key: 'crystals', label: 'CRYSTALS' },
+            { key: 'fastest',  label: 'FASTEST' }
+        ];
+        const sortRecs = mode => {
+            if (mode === 'crystals') return [...recs].sort((a, b) => (b.crystals | 0) - (a.crystals | 0));
+            if (mode === 'fastest')  return [...recs].sort((a, b) => {
+                const ta = (typeof a.timeMs === 'number') ? a.timeMs : Infinity;
+                const tb = (typeof b.timeMs === 'number') ? b.timeMs : Infinity;
+                return ta - tb;
+            });
+            return recs.slice();   // latest: 落盘即最新在前
+        };
+        const VIEW_TOP = -PH / 2 + 102, VIEW_H = PH - 102 - 44;
         const ROW_H = 56, GAP = 6;
-        const list = this.add.container(0, 0);
-        panel.add(list);
         const fmtDate = ts => { const d = new Date(ts); const p = n => (n < 10 ? '0' : '') + n;
             return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+        const _fmtT = ms => { ms = ms | 0; const m = Math.floor(ms / 60000), s2 = Math.floor(ms / 1000) % 60; return m + ':' + (s2 < 10 ? '0' : '') + s2; };
         const gColor = g => ({ S: '#ffcc44', A: '#88dd66', B: '#66aaff', C: '#cccccc', D: '#aa6666' })[g] || '#cccccc';
-        recs.forEach((r, i) => {
-            const ry = VIEW_TOP + 8 + ROW_H / 2 + i * (ROW_H + GAP);
-            const card = this.add.rectangle(0, ry, PW - 70, ROW_H, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a);
-            const bar = this.add.rectangle(-(PW - 70) / 2 + 3, ry, 4, ROW_H, 0xffcc44, 1);
-            const gT = this.add.text(-(PW - 70) / 2 + 34, ry, r.grade || '-', {
-                fontSize: '34px', color: gColor(r.grade), fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
-            }).setOrigin(0.5);
-            const main = this.add.text(-(PW - 70) / 2 + 64, ry - 11, 'CLEARED  [' + String(r.difficulty || '').toUpperCase() + ']', {
-                fontSize: '19px', color: '#ffd86a', fontFamily: '"VT323", monospace'
-            }).setOrigin(0, 0.5);
-            const sub = this.add.text(-(PW - 70) / 2 + 64, ry + 12, fmtDate(r.at) + '    Deaths ' + (r.deaths | 0), {
-                fontSize: '15px', color: '#9aa0b0', fontFamily: '"VT323", monospace'
-            }).setOrigin(0, 0.5);
-            list.add([card, bar, gT, main, sub]);
-            const cxr = (PW - 70) / 2 - 92;
-            if (this.textures.exists('Crystal')) list.add(this.add.image(cxr, ry, 'Crystal').setDisplaySize(20, 20));
-            list.add(this.add.text(cxr + 16, ry, String(r.crystals | 0), {
-                fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace'
-            }).setOrigin(0, 0.5));
-        });
-        const contentH = recs.length * (ROW_H + GAP) + 16;
-        const maxScroll = Math.max(0, contentH - VIEW_H);
+
+        const list = this.add.container(0, 0);
+        panel.add(list);
         const mg = this.make.graphics({}, false);
         mg.fillStyle(0xffffff, 1);
         mg.fillRect(W / 2 - (PW - 60) / 2, H / 2 + VIEW_TOP, PW - 60, VIEW_H);
         list.setMask(mg.createGeometryMask());
         items.push(mg);
-        let scroll = 0;
-        if (maxScroll > 0) {
-            const track = this.add.rectangle(PW / 2 - 18, VIEW_TOP + VIEW_H / 2, 8, VIEW_H, 0x222230, 1);
-            const thH = Math.max(36, VIEW_H * VIEW_H / contentH);
-            const thumb = this.add.rectangle(PW / 2 - 18, VIEW_TOP + thH / 2, 8, thH, 0xffcc44, 1).setInteractive({ draggable: true });
-            panel.add([track, thumb]);
-            const syncThumb = () => { thumb.y = VIEW_TOP + thH / 2 + (VIEW_H - thH) * (maxScroll ? scroll / maxScroll : 0); };
-            thumb.on('drag', (p, dx, dy) => {
-                const t = Phaser.Math.Clamp((dy - (VIEW_TOP + thH / 2)) / Math.max(1, VIEW_H - thH), 0, 1);
-                scroll = t * maxScroll; list.y = -scroll; syncThumb();
+
+        let scroll = 0, maxScroll = 0;
+        const sbItems = [];   // 滚动条件 (随排序重建)
+        let syncThumb = () => {};
+        onWheel = (p, objs, wx, wy) => {
+            if (maxScroll <= 0) return;
+            scroll = Phaser.Math.Clamp(scroll + wy * 0.6, 0, maxScroll);
+            list.y = -scroll; syncThumb();
+        };
+
+        const buildList = mode => {
+            list.removeAll(true);
+            sbItems.forEach(o => { try { o.destroy(); } catch (e) {} });
+            sbItems.length = 0;
+            scroll = 0; list.y = 0;
+            const arr = sortRecs(mode);
+            arr.forEach((r, i) => {
+                const ry = VIEW_TOP + 8 + ROW_H / 2 + i * (ROW_H + GAP);
+                const card = this.add.rectangle(0, ry, PW - 70, ROW_H, 0x1c1828, 1).setStrokeStyle(1, 0x6a5a2a);
+                const bar = this.add.rectangle(-(PW - 70) / 2 + 3, ry, 4, ROW_H, 0xffcc44, 1);
+                const gT = this.add.text(-(PW - 70) / 2 + 34, ry, r.grade || '-', {
+                    fontSize: '34px', color: gColor(r.grade), fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
+                }).setOrigin(0.5);
+                const main = this.add.text(-(PW - 70) / 2 + 64, ry - 11, 'CLEARED  [' + String(r.difficulty || '').toUpperCase() + ']', {
+                    fontSize: '19px', color: '#ffd86a', fontFamily: '"VT323", monospace'
+                }).setOrigin(0, 0.5);
+                const sub = this.add.text(-(PW - 70) / 2 + 64, ry + 12,
+                    fmtDate(r.at) + '    Deaths ' + (r.deaths | 0) + (typeof r.timeMs === 'number' ? '    Time ' + _fmtT(r.timeMs) : ''), {
+                    fontSize: '15px', color: '#9aa0b0', fontFamily: '"VT323", monospace'
+                }).setOrigin(0, 0.5);
+                list.add([card, bar, gT, main, sub]);
+                const cxr = (PW - 70) / 2 - 92;
+                const _recTex = this.textures.exists('YCrystal') ? 'YCrystal' : (this.textures.exists('Crystal') ? 'Crystal' : null);
+                if (_recTex) list.add(this.add.image(cxr, ry, _recTex).setDisplaySize(20, 20));
+                list.add(this.add.text(cxr + 16, ry, String(r.crystals | 0), {
+                    fontSize: '20px', color: '#ffffff', fontFamily: '"VT323", monospace'
+                }).setOrigin(0, 0.5));
             });
-            onWheel = (p, objs, wx, wy) => {
-                scroll = Phaser.Math.Clamp(scroll + wy * 0.6, 0, maxScroll);
-                list.y = -scroll; syncThumb();
-            };
-        }
+            const contentH = arr.length * (ROW_H + GAP) + 16;
+            maxScroll = Math.max(0, contentH - VIEW_H);
+            syncThumb = () => {};
+            if (maxScroll > 0) {
+                const track = this.add.rectangle(PW / 2 - 18, VIEW_TOP + VIEW_H / 2, 8, VIEW_H, 0x222230, 1);
+                const thH = Math.max(36, VIEW_H * VIEW_H / contentH);
+                const thumb = this.add.rectangle(PW / 2 - 18, VIEW_TOP + thH / 2, 8, thH, 0xffcc44, 1).setInteractive({ draggable: true });
+                panel.add([track, thumb]);
+                sbItems.push(track, thumb);
+                syncThumb = () => { thumb.y = VIEW_TOP + thH / 2 + (VIEW_H - thH) * (maxScroll ? scroll / maxScroll : 0); };
+                thumb.on('drag', (p, dx, dy) => {
+                    const t = Phaser.Math.Clamp((dy - (VIEW_TOP + thH / 2)) / Math.max(1, VIEW_H - thH), 0, 1);
+                    scroll = t * maxScroll; list.y = -scroll; syncThumb();
+                });
+            }
+        };
+
+        // 排序 tab 行
+        let activeTab = 'latest';
+        const tabTxts = [];
+        TABS.forEach((t, i) => {
+            const tx = this.add.text(-180 + i * 180, -PH / 2 + 80, t.label, {
+                fontSize: '20px', color: '#8a8a99', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 3
+            }).setOrigin(0.5).setInteractive();
+            tx._key = t.key;
+            tx.on('pointerover', () => { if (activeTab !== tx._key) tx.setColor('#cfcfdd'); });
+            tx.on('pointerout',  () => { if (activeTab !== tx._key) tx.setColor('#8a8a99'); });
+            tx.on('pointerdown', () => {
+                if (activeTab === tx._key) return;
+                activeTab = tx._key;
+                tabTxts.forEach(o => o.setColor(o._key === activeTab ? '#ffd86a' : '#8a8a99'));
+                buildList(activeTab);
+            });
+            tabTxts.push(tx);
+            panel.add(tx);
+        });
+        tabTxts[0].setColor('#ffd86a');
+
+        // 底部说明
+        const note = this.add.text(0, PH / 2 - 20, 'Only the latest 30 runs are recorded.', {
+            fontSize: '15px', color: '#8a8a99', fontFamily: '"VT323", monospace'
+        }).setOrigin(0.5);
+        panel.add(note);
+
+        buildList(activeTab);
         this.input.on('wheel', onWheel);
     }
 

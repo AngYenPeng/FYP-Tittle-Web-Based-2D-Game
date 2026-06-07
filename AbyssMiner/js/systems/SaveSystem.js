@@ -59,6 +59,13 @@ class SaveSystem {
         return out;
     }
 
+    /** (用户) 局内游戏时间: 基线(随档恢复) + 本场景实时增量. 首次调用启动计时.
+     *  只在落盘点累计 → 未保存的游玩时段自然不计 (关游戏没存 = 不算时间) */
+    static _tickPlayMs(scene) {
+        if (!scene._playStartAt) { scene._playStartAt = Date.now(); scene._playMsBase = scene._playMsBase || 0; }
+        return (scene._playMsBase || 0) + (Date.now() - scene._playStartAt);
+    }
+
     static captureFromScene(scene) {
         const inv = (scene.inventorySystem && scene.inventorySystem.slots)
             ? [...scene.inventorySystem.slots] : null;
@@ -76,6 +83,7 @@ class SaveSystem {
             inventorySlots:    inv,
             pickaxeUpgraded:   !!((scene.registry && scene.registry.get('pickaxeUpgraded')) || scene._pickaxeUpgraded),
             plotFlags:         SaveSystem._capturePlotFlags(scene),
+            playMs:            SaveSystem._tickPlayMs(scene),
             savedAt:           Date.now()
         };
     }
