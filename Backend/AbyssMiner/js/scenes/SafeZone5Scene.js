@@ -1,3 +1,36 @@
+var sz6_bossBarrier, sz6_merchant, sz6_arenaLocked = false;
+var sz6_dialogueBox, sz6_dialogueText, sz6_dialogueHint, sz6_skipHint;
+var sz6_dialogueState = 0;
+var sz6_currentLine = 0;
+var sz6_hazards;
+var sz6_bullets;
+var sz6_spawnDoor, sz6_bossDoor;
+var sz6_exitWall, sz6_exitStairs, sz6_victoryTrigger;
+var sz6_bossBeatenSequence = false;
+var sz6_dialogueLines = [
+"Merchant: Oi, dirt-scratcher. Didn't peg ya to survive this deep... gotta hand it to ya, you got grit.",
+"Merchant: 'Fore you go kickin' the hornet's nest, listen up. Them shiny blue rocks you been hoarding? They sprout by suckin' the juice outta the dead down here.",
+"Merchant: I ain't buyin' 'em to get filthy rich. I'm baggin' the infection. Every rock I pocket is one less nasty bug crawlin' its way to the topside.",
+"Merchant: The Big Bad is right through there. The Mother of all this mess. Go on, give 'er hell and finish this."
+];
+var sz6_terrain = [
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
+[1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1],
+[1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1],
+[1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,1,1],
+[1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1],
+[1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1],
+[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1],
+[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+]
 /**
  * SafeZone5Scene — 5 号安全区 (占位框架)
  *
@@ -156,409 +189,409 @@ class SafeZone5Scene extends MainGameScene {
         if (typeof super.preload === 'function') super.preload();
     }
 
-    create() {
-        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone5');  // BGM (SafeZone5.mp3 放进 BGM/ 即生效)
-        // (用户) SZ5 保留物理 hitbox 显示 (全局 debug 已关, 这里单独开)
-        // 注: config debug=false 时 body 创建即 debugShowBody=false → 必须改 world.defaults,
-        //     且这段在 create 顶部 (墙/玩家创建之前), 之后创建的所有 body 才会画
-        try {
-            const w = this.physics.world;
-            w.drawDebug = true;
-            if (!w.debugGraphic) w.createDebugGraphic();
-            w.defaults.debugShowBody = true;
-            w.defaults.debugShowStaticBody = true;
-        } catch (e) {}
+create() {
+    if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone5');  
+    // (合并) 物理 debug draw 关闭 (队友开发期临时开的, 上线不显示碰撞框)
+    try {
+        const w = this.physics.world;
+        w.drawDebug = false;
+        if (w.debugGraphic) { w.debugGraphic.clear(); w.debugGraphic.setVisible(false); }
+        w.defaults.debugShowBody = false;
+        w.defaults.debugShowStaticBody = false;
+    } catch (e) {}
 
-        // pickaxeUpgraded — 从 registry 读 (跨场景有效, 刷新网页自动重置 — 暂无后台存档)
-        this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
-        // 丢稿子距离极限 (砍短, 防飞出屏幕) — 这里覆盖一次, 不依赖 GameScene.js 构造器
-        this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
-        // 节点末索引 (15 节点 → 0..14)
-        this.activeEnd1 = 14; this.activeEnd2 = 14;
-        // 注册怪物 anim — SZ 场景不调 super.create(), 必须自己 register
-        this._registerMonsterAnims();
+    this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
+    this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
+    this.activeEnd1 = 14; this.activeEnd2 = 14;
+    this._registerMonsterAnims();
 
-        const G = 32;
-        const W = 1280;
-        const H = 720;
+    const G = 60;
+    const W = 6000;
+    const H = 1200;
 
-        this.physics.world.setBounds(0, 0, W, H);
+    sz6_arenaLocked = false;
+    sz6_dialogueState = 0;
+    sz6_currentLine = 0;
+    sz6_bossBeatenSequence = false;
+    this.playerCanMove = true;
 
-        // 背景
-        if (this.textures.exists('Tutorial_scene_background_image')) {
-            this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
-            const bgScale = Math.max(W / this.bg.width, H / this.bg.height);
-            this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-100);
-        }
+    this.cameras.main.setBackgroundColor('#050510');
+    this.physics.world.setBounds(0, 0, W, H);
 
-        this._initT1State();
-        this.input.mouse.disableContextMenu();
-        this._registerAnims();
+    if (this.textures.exists('Tutorial_scene_background_image')) {
+        this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
+        const bgScale = Math.max(W / this.bg.width, H / this.bg.height);
+        this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-100);
+    }
 
-        // 按键
-        this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   // (用户) W 同跳 — 与 SPACE 共用同一跳跃路径
-        this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-        this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-        this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-        this.keyShift  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-        this.keyR      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-        this.keyESC    = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-        this.input.keyboard.addCapture([
-            Phaser.Input.Keyboard.KeyCodes.SHIFT,
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-            Phaser.Input.Keyboard.KeyCodes.F,
-            Phaser.Input.Keyboard.KeyCodes.E,
-            Phaser.Input.Keyboard.KeyCodes.S,
-            Phaser.Input.Keyboard.KeyCodes.R,
-            Phaser.Input.Keyboard.KeyCodes.Z,
-            Phaser.Input.Keyboard.KeyCodes.X,
-            Phaser.Input.Keyboard.KeyCodes.C,
-            Phaser.Input.Keyboard.KeyCodes.B,
-        ]);
+    this._initT1State();
+    this.input.mouse.disableContextMenu();
+    this._registerAnims();
 
-        // GridSystem
-        // GridSystem 覆盖含全部扩展区
-        // 左 BUF_L=39（砍 col<-39 的部分），右 BUF_R=50, 上下 BUF=20
-        const BUF_T = 20, BUF_B = 20, BUF_L = 39, BUF_R = 50;
-        // === SZ5 重建: 空白大地图 — 左+50 / 右+300 / 上+150 / 下+150 格 ===
-        // (用户) SZ5 砍到只剩出生点 10×10 格: x ∈ [-30,-21], y ∈ [10,19] (出生 (-25,18), 地板 row 19)
-        const boundsX = -30 * G;
-        const boundsY = 10 * G;
-        const boundsW = 10 * G;
-        const boundsH = 10 * G;
-        this.gridSystem = new GridSystem(this, G, boundsW, boundsH, boundsX, boundsY);
+    this.keyJump   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.keyJumpW  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);   
+    this.keyCrouch = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.keyF      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+    this.keyE      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.keyShift  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+    this.keyR      = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    this.keyESC    = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.input.keyboard.addCapture([
+        Phaser.Input.Keyboard.KeyCodes.SHIFT,
+        Phaser.Input.Keyboard.KeyCodes.SPACE,
+        Phaser.Input.Keyboard.KeyCodes.F,
+        Phaser.Input.Keyboard.KeyCodes.E,
+        Phaser.Input.Keyboard.KeyCodes.S,
+        Phaser.Input.Keyboard.KeyCodes.R,
+        Phaser.Input.Keyboard.KeyCodes.Z,
+        Phaser.Input.Keyboard.KeyCodes.X,
+        Phaser.Input.Keyboard.KeyCodes.C,
+        Phaser.Input.Keyboard.KeyCodes.B,
+    ]);
 
-        // 物理组
-        this.walls = this.physics.add.staticGroup();
-        this.platforms = this.physics.add.staticGroup();
-        this.bgBlocks = this.physics.add.staticGroup();
-        this.crystalBlocks = this.physics.add.staticGroup();
-        this.wallRects = [];
-        this.droppedCrystals = this.physics.add.group();
-        // 怪物组（creative 模式放置怪物用）
-        this.spiders = this.physics.add.group();
-        this.bungeeSpiders = this.physics.add.group();
-        this.bats = this.physics.add.group();
-        this.earthworms = this.physics.add.group();
-        this.slimes = this.physics.add.group();
-        this.beetles = this.physics.add.group();
-        this.mimicOres = this.physics.add.group();
-        this.volatileCrystals = this.physics.add.group();
+    const boundsX = 0;
+    const boundsY = 0;
+    const boundsW = W;
+    const boundsH = H;
+    this.gridSystem = new GridSystem(this, G, boundsW, boundsH, boundsX, boundsY);
 
-        // 地形
-        const G_W = Math.floor(W / G);
-        const G_H = Math.floor(H / G);
-        const rectFromCells = (x1, y1, x2, y2) => {
-            for (let cx = x1; cx <= x2; cx++) {
-                for (let cy = y1; cy <= y2; cy++) {
-                    new CavetileWall(this, cx * G + G / 2, cy * G + G / 2, G, G);
-                }
-            }
-        };
-        const bgFromCells = (x1, y1, x2, y2) => {
-            for (let cx = x1; cx <= x2; cx++) {
-                for (let cy = y1; cy <= y2; cy++) {
-                    new BackgroundBlock(this, cx * G + G / 2, cy * G + G / 2, G, G);
-                }
-            }
-        };
-        // === SZ5 重建: 删光所有地形, 只在出生点 (-25,18) 下方放一块小平台 ===
-        // 出生点中心 row 18.5 → 平台顶 row 19, 玩家落在上面; 其余全空 (靠世界边界兜底)
-        rectFromCells(-30, 19, -21, 19);   // (用户) 10×10 区域底边地板 (1 行通铺 col -30..-21)
+    this.walls = this.physics.add.staticGroup();
+    this.platforms = this.physics.add.staticGroup();
+    this.bgBlocks = this.physics.add.staticGroup();
+    this.crystalBlocks = this.physics.add.staticGroup();
+    this.wallRects = [];
+    this.droppedCrystals = this.physics.add.group();
+    this.spiders = this.physics.add.group();
+    this.bungeeSpiders = this.physics.add.group();
+    this.bats = this.physics.add.group();
+    this.earthworms = this.physics.add.group();
+    this.slimes = this.physics.add.group();
+    this.beetles = this.physics.add.group();
+    this.mimicOres = this.physics.add.group();
+    this.volatileCrystals = this.physics.add.group();
 
-        // 应用 level data（来自 creative export）
-        this._applyLevelData();
+    sz6_hazards = this.physics.add.staticGroup(); 
+    sz6_bullets = this.physics.add.group();
+    sz6_exitStairs = this.physics.add.staticGroup(); 
 
-        // 物理边界 = 整张扩展后的空白地图
-        this.physics.world.setBounds(boundsX, boundsY, boundsW, boundsH);
+    this.buildCaveDecorations();
 
-        // (用户) 删掉重复的 renderSkins — 这里跑一遍、后面"渲染 CavetileWall 皮肤"又跑一遍,
-        //        全图几千面墙的皮肤计算白做一次, 是重进存档卡顿的大头之一 (真正的调用在后面)
+    sz6_spawnDoor = this.add.rectangle(35, 660, 30, 120, 0x111122).setStrokeStyle(3, 0x443355).setDepth(5);
+    sz6_bossDoor = this.add.rectangle(3300, 630, 40, 300, 0x221133).setStrokeStyle(4, 0x9900ff).setDepth(5);
+    sz6_exitWall = this.add.rectangle(4770, 900, 60, 120, 0x1a0f2e).setStrokeStyle(2, 0x3b2d59).setDepth(11);
+    
+    this.physics.add.existing(sz6_exitWall, true);
+    this.platforms.add(sz6_exitWall);
 
-        // 网格线（按 R 切换）
-        this._gridGraphics = this.add.graphics().setDepth(0);
-        this._gridGraphics.lineStyle(1, 0xffffff, 0.15);
-        for (let x = boundsX; x <= boundsX + boundsW; x += G) {
-            this._gridGraphics.moveTo(x, boundsY);
-            this._gridGraphics.lineTo(x, boundsY + boundsH);
-        }
-        for (let y = boundsY; y <= boundsY + boundsH; y += G) {
-            this._gridGraphics.moveTo(boundsX, y);
-            this._gridGraphics.lineTo(boundsX + boundsW, y);
-        }
-        this._gridGraphics.strokePath();
-        this._gridGraphics.setVisible(false);
+    for (let r = 0; r < sz6_terrain.length; r++) {
+        for (let c = 0; c < sz6_terrain[r].length; c++) {
+            let xPos = c * G + (G / 2);
+            let yPos = r * G + (G / 2);
 
-        // Z X C 快捷键
-        this.keyZ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
-        this.keyX = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
-        this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
-        this.keyB = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
-
-        // 渲染 CavetileWall 皮肤
-        if (typeof CavetileWall !== 'undefined' && CavetileWall.renderSkins) {
-            CavetileWall.renderSkins(this);
-        }
-
-        // 物理子系统
-        this.ropePhysics   = new RopePhysics(this);
-        this.dashSystem    = new DashSystem(this);
-        this.movementSystem= new MovementSystem(this);
-        this.throwSystem   = new ThrowSystem(this);
-        this.grappleSystem = new GrappleSystem(this);
-        this.recallSystem  = new RecallSystem(this);
-        this.meleeSystem   = new MeleeSystem(this);
-
-        // 玩家
-        // 出生点：world (-25, 18) 是 SecretDoor 位置 — 玩家从 T1 传送过来后站在它上面
-        const spawnX = -25 * G + G / 2;
-        const spawnY = 18 * G + G / 2;
-        this.spawnX = spawnX;
-        this.spawnY = spawnY;
-        this.player = new Player(this, spawnX, spawnY);
-
-        // 真稿子系统 (替换 stub) — 右键丢/grapple/换手
-        this._setupRealPickaxes();
-
-        // 物理碰撞 — T1 同款（platform 用 checkCollision.down=false 单向）
-        this.physics.add.collider(this.player, this.walls);
-        this.physics.add.collider(this.droppedCrystals, this.walls);
-        // 怪物 ↔ walls
-        this.physics.add.collider(this.spiders, this.walls);
-        this.physics.add.collider(this.bats, this.walls);
-        this.physics.add.collider(this.slimes, this.walls);
-        this.physics.add.collider(this.beetles, this.walls);
-        this.physics.add.collider(this.earthworms, this.walls);
-        this.physics.add.collider(this.mimicOres, this.walls);
-        this.physics.add.collider(this.bungeeSpiders, this.walls);
-        this.physics.add.collider(this.volatileCrystals, this.walls);
-
-        // 玩家伤害检测（同 T1 写法）
-        const dmgCheck = (p, m) => {
-            if (m.canDamagePlayer && m.canDamagePlayer()) {
-                if (this._playerHit) this._playerHit(p, m);
-                if (m.onHitPlayer) m.onHitPlayer();
-            }
-        };
-        this.physics.add.overlap(this.player, this.spiders, dmgCheck);
-        this.physics.add.overlap(this.player, this.bats, dmgCheck);
-        this.physics.add.overlap(this.player, this.slimes, dmgCheck);
-        this.physics.add.overlap(this.player, this.beetles, dmgCheck);
-        this.physics.add.overlap(this.player, this.earthworms, dmgCheck);
-        this.physics.add.overlap(this.player, this.mimicOres, dmgCheck);
-        this.physics.add.overlap(this.player, this.bungeeSpiders, dmgCheck);
-        this.physics.add.overlap(this.player, this.volatileCrystals, dmgCheck);
-
-        // UI 系统（同 GameScene 顺序）
-        this.healthSystem    = new HealthSystem(this);    this.healthSystem.init();
-        this.diseaseSystem   = new DiseaseSystem(this);   this.diseaseSystem.init();
-        this.inventorySystem = new BackpackSystem(this);  this.inventorySystem.init();
-        this.backpackSystem  = this.inventorySystem;
-        this.hudSystem       = new HUDSystem(this);       this.hudSystem.init();
-        this.settingsSystem  = new SettingsSystem(this);  this.settingsSystem.init();
-        if (typeof CreativeSystem !== 'undefined') {
-            this.creativeSystem  = new CreativeSystem(this);  this.creativeSystem.init();
-        }
-        this.dialogSystem    = new DialogSystem(this);    this.dialogSystem.init();
-        if (typeof QuestSystem !== 'undefined') {
-            this.questSystem     = new QuestSystem(this);     this.questSystem.init();
-        }
-        this.guideSystem     = new GuideSystem(this);     this.guideSystem.init();
-        if (typeof ShopSystem !== 'undefined') {
-            this.shopSystem      = new ShopSystem(this);      this.shopSystem.init();
-        }
-        this.interactSystem  = new InteractSystem(this);  this.interactSystem.init();
-
-        // (用户) 光影黑雾启用 — 按 gridSystem 原点/尺寸 (负坐标地图 OK)
-        // 性能: 跨格才重画 + 墙数据健全后 flood 范围有限, 比之前每帧全图重画轻得多
-        if (typeof FogSystem !== 'undefined' && this.gridSystem) {
-            const _fg = this.gridSystem;
-            this.fogSystem = new FogSystem(this, _fg.cellSize, _fg.cols * _fg.cellSize, _fg.rows * _fg.cellSize, _fg.originX || 0, _fg.originY || 0);
-        }
-
-        // 怪物掉落监听
-        this.events.on('monster_killed', (mx, my, dropRate) => {
-            if (Math.random() <= dropRate) {
-                const angle = Math.random() * Math.PI * 2;
-                const radius = 5 + Math.random() * 10;
-                let targetX = mx + Math.cos(angle) * radius;
-                let targetY = my + Math.sin(angle) * radius;
-                // (用户) 防穿模 v2 — 与 GameScene 同源:
-                if (this.wallRects) {
-                    // ① 落点 X 若伸进同高度侧墙体内 → 先水平挤出 (水晶半宽 10)
-                    for (const w of this.wallRects) {
-                        if (w.bottom > my - 14 && w.top < my + 14 && targetX > w.left - 10 && targetX < w.right + 10) {
-                            targetX = (mx <= (w.left + w.right) / 2) ? w.left - 10 : w.right + 10;
-                        }
-                    }
-                    // ② 垂直 raycast 找地板, 钉地板顶 (半高 10 + 2px 余量)
-                    let nearestFloorY = Infinity;
-                    for (const w of this.wallRects) {
-                        if (targetX >= w.left && targetX <= w.right && w.top >= my - 4) {
-                            if (w.top < nearestFloorY) nearestFloorY = w.top;
-                        }
-                    }
-                    if (nearestFloorY === Infinity) {
-                        targetX = mx; targetY = my;   // 该 X 列没地板 → 回方块原位
-                    } else {
-                        targetY = nearestFloorY - 12;
-                    }
-                    // ③ 最终保险: 仍与任何墙重叠 → 回方块原位 (刚打掉的格子必为空气)
-                    for (const w of this.wallRects) {
-                        if (targetX > w.left - 10 && targetX < w.right + 10 && targetY > w.top - 10 && targetY < w.bottom + 10) {
-                            targetX = mx; targetY = my; break;
-                        }
-                    }
-                }
-                // 用 Crystal 纹理（fallback drop_crystal_img）
-                const tex = this.textures.exists('Crystal') ? 'Crystal' : 'drop_crystal_img';
-                const c = this.add.image(mx, my, tex);
-                if (tex === 'Crystal') c.setDisplaySize(20, 20);
-                c.setDepth(8);
-                if (this.uiCam) this.uiCam.ignore(c);
-                c._isDroppedCrystal = true;
-                c._pickupReadyAt = this.time.now + 500;
-                c.active = true;
-                this.droppedCrystals.add(c);
-                this.tweens.add({ targets: c, x: targetX, duration: 350, ease: 'Linear' });
-                // 旋转 360°
-                this.tweens.add({ targets: c, angle: 360, duration: 350, ease: 'Linear' });
-                const peakY = Math.min(my, targetY) - 30;
-                this.tweens.add({
-                    targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
-                    onComplete: () => this.tweens.add({
-                        // (用户) 下落时长按重力换算 t=√(2d/g) — 原固定 175ms 在长落差下像瞬移, 比玩家落地还快
-                        targets: c, y: targetY,
-                        duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
-                        ease: 'Quad.easeIn',
-                        onComplete: () => { c.angle = 0; }  // 落地后正立
-                    })
+            if (sz6_terrain[r][c] === 1) { 
+                let block = this.add.rectangle(xPos, yPos, G, G, 0x1a0f2e);
+                block.setStrokeStyle(2, 0x3b2d59); 
+                this.physics.add.existing(block, true);
+                this.walls.add(block); 
+                
+                this.wallRects.push({
+                    x: xPos - G/2, y: yPos - G/2,
+                    width: G, height: G,
+                    left: xPos - G/2, right: xPos + G/2,
+                    top: yPos - G/2, bottom: yPos + G/2
                 });
+            } else if (sz6_terrain[r][c] === 2) {
+                let spike = this.add.triangle(xPos, yPos + 15, 0, 30, 30, 30, 15, 0, 0xff0055);
+                this.physics.add.existing(spike, true);
+                sz6_hazards.add(spike);
+            } else if (sz6_terrain[r][c] === 3) {
+                let step = this.add.rectangle(xPos, yPos, G, G, 0x1a0f2e);
+                step.setStrokeStyle(2, 0x3b2d59);
+                this.physics.add.existing(step, true);
+                sz6_exitStairs.add(step);
+                step.setVisible(false);
+                step.body.enable = false;
             }
-        });
-
-        // 监听 slime 分裂事件 — 大 Slime 死亡后产生 2 只 mini
-        this.events.on('slime_split', (x, y) => {
-            for (let i = 0; i < 2; i++) {
-                const mini = new CrystalSlime(this, x + (i === 0 ? -20 : 20), y - 10, true);
-                this.slimes.add(mini);
-                if (mini.setDepth) mini.setDepth(10);
-                if (this.uiCam) { try { this.uiCam.ignore(mini); } catch(e) {} }
-                this.physics.add.collider(mini, this.walls);
-                // mini 不重生（只继承大 slime 的 chunk）
-            }
-        });
-
-        // 镜头：4 个 chunks
-        // zone1（出生区）：(-39, 7) → (0, 29)
-        // zone2：左 x=0，右 x=39，上 y=0
-        // zone3：左 x=39，右 x=92，上 y=-2，下 y=21.5
-        // zone4：左 x=39，右 x=92，下 y=-2 — zone3 上方
-        const G_H_FULL = G_H + BUF_B;
-        // 9 个 chunks (zone7 跟 6/8/9 一排在上方)
-        this._chunks = [
-            // (用户) SZ5 10×10: chunk = 正好一个视口 (zoom2 = 20×11.25 格), 居中锁定出生区
-            //   宽 (-16+1)−(-35)=20 格=640px, 高 20.625−9.375=11.25 格=360px, 中心 (col -25, row 15)
-            { id: 'zone1', x1: -35, y1: 9.375, x2: -16, y2: 19.625 }
-        ];
-        this._currentChunkId = null;
-
-        // === Mob 透明墙 — 沿每个 chunk 边界 ===
-        // 只挡 Mob（玩家可穿过）
-        const barrierTh = 4;
-        for (const c of this._chunks) {
-            const cx1 = c.x1 * G, cx2 = (c.x2 + 1) * G;
-            const cy1 = c.y1 * G, cy2 = (c.y2 + 1) * G;
-            const w = cx2 - cx1, h = cy2 - cy1;
-            new MobWall(this, cx1 + w/2, cy1 - barrierTh/2, w, barrierTh);  // 顶
-            new MobWall(this, cx1 + w/2, cy2 + barrierTh/2, w, barrierTh);  // 底
-            new MobWall(this, cx1 - barrierTh/2, cy1 + h/2, barrierTh, h);  // 左
-            new MobWall(this, cx2 + barrierTh/2, cy1 + h/2, barrierTh, h);  // 右
         }
-        // Mob ↔ mobWalls collider
-        if (this.mobWalls) {
-            ['spiders', 'bats', 'slimes', 'beetles', 'earthworms', 'bungeeSpiders', 'mimicOres', 'volatileCrystals'].forEach(grpName => {
-                const grp = this[grpName];
-                if (grp) this.physics.add.collider(grp, this.mobWalls);
+    }
+
+    this.add.text(120, 520, ">> DEEP MINES AHEAD >>", { fontSize: '24px', fill: '#00ffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setDepth(10);
+    let finalHint = this.add.text(2600, 400, ">> WARNING: MATRIARCH LAIR >>", { fontSize: '28px', fill: '#ff0000', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setDepth(10);
+    this.tweens.add({ targets: finalHint, alpha: 0.2, duration: 800, yoyo: true, repeat: -1 });
+
+    sz6_bossBarrier = this.add.rectangle(3300, 700, 40, 800, 0x8888ff, 0.5);
+    this.physics.add.existing(sz6_bossBarrier, true);
+    sz6_bossBarrier.setVisible(false);
+    this.physics.world.disable(sz6_bossBarrier); 
+
+    sz6_merchant = this.add.rectangle(530, 600, 40, 80, 0x00ff00);  
+    
+    sz6_dialogueBox = this.add.rectangle(800, 750, 1000, 160, 0x000000, 0.85).setScrollFactor(0).setDepth(9999);
+    sz6_dialogueBox.setStrokeStyle(3, 0xffffff); 
+    sz6_dialogueText = this.add.text(340, 700, "", { fontSize: '24px', fill: '#ffffff', fontFamily: 'monospace', wordWrap: { width: 920 }, lineSpacing: 8 }).setScrollFactor(0).setDepth(10000);
+    sz6_dialogueHint = this.add.text(1120, 800, "[ Click to Progress ]", { fontSize: '16px', fill: '#ffff00', fontStyle: 'bold' }).setScrollFactor(0).setDepth(10000);
+    sz6_skipHint = this.add.text(1240, 680, "SKIP >>", { fontSize: '16px', fill: '#ff5555', fontStyle: 'bold' }).setScrollFactor(0).setInteractive({ useHandCursor: true }).setDepth(10000);
+    
+    sz6_dialogueBox.setVisible(false);
+    sz6_dialogueText.setVisible(false);
+    sz6_dialogueHint.setVisible(false);
+    sz6_skipHint.setVisible(false);
+
+    // (合并) 删掉 this._applyLevelData() 调用 — 你保留的那版按旧 SZ5 (G=32) 关卡数据重建地形,
+    //   会把要删的旧 BackgroundBlock/wall 盖在 boss 竞技场上. 本关卡全靠 sz6_terrain (G=60) 建.
+
+    this._gridGraphics = this.add.graphics().setDepth(0);
+    this._gridGraphics.lineStyle(1, 0xffffff, 0.15);
+    for (let x = boundsX; x <= boundsX + boundsW; x += G) {
+        this._gridGraphics.moveTo(x, boundsY);
+        this._gridGraphics.lineTo(x, boundsY + boundsH);
+    }
+    for (let y = boundsY; y <= boundsY + boundsH; y += G) {
+        this._gridGraphics.moveTo(boundsX, y);
+        this._gridGraphics.lineTo(boundsX + boundsW, y);
+    }
+    this._gridGraphics.strokePath();
+    this._gridGraphics.setVisible(false);
+
+    this.keyZ = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+    this.keyX = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+    this.keyC = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+    this.keyB = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+
+    if (typeof CavetileWall !== 'undefined' && CavetileWall.renderSkins) {
+        CavetileWall.renderSkins(this);
+    }
+
+    this.ropePhysics   = new RopePhysics(this);
+    this.dashSystem    = new DashSystem(this);
+    this.movementSystem= new MovementSystem(this);
+    this.throwSystem   = new ThrowSystem(this);
+    this.grappleSystem = new GrappleSystem(this);
+    this.recallSystem  = new RecallSystem(this);
+    this.meleeSystem   = new MeleeSystem(this);
+
+    // (合并修复) 队友引用 spawnX/spawnY 但未声明 → 补定义 (有传入出生点用之, 否则默认 360/440); 同步存 this.spawnX/Y 供框架复活逻辑
+    const spawnX = (this._inheritedData && this._inheritedData.spawnX) || 360;
+    const spawnY = (this._inheritedData && this._inheritedData.spawnY) || 440;
+    this.spawnX = spawnX; this.spawnY = spawnY;
+    this.player = new Player(this, 80, spawnY);
+
+    this._setupRealPickaxes();
+
+    this.physics.add.collider(this.player, this.walls);
+    this.physics.add.collider(this.player, sz6_bossBarrier);
+    this.physics.add.collider(this.droppedCrystals, this.walls);
+    this.physics.add.collider(this.spiders, this.walls);
+    this.physics.add.collider(this.bats, this.walls);
+    this.physics.add.collider(this.slimes, this.walls);
+    this.physics.add.collider(this.beetles, this.walls);
+    this.physics.add.collider(this.earthworms, this.walls);
+    this.physics.add.collider(this.mimicOres, this.walls);
+    this.physics.add.collider(this.bungeeSpiders, this.walls);
+    this.physics.add.collider(this.volatileCrystals, this.walls);
+
+    const dmgCheck = (p, m) => {
+        if (m.canDamagePlayer && m.canDamagePlayer()) {
+            if (this._playerHit) this._playerHit(p, m);
+            if (m.onHitPlayer) m.onHitPlayer();
+        }
+    };
+    this.physics.add.overlap(this.player, this.spiders, dmgCheck);
+    this.physics.add.overlap(this.player, this.bats, dmgCheck);
+    this.physics.add.overlap(this.player, this.slimes, dmgCheck);
+    this.physics.add.overlap(this.player, this.beetles, dmgCheck);
+    this.physics.add.overlap(this.player, this.earthworms, dmgCheck);
+    this.physics.add.overlap(this.player, this.mimicOres, dmgCheck);
+    this.physics.add.overlap(this.player, this.bungeeSpiders, dmgCheck);
+    this.physics.add.overlap(this.player, this.volatileCrystals, dmgCheck);
+
+    this.healthSystem    = new HealthSystem(this);    this.healthSystem.init();
+    this.diseaseSystem   = new DiseaseSystem(this);   this.diseaseSystem.init();
+    this.inventorySystem = new BackpackSystem(this);  this.inventorySystem.init();
+    this.backpackSystem  = this.inventorySystem;
+    this.hudSystem       = new HUDSystem(this);       this.hudSystem.init();
+    this.settingsSystem  = new SettingsSystem(this);  this.settingsSystem.init();
+    if (typeof CreativeSystem !== 'undefined') {
+        this.creativeSystem  = new CreativeSystem(this);  this.creativeSystem.init();
+    }
+    this.dialogSystem    = new DialogSystem(this);    this.dialogSystem.init();
+    if (typeof QuestSystem !== 'undefined') {
+        this.questSystem     = new QuestSystem(this);     this.questSystem.init();
+    }
+    this.guideSystem     = new GuideSystem(this);     this.guideSystem.init();
+    if (typeof ShopSystem !== 'undefined') {
+        this.shopSystem      = new ShopSystem(this);      this.shopSystem.init();
+    }
+    this.interactSystem  = new InteractSystem(this);  this.interactSystem.init();
+
+    if (typeof FogSystem !== 'undefined' && this.gridSystem) {
+        const _fg = this.gridSystem;
+        this.fogSystem = new FogSystem(this, _fg.cellSize, _fg.cols * _fg.cellSize, _fg.rows * _fg.cellSize, _fg.originX || 0, _fg.originY || 0);
+    }
+
+    this.events.on('monster_killed', (mx, my, dropRate) => {
+        if (Math.random() <= dropRate) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 5 + Math.random() * 10;
+            let targetX = mx + Math.cos(angle) * radius;
+            let targetY = my + Math.sin(angle) * radius;
+            if (this.wallRects) {
+                for (const w of this.wallRects) {
+                    if (w.bottom > my - 14 && w.top < my + 14 && targetX > w.left - 10 && targetX < w.right + 10) {
+                        targetX = (mx <= (w.left + w.right) / 2) ? w.left - 10 : w.right + 10;
+                    }
+                }
+                let nearestFloorY = Infinity;
+                for (const w of this.wallRects) {
+                    if (targetX >= w.left && targetX <= w.right && w.top >= my - 4) {
+                        if (w.top < nearestFloorY) nearestFloorY = w.top;
+                    }
+                }
+                if (nearestFloorY === Infinity) {
+                    targetX = mx; targetY = my;
+                } else {
+                    targetY = nearestFloorY - 12;
+                }
+                for (const w of this.wallRects) {
+                    if (targetX > w.left - 10 && targetX < w.right + 10 && targetY > w.top - 10 && targetY < w.bottom + 10) {
+                        targetX = mx; targetY = my; break;
+                    }
+                }
+            }
+            const tex = this.textures.exists('Crystal') ? 'Crystal' : 'drop_crystal_img';
+            const c = this.add.image(mx, my, tex);
+            if (tex === 'Crystal') c.setDisplaySize(20, 20);
+            c.setDepth(8);
+            if (this.uiCam) this.uiCam.ignore(c);
+            c._isDroppedCrystal = true;
+            c._pickupReadyAt = this.time.now + 500;
+            c.active = true;
+            this.droppedCrystals.add(c);
+            this.tweens.add({ targets: c, x: targetX, duration: 350, ease: 'Linear' });
+            this.tweens.add({ targets: c, angle: 360, duration: 350, ease: 'Linear' });
+            const peakY = Math.min(my, targetY) - 30;
+            this.tweens.add({
+                targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
+                onComplete: () => this.tweens.add({
+                    targets: c, y: targetY,
+                    duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                    ease: 'Quad.easeIn',
+                    onComplete: () => { c.angle = 0; }
+                })
             });
         }
-        this.cameras.main.setZoom(2);
-        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-        this._updateChunkCamera();  // 初始化镜头到出生 chunk
+    });
 
-        // 鼠标
-        const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
-        this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(999999).setScrollFactor(0);
-        { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }   // (用户修复) 创建即归位 — 防地图刚显示时光标在 (0,0) 闪没一瞬
-        if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
-        this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
-        this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
-        this.input.on('pointermove', (pointer) => {
-            if (!this.crosshair) return;
-            this.crosshair.setPosition(pointer.x, pointer.y);
-            this.leftHandIndicator.setPosition(pointer.x - 22, pointer.y);
-            this.rightHandIndicator.setPosition(pointer.x + 22, pointer.y);
-        });
-        this.game.canvas.style.cursor = 'none';
+    this.events.on('slime_split', (x, y) => {
+        for (let i = 0; i < 2; i++) {
+            const mini = new CrystalSlime(this, x + (i === 0 ? -20 : 20), y - 10, true);
+            this.slimes.add(mini);
+            if (mini.setDepth) mini.setDepth(10);
+            if (this.uiCam) { try { this.uiCam.ignore(mini); } catch(e) {} }
+            this.physics.add.collider(mini, this.walls);
+        }
+    });
 
-        // pointerdown
-        this.input.on('pointerdown', (pointer) => {
-            if (!this.player.body || this.isPlayerStunned || this.isDead) return;
-            if (this._cinematicLock) return;
-            if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
-            if (this.backpackSystem?.isOpen || this.settingsSystem?.isOpen || this.creativeSystem?.isOpen) return;
-            if (this.dialogSystem?.isOpen || this.guideSystem?.isOpen) return;
-            if (this._suppressNextClick) {
-                this._suppressNextClick = false;
-                return;
+    this._chunks = [];
+    this._currentChunkId = null;
+
+    this.cameras.main.setZoom(1.8);
+    this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
+
+    this.cameraSystem = new CameraSystem(this.cameras.main, this.player);
+    this.uiCam = this.cameraSystem.setupUICamera(this);
+
+    try {
+        this.cameras.main.ignore(this.crosshair);
+        this.cameras.main.ignore(this.leftHandIndicator);
+        this.cameras.main.ignore(this.rightHandIndicator);
+    } catch(e) {}
+
+    this.time.delayedCall(100, () => {
+        if (this.hudSystem && this.hudSystem.displayGroup && typeof this.hudSystem.displayGroup.getChildren === 'function') {
+            this.hudSystem.displayGroup.getChildren().forEach(item => {
+                item.setScrollFactor(0);
+                this.cameras.main.ignore(item);
+            });
+        }
+    });
+
+    this._cfgConvMin = 500;
+    this._cfgConvMax = 830;
+    this._cfgArenaX  = 3350;
+    this._cfgBossX   = 4050;
+    this._cfgBossY   = 150;
+    this._cfgVictoryX = 5880;
+    this._cfgVictoryY = 300;
+
+    const cursorTex = this.textures.exists('Mouse_cursor') ? 'Mouse_cursor' : 'crosshair_custom';
+    this.crosshair          = this.add.sprite(0, 0, cursorTex).setDepth(999999).setScrollFactor(0);
+    { const _p0 = this.input && this.input.activePointer; if (_p0) this.crosshair.setPosition(_p0.x, _p0.y); }
+    if (cursorTex !== 'Mouse_cursor') this.crosshair.setTint(0xffff00);
+    this.leftHandIndicator  = this.add.sprite(0, 0, 'left_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
+    this.rightHandIndicator = this.add.sprite(0, 0, 'right_hand_icon').setDepth(999998).setVisible(false).setScrollFactor(0);
+    this.input.on('pointermove', (pointer) => {
+        if (!this.crosshair) return;
+        this.crosshair.setPosition(pointer.x, pointer.y);
+        this.leftHandIndicator.setPosition(pointer.x - 22, pointer.y);
+        this.rightHandIndicator.setPosition(pointer.x + 22, pointer.y);
+    });
+    this.game.canvas.style.cursor = 'none';
+
+    this.input.on('pointerdown', (pointer) => {
+        if (sz6_dialogueState === 1) {
+            sz6_currentLine++;
+            if (sz6_currentLine >= sz6_dialogueLines.length) {
+                this.finishDialogue();
+            } else {
+                sz6_dialogueText.setText(sz6_dialogueLines[sz6_currentLine]);
             }
-            if (this._isClickOnHUDButton(pointer)) return;
+            return;
+        }
+        if (!this.player.body || this.isPlayerStunned || this.isDead) return;
+        if (this._cinematicLock) return;
+        if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
+        if (this.backpackSystem?.isOpen || this.settingsSystem?.isOpen || this.creativeSystem?.isOpen) return;
+        if (this.dialogSystem?.isOpen || this.guideSystem?.isOpen) return;
+        if (this._suppressNextClick) {
+            this._suppressNextClick = false;
+            return;
+        }
+        if (this._isClickOnHUDButton(pointer)) return;
 
-            let item = this.inventorySystem?.getActiveItem?.();
-            let holdingPickaxe = item && item.type === 'pickaxe';
-            let side = this.player.pState?.activeHand;
-            let pick = side === 'left' ? this.pick1 : this.pick2;
+        let item = this.inventorySystem?.getActiveItem?.();
+        let holdingPickaxe = item && item.type === 'pickaxe';
+        let side = this.player.pState?.activeHand;
+        let pick = side === 'left' ? this.pick1 : this.pick2;
 
-            if (pointer.button === 2) {
-                if (holdingPickaxe && this._pickaxeUpgraded) {
-                    pick.state === 'idle' ? this.throwSystem.releaseThrow(pointer) : this.recallSystem.startRecall(pick);
-                }
-            } else if (pointer.button === 0) {
-                if (holdingPickaxe && pick.state === 'attached' && this._pickaxeUpgraded) {
-                    this.grappleSystem.startZip(pick);
-                } else {
-                    if (this.meleeSystem.execute()) {
-                        this._checkMeleeOnCrystalOres();
-                    }
+        if (pointer.button === 2) {
+            if (holdingPickaxe && this._pickaxeUpgraded) {
+                pick.state === 'idle' ? this.throwSystem.releaseThrow(pointer) : this.recallSystem.startRecall(pick);
+            }
+        } else if (pointer.button === 0) {
+            if (holdingPickaxe && pick.state === 'attached' && this._pickaxeUpgraded) {
+                this.grappleSystem.startZip(pick);
+            } else {
+                if (this.meleeSystem.execute()) {
+                    this._checkMeleeOnCrystalOres();
                 }
             }
-        });
+        }
+    });
 
-        // UI Camera
-        this.cameraSystem = new CameraSystem(this.cameras.main, this.player);
-        this.uiCam = this.cameraSystem.setupUICamera(this);
+    this._applyInheritedState();
+    if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);
 
-        // 强制 mainCam ignore crosshair（防止 cameraSystem 顺序问题导致双鼠标）
-        try {
-            this.cameras.main.ignore(this.crosshair);
-            this.cameras.main.ignore(this.leftHandIndicator);
-            this.cameras.main.ignore(this.rightHandIndicator);
-        } catch(e) {}
+    this._cinematicLock = true;
+    this.cameras.main.fadeIn(800);
+    this.time.delayedCall(900, () => {
+        this._cinematicLock = false;
+    });
+    setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
+}
 
-        // 继承 Tutorial 状态
-        this._applyInheritedState();
-        if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);   // 进入区域自动存档
-
-        // 进入剧情过渡
-        this._cinematicLock = true;
-        this.cameras.main.fadeIn(800);
-        this.time.delayedCall(900, () => {
-            this._cinematicLock = false;
-        });
-        // (用户) 兜底: 解锁用的是场景时钟, 进场窗口期时钟若被暂停 (guide 弹窗等) 回调会冻住 → 键盘永久失灵.
-        //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁
-        setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
+    buildCaveDecorations() {
+        // (合并) 队友代码引用此方法但项目中原本不存在 → 空实现避免崩溃 (背景装饰可后补)
     }
 
     _applyInheritedState() {
@@ -680,183 +713,198 @@ class SafeZone5Scene extends MainGameScene {
         this.ropeLength1 = 0; this.ropeLength2 = 0;
     }
 
-    update(time, delta) {
-        if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
-        if (!this.player.body) return;
+update(time, delta) {
+    if (this._uiPaused) return;   
+    if (!this.player.body) return;
 
-        // Hint + Chest + CrystalNpc update (阶段 1+2+7)
-        if (this._hints) this._hints.forEach(h => h.update());
-        if (this._chests) this._chests.forEach(c => c.update());
-        if (this._crystalNpcs) this._crystalNpcs.forEach(n => n.update());
+    if (this._hints) this._hints.forEach(h => h.update());
+    if (this._chests) this._chests.forEach(c => c.update());
+    if (this._crystalNpcs) this._crystalNpcs.forEach(n => n.update());
 
-        // (SZ5: Boss intro 已删 — 占位框架)
+    let paused = this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm;
 
+    if (this.dashCooldown > 0)  this.dashCooldown  -= delta;
+    if (this.meleeCooldown > 0) this.meleeCooldown -= delta;
 
-        // (SZ5: Golem reset 已删 — 占位框架)
+    let pointer = this.input.activePointer;
+    if (this.crosshair) this.crosshair.setPosition(pointer.x, pointer.y);
+    if (this.leftHandIndicator) this.leftHandIndicator.setPosition(pointer.x - 22, pointer.y);
+    if (this.rightHandIndicator) this.rightHandIndicator.setPosition(pointer.x + 22, pointer.y);
 
+    if (this.crosshair) this.crosshair.setVisible(!this._cssCursorOverlap);   
 
+    if (this.healthSystem) this.healthSystem.update(delta);
+    if (this.diseaseSystem) this.diseaseSystem.update(delta);
+    if (this.interactSystem) this.interactSystem.update();
+    if (this.fogSystem) this.fogSystem.update(this.player.x, this.player.y);
 
-
-        let paused = this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm;
-
-        if (this.dashCooldown > 0)  this.dashCooldown  -= delta;
-        if (this.meleeCooldown > 0) this.meleeCooldown -= delta;
-
-        let pointer = this.input.activePointer;
-        if (this.crosshair) this.crosshair.setPosition(pointer.x, pointer.y);
-        if (this.leftHandIndicator) this.leftHandIndicator.setPosition(pointer.x - 22, pointer.y);
-        if (this.rightHandIndicator) this.rightHandIndicator.setPosition(pointer.x + 22, pointer.y);
-
-        if (this.crosshair) this.crosshair.setVisible(!this._cssCursorOverlap);   // (用户修复) 暂停也用精灵光标; 过场交接重叠期 (CSS 顶上时) 让位防双鼠标
-
-        if (this.healthSystem) this.healthSystem.update(delta);
-        if (this.diseaseSystem) this.diseaseSystem.update(delta);
-        if (this.interactSystem) this.interactSystem.update();
-        if (this.fogSystem) this.fogSystem.update(this.player.x, this.player.y);
-
-        // R 键切换网格
-        if (this.keyR && Phaser.Input.Keyboard.JustDown(this.keyR)) {
-            if (this._gridGraphics) {
-                this._gridGraphics.setVisible(!this._gridGraphics.visible);
+    if (this.keyR && Phaser.Input.Keyboard.JustDown(this.keyR)) {
+        if (this._gridGraphics) {
+            this._gridGraphics.setVisible(!this._gridGraphics.visible);
+        }
+    }
+    if (this._gridGraphics && this._gridGraphics.visible) {
+        const middleDown = this.input.activePointer.middleButtonDown();
+        if (middleDown && !this._middleClickPrev) {
+            this._gridCoordVisible = !this._gridCoordVisible;
+            if (!this._gridCoordVisible && this._gridCoordText) {
+                this._gridCoordText.destroy();
+                this._gridCoordText = null;
             }
         }
-        // 中键坐标显示（网格开启时）
-        if (this._gridGraphics && this._gridGraphics.visible) {
-            const middleDown = this.input.activePointer.middleButtonDown();
-            if (middleDown && !this._middleClickPrev) {
-                this._gridCoordVisible = !this._gridCoordVisible;
-                if (!this._gridCoordVisible && this._gridCoordText) {
-                    this._gridCoordText.destroy();
-                    this._gridCoordText = null;
-                }
+        this._middleClickPrev = middleDown;
+
+        if (this._gridCoordVisible) {
+            const ptr = this.input.activePointer;
+            const cam = this.cameras.main;
+            const wx = cam.scrollX + (ptr.x - cam.width / 2) / cam.zoom + cam.width / 2;
+            const wy = cam.scrollY + (ptr.y - cam.height / 2) / cam.zoom + cam.height / 2;
+            const gx = Math.floor(wx / 60);
+            const gy = Math.floor(wy / 60);
+            if (!this._gridCoordText) {
+                this._gridCoordText = this.add.text(0, 0, '', {
+                    fontSize: '18px', color: '#00ff00',
+                    fontFamily: '"VT323", monospace', align: 'center',
+                    stroke: '#000', strokeThickness: 3,
+                    backgroundColor: '#000000aa',
+                    padding: { x: 6, y: 3 }
+                }).setOrigin(0.5).setDepth(900);
+                if (this.uiCam) this.uiCam.ignore(this._gridCoordText);
             }
-            this._middleClickPrev = middleDown;
-
-            if (this._gridCoordVisible) {
-                const ptr = this.input.activePointer;
-                const cam = this.cameras.main;
-                const wx = cam.scrollX + (ptr.x - cam.width / 2) / cam.zoom + cam.width / 2;
-                const wy = cam.scrollY + (ptr.y - cam.height / 2) / cam.zoom + cam.height / 2;
-                const gx = Math.floor(wx / 32);
-                const gy = Math.floor(wy / 32);
-                if (!this._gridCoordText) {
-                    this._gridCoordText = this.add.text(0, 0, '', {
-                        fontSize: '18px', color: '#00ff00',
-                        fontFamily: '"VT323", monospace', align: 'center',
-                        stroke: '#000', strokeThickness: 3,
-                        backgroundColor: '#000000aa',
-                        padding: { x: 6, y: 3 }
-                    }).setOrigin(0.5).setDepth(900);
-                    if (this.uiCam) this.uiCam.ignore(this._gridCoordText);
-                }
-                this._gridCoordText.setPosition(wx, wy - 24);
-                this._gridCoordText.setText(`(${gx}, ${gy})\nworld:(${Math.floor(wx)}, ${Math.floor(wy)})`);
-            }
-        } else if (this._gridCoordText) {
-            this._gridCoordText.destroy();
-            this._gridCoordText = null;
-            this._gridCoordVisible = false;
+            this._gridCoordText.setPosition(wx, wy - 24);
+            this._gridCoordText.setText(`(${gx}, ${gy})\nworld:(${Math.floor(wx)}, ${Math.floor(wy)})`);
         }
+    } else if (this._gridCoordText) {
+        this._gridCoordText.destroy();
+        this._gridCoordText = null;
+        this._gridCoordVisible = false;
+    }
 
-        if (paused || this.isDead) return;
+    if (sz6_dialogueState === 0 && this.player.x > this._cfgConvMin && this.player.x < this._cfgConvMax && this.player.y > 700) {
+        sz6_dialogueState = 1;
+        this.playerCanMove = false;
+        this.player.body.setVelocity(0, 0);
+        sz6_dialogueBox.setVisible(true);
+        sz6_dialogueText.setVisible(true);
+        sz6_dialogueHint.setVisible(true);
+        sz6_skipHint.setVisible(true);
+        sz6_dialogueText.setText(sz6_dialogueLines[0]);
+    }
 
-        if (!this.isPlayerStunned && this.movementSystem) {
-            this.movementSystem.update(time, delta);
-        this._updateRealPickaxes(time, delta);
-        }
-
-        if (this.backpackSystem) {
-            const k = Phaser.Input.Keyboard;
-            if (this.keyZ && k.JustDown(this.keyZ)) this.backpackSystem.useQuickSlot(0);
-            if (this.keyX && k.JustDown(this.keyX)) this.backpackSystem.useQuickSlot(1);
-            if (this.keyC && k.JustDown(this.keyC)) this.backpackSystem.useQuickSlot(2);
-            if (this.keyB && k.JustDown(this.keyB)) {
-                if (!this.settingsSystem?.isOpen) this.backpackSystem.toggle();
-            }
-        }
-        if (this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) {
-            if (!this.backpackSystem?.isOpen) this.settingsSystem?.toggle();
-        }
-
-        if (this.inventorySystem) this.inventorySystem.update(delta);
-        if (this.dialogSystem) this.dialogSystem.update();
-        if (this.hudSystem && this.hudSystem.updateGuideButton) this.hudSystem.updateGuideButton();
-        // 怪物 AI — 用 MainGameScene 共用过滤系统 (距离 20×12 + 跨 chunk)
-        this._updateMonstersFiltered(time, delta);
-        // chunk 镜头切换
-        this._updateChunkCamera();
-        // platform guide 触发
-        this._checkPlatformGuide();
-        // 检查 pending respawns
-        this._checkPendingRespawns();
-        // checkpoint hint + E 交互
-        this._checkCheckpoint();
-        // Yellow_dirt 扩散
-        this._updateYellowDirtSpread(delta);
-        // 水晶磁吸拾取
-        if (this.droppedCrystals) {
-            this.droppedCrystals.getChildren().forEach(c => {
-                if (!c.active) return;
-                if (c._pickupReadyAt && this.time.now < c._pickupReadyAt) return;
-                if (c._flying) return;
-                const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y);
-                if (dist <= 160) {
-                    c._flying = true;
-                    if (c.body) c.body.enable = false;
-                    this.tweens.add({
-                        targets: c,
-                        x: () => this.player.x,
-                        y: () => this.player.y,
-                        duration: 250,
-                        ease: 'Cubic.easeIn',
-                        onUpdate: () => { if (c.scale > 0.5) c.scale -= 0.02; },
-                        onComplete: () => {
-                            c.destroy();
-                            if (this.hudSystem) this.hudSystem.addCrystal(1);
-                        }
-                    });
-                }
-            });
-        }
-
-        // 宝箱掉落物磁吸拾取 (阶段 2)
-        if (this._chestDrops && this._chestDrops.length > 0) {
-            this._chestDrops = this._chestDrops.filter(d => d && d.active);
-            this._chestDrops.forEach(d => {
-                if (!d.active || d._flying) return;
-                if (d._pickupReadyAt && this.time.now < d._pickupReadyAt) return;
-                const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, d.x, d.y);
-                if (dist <= 160) {
-                    d._flying = true;
-                    this.tweens.add({
-                        targets: d,
-                        x: () => this.player.x,
-                        y: () => this.player.y,
-                        duration: 250,
-                        ease: 'Cubic.easeIn',
-                        onUpdate: () => { if (d.scale > 0.5) d.scale -= 0.02; },
-                        onComplete: () => {
-                            // 根据 kind/type 入库
-                            if (d._dropKind === 'crystal') {
-                                if (this.hudSystem) this.hudSystem.addCrystal(1);
-                            } else if (d._dropKind === 'potion') {
-                                const t = d._dropType;
-                                if (t === 'life_potion') {
-                                    // life_potion 没 Z/X/C 槽, 落地即生效 +1 爱心
-                                    if (this.healthSystem) this.healthSystem.addHeart(1);
-                                } else if (t === 'healing_potion' || t === 'health_potion') {
-                                    // 进 InventorySystem, 自动触发 BackpackSystem.refreshQuick
-                                    if (this.inventorySystem) this.inventorySystem.addItem(t, 1);
-                                }
-                            }
-                            d.destroy();
-                        }
-                    });
-                }
-            });
+    if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
+        sz6_arenaLocked = true;
+        sz6_dialogueState = 6;
+        this.playerCanMove = false;
+        this.player.setPosition(3320, 700);
+        this.cameras.main.setBounds(3280, 0, 1500, 1200);
+        sz6_bossBarrier.setVisible(true);
+        this.physics.world.enable(sz6_bossBarrier);
+        if (typeof BossManager !== 'undefined') {
+            BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, () => {}, true);
         }
     }
 
+    if (sz6_arenaLocked && typeof BossManager !== 'undefined') {
+        BossManager.update(time, delta, this.player);
+        if (!sz6_bossBeatenSequence && (!BossManager.entity || !BossManager.entity.active)) {
+            sz6_bossBeatenSequence = true;
+            this.revealEndgamePassage();
+        }
+    }
+
+    if (paused || this.isDead) return;
+
+    if (this.playerCanMove) {
+        if (!this.isPlayerStunned && this.movementSystem) {
+            this.movementSystem.update(time, delta);
+            this._updateRealPickaxes(time, delta);
+        }
+    } else {
+        this.player.body.setVelocityX(0);
+        this.player.anims.play('idle', true);
+    }
+
+    if (this.backpackSystem) {
+        const k = Phaser.Input.Keyboard;
+        if (this.keyZ && k.JustDown(this.keyZ)) this.backpackSystem.useQuickSlot(0);
+        if (this.keyX && k.JustDown(this.keyX)) this.backpackSystem.useQuickSlot(1);
+        if (this.keyC && k.JustDown(this.keyC)) this.backpackSystem.useQuickSlot(2);
+        if (this.keyB && k.JustDown(this.keyB)) {
+            if (!this.settingsSystem?.isOpen) this.backpackSystem.toggle();
+        }
+    }
+    if (this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) {
+        if (!this.backpackSystem?.isOpen) this.settingsSystem?.toggle();
+    }
+
+    if (this.inventorySystem) this.inventorySystem.update(delta);
+    if (this.dialogSystem) this.dialogSystem.update();
+    if (this.hudSystem && this.hudSystem.updateGuideButton) this.hudSystem.updateGuideButton();
+    this._updateMonstersFiltered(time, delta);
+    this._updateChunkCamera();
+    this._checkPlatformGuide();
+    this._checkPendingRespawns();
+    this._checkCheckpoint();
+    this._updateYellowDirtSpread(delta);
+
+    if (this.droppedCrystals) {
+        this.droppedCrystals.getChildren().forEach(c => {
+            if (!c.active) return;
+            if (c._pickupReadyAt && this.time.now < c._pickupReadyAt) return;
+            if (c._flying) return;
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y);
+            if (dist <= 160) {
+                c._flying = true;
+                if (c.body) c.body.enable = false;
+                this.tweens.add({
+                    targets: c,
+                    x: () => this.player.x,
+                    y: () => this.player.y,
+                    duration: 250,
+                    ease: 'Cubic.easeIn',
+                    onUpdate: () => { if (c.scale > 0.5) c.scale -= 0.02; },
+                    onComplete: () => {
+                        c.destroy();
+                        if (this.hudSystem) this.hudSystem.addCrystal(1);
+                    }
+                });
+            }
+        });
+    }
+
+    if (this._chestDrops && this._chestDrops.length > 0) {
+        this._chestDrops = this._chestDrops.filter(d => d && d.active);
+        this._chestDrops.forEach(d => {
+            if (!d.active || d._flying) return;
+            if (d._pickupReadyAt && this.time.now < d._pickupReadyAt) return;
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, d.x, d.y);
+            if (dist <= 160) {
+                d._flying = true;
+                this.tweens.add({
+                    targets: d,
+                    x: () => this.player.x,
+                    y: () => this.player.y,
+                    duration: 250,
+                    ease: 'Cubic.easeIn',
+                    onUpdate: () => { if (d.scale > 0.5) d.scale -= 0.02; },
+                    onComplete: () => {
+                        if (d._dropKind === 'crystal') {
+                            if (this.hudSystem) this.hudSystem.addCrystal(1);
+                        } else if (d._dropKind === 'potion') {
+                            const t = d._dropType;
+                            if (t === 'life_potion') {
+                                if (this.healthSystem) this.healthSystem.addHeart(1);
+                            } else if (t === 'healing_potion' || t === 'health_potion') {
+                                if (this.inventorySystem) this.inventorySystem.addItem(t, 1);
+                            }
+                        }
+                        d.destroy();
+                    }
+                });
+            }
+        });
+    }
+}
     _updateYellowDirtSpread(delta) {
         const sp = this._yellowDirtSpread;
         if (!sp || !sp.active) return;
