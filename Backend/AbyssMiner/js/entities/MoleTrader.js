@@ -15,9 +15,21 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(true);
         this.setGravityY(1750);
 
-        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig (assets/audio/NPC/MoleDig.wav)
+        // (用户) trader_dig 动画期间 MoleDig 循环播 (声先播完就重头, 不留静音); 动画完成即停
         this.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
-            if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(scene, 'MoleDig');
+            if (!anim || anim.key !== 'trader_dig') return;
+            if (typeof AudioSystem === 'undefined' || !scene.cache.audio.exists('MoleDig')) return;
+            try {
+                if (this._digLoopSnd) { this._digLoopSnd.stop(); this._digLoopSnd.destroy(); }
+                this._digLoopSnd = scene.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                this._digLoopSnd.play();
+            } catch (e) { this._digLoopSnd = null; }
+        });
+        this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
+            if (anim && anim.key === 'trader_dig' && this._digLoopSnd) {
+                try { this._digLoopSnd.stop(); this._digLoopSnd.destroy(); } catch (e) {}
+                this._digLoopSnd = null;
+            }
         });
         // (用户) 出场钻地: 钻地期间冻结物理 (关 body+重力) 防掉出世界; 钻完落回出生点站立
         // (用户) 出生只站立, 不自动钻地 (避免一进场远处就响钻地声); 钻地改为玩家靠近时触发 (见 preUpdate)

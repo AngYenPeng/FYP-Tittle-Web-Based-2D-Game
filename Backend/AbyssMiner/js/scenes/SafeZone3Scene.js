@@ -2088,11 +2088,23 @@ class SafeZone3Scene extends MainGameScene {
             s.moleTrader.body.setAllowGravity(false);
             s.moleTrader.body.enable = false;
         }
-        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig. 文件须在 assets/audio/NPC/MoleDig.wav
+        // (用户) trader_dig 动画期间 MoleDig 循环播 (声先播完就重头, 不留静音); 动画完成即停. 文件须在 assets/audio/NPC/MoleDig.wav
         if (s.moleTrader && !s.moleTrader._digSndHooked) {
             s.moleTrader._digSndHooked = true;
             s.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
-                if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'MoleDig');
+                if (!anim || anim.key !== 'trader_dig') return;
+                if (typeof AudioSystem === 'undefined' || !s.cache.audio.exists('MoleDig')) return;
+                try {
+                    if (s.moleTrader._digLoopSnd) { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); }
+                    s.moleTrader._digLoopSnd = s.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                    s.moleTrader._digLoopSnd.play();
+                } catch (e) { s.moleTrader._digLoopSnd = null; }
+            });
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
+                if (anim && anim.key === 'trader_dig' && s.moleTrader._digLoopSnd) {
+                    try { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); } catch (e) {}
+                    s.moleTrader._digLoopSnd = null;
+                }
             });
         }
         if (s.anims.exists('trader_dig')) {

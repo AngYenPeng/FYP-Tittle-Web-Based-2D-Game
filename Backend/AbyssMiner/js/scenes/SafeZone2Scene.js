@@ -1247,11 +1247,23 @@ class SafeZone2Scene extends MainGameScene {
         this.tweens.add({ targets: cam, zoom: 2.0, duration: 600, ease: 'Quad.easeOut' });
         cam.pan(finalX, finalY, 600, 'Quad.easeOut');
 
-        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig. 文件须在 assets/audio/NPC/MoleDig.wav
+        // (用户) trader_dig 动画期间 MoleDig 循环播 (声先播完就重头, 不留静音); 动画完成即停. 文件须在 assets/audio/NPC/MoleDig.wav
         if (this.moleTrader && !this.moleTrader._digSndHooked) {
             this.moleTrader._digSndHooked = true;
             this.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
-                if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'MoleDig');
+                if (!anim || anim.key !== 'trader_dig') return;
+                if (typeof AudioSystem === 'undefined' || !this.cache.audio.exists('MoleDig')) return;
+                try {
+                    if (this.moleTrader._digLoopSnd) { this.moleTrader._digLoopSnd.stop(); this.moleTrader._digLoopSnd.destroy(); }
+                    this.moleTrader._digLoopSnd = this.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                    this.moleTrader._digLoopSnd.play();
+                } catch (e) { this.moleTrader._digLoopSnd = null; }
+            });
+            this.moleTrader.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
+                if (anim && anim.key === 'trader_dig' && this.moleTrader._digLoopSnd) {
+                    try { this.moleTrader._digLoopSnd.stop(); this.moleTrader._digLoopSnd.destroy(); } catch (e) {}
+                    this.moleTrader._digLoopSnd = null;
+                }
             });
         }
         // 商人钻出来动画: 反向播 trader_dig (从地底升起)
