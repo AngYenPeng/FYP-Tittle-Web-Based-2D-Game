@@ -422,9 +422,12 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                 const groundY = 23 * 32 - 32;
                 const warnY   = groundY - 64;
                 const fistY   = groundY - 64;
-                const warning = sc.add.circle(targetX, warnY, 50, 0xff0000, 0.45)
-                    .setStrokeStyle(2, 0xff3333).setDepth(18);
-                if (sc.uiCam) try { sc.uiCam.ignore(warning); } catch(e) {}
+                let warning = null;
+                if (!(window.AbyssDiff && AbyssDiff.mode === 'extreme')) {   // (用户) EXTREME 不给红色预警, 玩家拼反应
+                    warning = sc.add.circle(targetX, warnY, 50, 0xff0000, 0.45)
+                        .setStrokeStyle(2, 0xff3333).setDepth(18);
+                    if (sc.uiCam) try { sc.uiCam.ignore(warning); } catch(e) {}
+                }
                 if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(sc, 'ReadySmash');
                 sc.time.delayedCall(400 * mul, () => {
                     if (warning && warning.scene) warning.destroy();
@@ -510,10 +513,13 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                 if (this.hp <= 0) { hand._busy = false; return; }
 
                 // ===== 8. 红色警告 — 覆盖整个 sweepRange (256 px), 跟 sweep 同高度 =====
-                const warning = sc.add.rectangle(startX, armY, sweepRange, 60, 0xff0000, 0.4)
-                    .setOrigin(sweepDirRight ? 0 : 1, 0.5)
-                    .setStrokeStyle(2, 0xff3333).setDepth(18);
-                if (sc.uiCam) try { sc.uiCam.ignore(warning); } catch(e) {}
+                let warning = null;
+                if (!(window.AbyssDiff && AbyssDiff.mode === 'extreme')) {   // (用户) EXTREME 不给红色预警, 玩家拼反应
+                    warning = sc.add.rectangle(startX, armY, sweepRange, 60, 0xff0000, 0.4)
+                        .setOrigin(sweepDirRight ? 0 : 1, 0.5)
+                        .setStrokeStyle(2, 0xff3333).setDepth(18);
+                    if (sc.uiCam) try { sc.uiCam.ignore(warning); } catch(e) {}
+                }
                 if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(sc, 'ReadySwipe');
 
                 sc.time.delayedCall(400 * mul, () => {

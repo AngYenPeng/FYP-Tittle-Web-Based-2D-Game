@@ -83,6 +83,7 @@ class VolatileCrystal extends Phaser.Physics.Arcade.Sprite {
     explode() {
         if (this.hasExploded) return;
         this.hasExploded = true;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'CrystalExplode');   // (用户) 爆炸瞬间播 1 次
         // 伤害/连锁/掉落事件立刻发 (handleCrystalExplosion 当场读坐标, 时机与旧版一致)
         // (用户修复) 直接调用场景处理函数 — 旧事件监听只有 GameScene 注册过, SZ1/2/3/4/5 爆炸全是空响 (不扣血/无冲击圈/无连锁)
         if (this.scene.handleCrystalExplosion) this.scene.handleCrystalExplosion(this.x, this.y, this.explodeRadius);

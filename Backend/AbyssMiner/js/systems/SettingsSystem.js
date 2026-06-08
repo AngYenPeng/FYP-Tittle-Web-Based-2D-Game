@@ -466,7 +466,7 @@ class SettingsSystem {
         const s = this.scene;
         this._gameItems = [];
 
-        if (!this.titleMode) {   // (用户) 标题界面没有"保存并退出" (还没开始玩游戏)
+        if (!this.titleMode) {   // (用户) 标题界面没有"保存并退出" (还没开始玩游戏) (还没开始玩游戏)
             const saveQuit = s.add.text(0, 20, '[ Save & Exit to Title ]', {
                 fontSize: '24px', color: '#ffcc55', fontFamily: '"VT323", monospace',
                 stroke: '#000', strokeThickness: 3
@@ -493,15 +493,13 @@ class SettingsSystem {
     }
 
     _saveAndExit() {
-        // (用户) Save&Exit 不抓当前状态 — 存档 = 最近一次快照 (进入新图一次 + 完全死亡 FALLEN)
-        this._saveSettings();
-        // 注意: 不在这里抓当前状态 — 存档以"进入区域时"的快照为准 (见各场景 autoSave),
-        // 否则中途捡的东西会被存进去, 但 resume 又会刷新世界 → 可无限刷. 这里只负责退出.
+        // (用户) 此按钮【只退出, 不存任何游戏进度】— 存档全靠"进入新图自动存 1 次 + 死亡(FALLEN)存"负责.
+        //   设置(音量/画质)在每次改动时已实时存 (见各 _saveSettings 调用), 这里无需再存.
+        //   所以退出后 resume = 该图最近一次"进图快照" → 剧情/墙皮等按首次进房重来.
         this.close();
-        // 淡出到 TitleScene
+        // 淡出回 TitleScene (不 physics.pause: Arcade world 跨场景存活, isPaused 残留会冻结重进的场景)
         this.scene.cameras.main.fadeOut(600, 0, 0, 0, (cam, prog) => {
             if (prog === 1) {
-                // (用户) 不再 physics.pause() — Arcade world 跨场景重启存活, isPaused 残留会让重进的场景物理冻结
                 this.scene.scene.start('TitleScene');
             }
         });

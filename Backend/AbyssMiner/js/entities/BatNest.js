@@ -115,6 +115,7 @@ class BatNest {
         if (bat.body) bat.body.setAllowGravity(false);  // 蝙蝠无重力 (必须在 add 之后, 否则被物理组默认 allowGravity:true 覆盖)
         if (s.uiCam) { try { s.uiCam.ignore(bat); } catch (e) {} }
         this._spawned.push(bat);
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'BatNest');   // (用户) 每生成 1 只蝙蝠播 1 次
 
         // 召唤小特效 (一圈扩散光环)
         if (s.add) {

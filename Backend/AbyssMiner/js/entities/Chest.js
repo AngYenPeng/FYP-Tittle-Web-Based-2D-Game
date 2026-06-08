@@ -108,10 +108,11 @@ class Chest {
         const dy = this.scene.player.y - this.y;
         const inRange = (dx*dx + dy*dy) < this.interactRange * this.interactRange;
 
-        if (inRange) this._showHint();
+        const _inCin = this.scene._cinematicLock || (this.scene.dialogSystem && this.scene.dialogSystem.isOpen);   // (用户) 剧情/对话期间不可交互, 也不显示 E 提示
+        if (inRange && !_inCin) this._showHint();
         else this._hideHint();
 
-        if (inRange && !this._isOpen && this.scene.keyE && Phaser.Input.Keyboard.JustDown(this.scene.keyE)) {
+        if (inRange && !_inCin && !this._isOpen && this.scene.keyE && Phaser.Input.Keyboard.JustDown(this.scene.keyE)) {
             this._isOpen = true;
             this._open();
         }

@@ -13,6 +13,8 @@ class SafeZone25Scene extends SafeZone3Scene {
 
     init(data) {
         this._inheritedData = data || {};
+        // (用户) 每次进图=全新第一次: 清掉残留瞬态 (实例复用会串场)
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._sz25ShakeStarted = false;
     }
 
     create() {

@@ -13,7 +13,8 @@
  */
 class PetSpider extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
-        const tex = scene.textures.exists('Small_spider_run') ? 'Small_spider_run' : 'spider_img';
+        const tex = scene.textures.exists('Pet_spider_run') ? 'Pet_spider_run'
+                  : (scene.textures.exists('Small_spider_run') ? 'Small_spider_run' : 'spider_img');
         super(scene, x, y, tex);
         scene.add.existing(this);
         scene.physics.add.existing(this);
@@ -29,7 +30,8 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         this._stillMs = 0;                  // 玩家静止累计 (上头计时)
         this._climbSide = null;
 
-        if (scene.anims.exists('small_spider_run')) { this.play('small_spider_run'); }
+        this._ensurePetAnims();
+        if (scene.anims.exists('Pet_spider_run')) { this.play('Pet_spider_run'); }
 
         // 与地形碰撞 (blocked 检测用)
         try { if (scene.walls)     scene.physics.add.collider(this, scene.walls); } catch (e) {}
@@ -59,15 +61,24 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         this.setFlipX(p.flipX);
     }
 
-    /** (用户) 静止姿态: 有 idle 动画就播, 没有就停在站立帧 (run 第 0 帧) */
+    /** (用户) 宠物专用动画用点现注册 — Pet_spider_run / Pet_spider_idle 不在各场景注册簇里, 这里按需建 (帧数随贴图自适应) */
+    _ensurePetAnims() {
+        const s = this.scene;
+        if (!s || !s.anims || !s.textures) return;
+        if (!s.anims.exists('Pet_spider_run') && s.textures.exists('Pet_spider_run')) {
+            try { const ft = s.textures.get('Pet_spider_run').frameTotal; s.anims.create({ key: 'Pet_spider_run', frames: s.anims.generateFrameNumbers('Pet_spider_run', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 12, repeat: -1 }); } catch (e) {}
+        }
+        if (!s.anims.exists('Pet_spider_idle') && s.textures.exists('Pet_spider_idle')) {
+            try { const ft = s.textures.get('Pet_spider_idle').frameTotal; s.anims.create({ key: 'Pet_spider_idle', frames: s.anims.generateFrameNumbers('Pet_spider_idle', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 8, repeat: -1 }); } catch (e) {}
+        }
+    }
+
+    /** (用户) 静止姿态: 有 Pet_spider_idle 动画就播, 没有就停在站立帧 */
     _idlePose() {
         if (!this.anims) return;
-        // (用户修复) 动画用点现注册 — small_spider_idle 只在主矿洞 create 簇建, SZ/Hub 场景不跑那段 → 宠物没 idle
-        if (this.scene && this.scene.anims && !this.scene.anims.exists('small_spider_idle') && this.scene.textures.exists('Small_spider_idle')) {
-            try { this.scene.anims.create({ key: 'small_spider_idle', frames: this.scene.anims.generateFrameNumbers('Small_spider_idle', { start: 0, end: 5 }), frameRate: 8, repeat: -1 }); } catch (e) {}
-        }
-        if (this.scene && this.scene.anims.exists('small_spider_idle')) {
-            if (!this.anims.currentAnim || this.anims.currentAnim.key !== 'small_spider_idle') this.play('small_spider_idle');
+        this._ensurePetAnims();   // (用户修复) 用点现注册 — 注册簇只在主矿洞 create 跑, SZ/Hub 场景缺
+        if (this.scene && this.scene.anims.exists('Pet_spider_idle')) {
+            if (!this.anims.currentAnim || this.anims.currentAnim.key !== 'Pet_spider_idle') this.play('Pet_spider_idle');
         } else {
             this.anims.stop();
             this.setFrame(0);
@@ -135,9 +146,9 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         }
 
         // ── follow ──
-        if (this.anims && this.scene.anims.exists('small_spider_run') &&
-            (!this.anims.currentAnim || this.anims.currentAnim.key !== 'small_spider_run' || !this.anims.isPlaying)) {
-            this.play('small_spider_run');
+        if (this.anims && this.scene.anims.exists('Pet_spider_run') &&
+            (!this.anims.currentAnim || this.anims.currentAnim.key !== 'Pet_spider_run' || !this.anims.isPlaying)) {
+            this.play('Pet_spider_run');
         }
         const dir = dx >= 0 ? 1 : -1;
         const wallAhead = (dir > 0 && b.blocked.right) || (dir < 0 && b.blocked.left);

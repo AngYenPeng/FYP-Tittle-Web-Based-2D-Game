@@ -151,6 +151,9 @@ class SafeZone1Scene extends MainGameScene {
     init(data) {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
+        // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
+        this._sz1MerchantCutsceneDone = false; this._sz1MerchantCutsceneStarted = false; this._sz1MerchantPending = false;
     }
 
     preload() {
@@ -640,7 +643,7 @@ class SafeZone1Scene extends MainGameScene {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
+        // (用户) 不再恢复剧情完成标志 — 每次进图(含读档)所有剧情/房间状态都重新刷新, 哪怕之前看过 (老档残留的标志也忽略)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
@@ -659,7 +662,7 @@ class SafeZone1Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 — flag 跟着场景跨过来, 同时强制激活腐蚀度条 + 重排 layout
-        if (data.hasHealthDetector) {
+        if (false) {   // (用户) detector 不再随存档/场景恢复 — 每次进图重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -1081,11 +1084,14 @@ class SafeZone1Scene extends MainGameScene {
                 this.player.play('idle', true);
             }
             // 轮询: 等 checkpoint 不在 activating + 对话也关掉
+            let _waitTries = 0;
             const waitCP = this.time.addEvent({
                 delay: 200, loop: true, callback: () => {
+                    _waitTries++;
                     const cpDone = !cp._activating;
                     const noDialog = !(this.dialogSystem && this.dialogSystem.isOpen);
-                    if (cpDone && noDialog) {
+                    // (用户) 25*200=5s 安全超时 — 万一 checkpoint 卡住也强制开剧情, 绝不把玩家永久锁死
+                    if ((cpDone && noDialog) || _waitTries >= 25) {
                         waitCP.remove();
                         this._sz1MerchantPending = false;
                         this._startSZ1MerchantCutscene();  // 会重设 _cinematicLock

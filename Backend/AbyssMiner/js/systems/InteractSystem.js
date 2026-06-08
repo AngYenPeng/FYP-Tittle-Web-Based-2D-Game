@@ -36,6 +36,9 @@ class InteractSystem {
         // HUD 确认面板开着 → 不响应
         if (s.hudSystem && s.hudSystem.gamePausedByConfirm) return;
 
+        // (用户) 剧情/对话期间 E 不触发任何交互 (对话推进与选项由 DialogSystem 自行处理; 商店开着时上面已先处理关店)
+        if (s._cinematicLock || (s.dialogSystem && s.dialogSystem.isOpen)) return;
+
         // Checkpoint 神像 — 优先处理（不受怪物附近限制）; 激活后不再响应 E
         if (s._checkpoint && !s._checkpoint._buried && !s._checkpoint.activated) {
             const cp = s._checkpoint;

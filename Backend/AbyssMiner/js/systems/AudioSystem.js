@@ -289,6 +289,12 @@ AudioSystem.MANIFEST = {
     'PickaxeHitAir':    'Miner/PickaxeHitAir.wav',
     'PickaxeHitThings': 'Miner/PickaxeHitThings.wav',
     'Walking':          'Miner/Walking.wav',
+    // (用户) 新增音效
+    'BatNest':        'Batboss/BatNest.wav',       // 每生成 1 只蝙蝠播 1 次
+    'CrystalExplode': 'Mobs/CrystalExplode.wav',   // 水晶 mob 爆炸瞬间播 1 次
+    'Heal':           'Miner/Heal.wav',            // 治疗动画出现时播 1 次 (必须播完才能再播)
+    'HeartBreak':     'Miner/HeartBreak.wav',      // 还剩 ≥2 颗心时, 碎心动画开始播放就播
+    'LastLifeBreak':  'Miner/LastLifeBreak.wav',   // 剩最后 1 颗心碎裂, 动画开始 1 秒后播
 };
 
 if (typeof window !== 'undefined') window.AudioSystem = AudioSystem;

@@ -94,24 +94,32 @@ class Checkpoint {
             this.sprite.play('checkpoint_activating');
             // 切纹理后再设 displaySize（确保 6 格宽 5 格高）
             this.sprite.setDisplaySize(this.w, this.h);
-            this.sprite.once('animationcomplete', () => {
+            // (用户) 激活完成处理 — 抽出供 animationcomplete + 安全兜底共用 (幂等, 已完成则不重复)
+            const _finishActivate = () => {
+                if (this.activated) return;
                 this._activating = false;
                 this.activated = true;
                 if (scene.anims.exists('checkpoint_activated')) {
-                    this.sprite.play('checkpoint_activated');
-                    this.sprite.setDisplaySize(this.w, this.h);
+                    try { this.sprite.play('checkpoint_activated'); this.sprite.setDisplaySize(this.w, this.h); } catch (e) {}
                 }
                 scene._activeCheckpoint = { x: this.x, y: this.y };
                 // 触发 Yellow_dirt 皮肤扩散（zone2 镜头内）
-                scene._yellowDirtSpread = {
-                    cx: this.x,
-                    cy: this.y,
-                    radius: 0,
-                    maxRadius: 1500,  // 够覆盖整个 zone2
-                    active: true
-                };
+                if (!scene._yellowDirtSpread) {
+                    scene._yellowDirtSpread = {
+                        cx: this.x,
+                        cy: this.y,
+                        radius: 0,
+                        maxRadius: 1500,  // 够覆盖整个 zone2
+                        active: true
+                    };
+                }
                 // (用户) "Checkpoint activated." 提示已取消 — 静默完成
-            });
+            };
+            this.sprite.once('animationcomplete', _finishActivate);
+            // (用户) 安全兜底: 万一 animationcomplete 没触发 (resume / 动画被打断), 到时强制完成 —
+            //   否则 _activating 永卡 true → 商人剧情 waitCP 永等 → 玩家被锁死且无剧情 (正是此 bug)
+            const _animMs = (22 / 12) * 1000 + 500;  // 22 帧 @12fps ≈ 1833ms + buffer
+            scene.time.delayedCall(_animMs, _finishActivate);
         } else {
             this._activating = false;
             this.activated = true;

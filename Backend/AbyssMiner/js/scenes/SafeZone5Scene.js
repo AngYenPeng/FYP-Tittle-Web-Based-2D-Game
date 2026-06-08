@@ -181,6 +181,8 @@ class SafeZone5Scene extends MainGameScene {
 
     init(data) {
         this._inheritedData = data || {};
+        // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
     }
 
     preload() {
@@ -595,7 +597,7 @@ create() {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
+        // (用户) 不再恢复剧情完成标志 — 每次进图(含读档)所有剧情/房间状态都重新刷新, 哪怕之前看过 (老档残留的标志也忽略)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         // (用户) 黄水晶继承 — 与 SZ1 同款
         if (typeof data.yellowCrystalCount === 'number' && this.hudSystem) {
@@ -620,7 +622,7 @@ create() {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (data.hasHealthDetector) {
+        if (false) {   // (用户) detector 不再随存档/场景恢复 — 每次进图重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);

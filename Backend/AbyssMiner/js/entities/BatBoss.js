@@ -402,10 +402,12 @@ class BatBoss {
         this._dashLen = len;
         const cx = this.x + Math.cos(ang) * len / 2;
         const cy = this.y + Math.sin(ang) * len / 2;
-        if (this._chargeFx) { try { this._chargeFx.destroy(); } catch (e) {} }
-        this._chargeFx = s.add.rectangle(cx, cy, len, 44, 0xff0000, 0.28).setDepth(19);
-        this._chargeFx.setRotation(ang);
-        if (s.uiCam) { try { s.uiCam.ignore(this._chargeFx); } catch (e) {} }
+        if (this._chargeFx) { try { this._chargeFx.destroy(); } catch (e) {} this._chargeFx = null; }
+        if (!(window.AbyssDiff && AbyssDiff.mode === 'extreme')) {   // (用户) EXTREME 不给 dash 红色预警, 玩家拼反应
+            this._chargeFx = s.add.rectangle(cx, cy, len, 44, 0xff0000, 0.28).setDepth(19);
+            this._chargeFx.setRotation(ang);
+            if (s.uiCam) { try { s.uiCam.ignore(this._chargeFx); } catch (e) {} }
+        }
     }
 
     // 靠近玩家, 进 ATTACK_RANGE 且"到玩家直线畅通"才蓄力; 被地形挡住就重定位绕行

@@ -99,6 +99,9 @@ class MainGameScene extends Phaser.Scene {
         // (用户) 素材缺失暂停加载, 文件补进 assets 后解开: this.load.spritesheet('Small_spider_injured', 'assets/images/Small_spider_injured.png', { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('Small_spider_dead',    'assets/images/Small_spider_dead.png',    { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('Small_spider_fall',    'assets/images/Small_spider_fall.png',    { frameWidth: 64, frameHeight: 64 });
+        // (用户) 宠物专用贴图 (与 mob 小蜘蛛分开): 移动 + 待机
+        this.load.spritesheet('Pet_spider_run',  'assets/images/Pet_spider_run.png',  { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('Pet_spider_idle', 'assets/images/Pet_spider_idle.png', { frameWidth: 64, frameHeight: 64 });
 
         // 史莱姆动画
         this.load.spritesheet('Slime_dead',     'assets/images/Slime_dead.png',     { frameWidth: 32, frameHeight: 32 });  // 96x32 / 3 frames
@@ -1060,13 +1063,13 @@ class MainGameScene extends Phaser.Scene {
         }
         this._deathHearts = arr;
         this.time.delayedCall(420, () => {
-            this._deathShatterHeart(arr[cnt - 1], () => {
+            this._deathShatterHeart(arr[cnt - 1], cnt, () => {
                 this.time.delayedCall(280, () => { if (onComplete) onComplete(); });
             });
         });
     }
 
-    _deathShatterHeart(heart, onDone) {
+    _deathShatterHeart(heart, n, onDone) {
         if (!heart || !heart.active) { if (onDone) onDone(); return; }
         const hx = heart.x, hy = heart.y;
         // (用户) HeartBreak 贴图碎裂动画 — 抖动后整颗换成 11 帧碎裂; 缺图走旧文字碎裂
@@ -1088,6 +1091,11 @@ class MainGameScene extends Phaser.Scene {
                     if (!this._deathFragments) this._deathFragments = [];
                     this._deathFragments.push(br);
                     br.play('heart_break');
+                    // (用户) 碎心动画开始播放: 还剩≥2颗心 → HeartBreak; 最后1颗心 → LastLifeBreak (开始1秒后)
+                    if (typeof AudioSystem !== 'undefined') {
+                        if (n >= 2) AudioSystem.sfx(this, 'HeartBreak');
+                        else this.time.delayedCall(1000, () => AudioSystem.sfx(this, 'LastLifeBreak'));
+                    }
                     br.once('animationcomplete-heart_break', () => {
                         this.tweens.add({ targets: br, alpha: 0, duration: 220, delay: 140 });
                     });
@@ -1100,6 +1108,11 @@ class MainGameScene extends Phaser.Scene {
         this.tweens.add({
             targets: heart, x: hx + 6, duration: 38, yoyo: true, repeat: 5, ease: 'Sine.easeInOut',
             onComplete: () => {
+                // (用户) 碎心动画开始 (回退文本版): 还剩≥2颗心 → HeartBreak; 最后1颗心 → LastLifeBreak (开始1秒后)
+                if (typeof AudioSystem !== 'undefined') {
+                    if (n >= 2) AudioSystem.sfx(this, 'HeartBreak');
+                    else this.time.delayedCall(1000, () => AudioSystem.sfx(this, 'LastLifeBreak'));
+                }
                 if (heart.setColor) heart.setColor('#ff3355');
                 this.tweens.add({ targets: heart, scaleX: 0.1, scaleY: 0.1, angle: 130, alpha: 0, duration: 260, ease: 'Quad.easeIn' });
                 for (let i = 0; i < 6; i++) {

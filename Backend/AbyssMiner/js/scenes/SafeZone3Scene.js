@@ -14,6 +14,9 @@ class SafeZone3Scene extends MainGameScene {
     init(data) {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
+        // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
+        this._sistersIntroRun = false; this._sisterTeaseRunning = false; this._sz3IntroStarted = false; this._sz3IntroPhase = 0; this._citrinePhase = 'fresh';
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -1971,7 +1974,7 @@ class SafeZone3Scene extends MainGameScene {
             [s._sz3Cryst, s._sz3CNpc2, s._sz3CNpc3].forEach(n => { if (n && n.eIcon) n.eIcon.setVisible(false); });
             return;
         }
-        const inDialog = s.dialogSystem && s.dialogSystem.isOpen;
+        const inDialog = (s.dialogSystem && s.dialogSystem.isOpen) || s._cinematicLock;   // (用户) 剧情锁期间也算"对话中" → E 交互与图标全禁
         // 上下漂浮偏移 — 仿商人 E 图标 tween (y -=10, 600ms, yoyo, Sine.easeInOut)
         // 等效公式: 周期 1200ms, 从 0 缓动到 -10 再回到 0, 反复
         const _cycle = 1200;
@@ -2175,7 +2178,7 @@ class SafeZone3Scene extends MainGameScene {
     _applyInheritedState() {
         const data = this._inheritedData || {};
         // (用户) 一次性剧情完成标志随档恢复 — 防止已读剧情重播/触发器卡死玩家
-        if (data.plotFlags) { try { for (const k in data.plotFlags) { if (data.plotFlags[k] === true && !/CutsceneStarted$/.test(k)) this[k] = true; } } catch (e) {} }   // (用户) Started 瞬态不恢复 (兼容老档)
+        // (用户) 不再恢复剧情完成标志 — 每次进图(含读档)所有剧情/房间状态都重新刷新, 哪怕之前看过 (老档残留的标志也忽略)
         if (typeof data.playMs === 'number') { this._playMsBase = data.playMs; this._playStartAt = Date.now(); }   // (用户) 局内时间随档续算
         if (typeof data.crystalCount === 'number' && this.hudSystem) {
             this.hudSystem.crystalCount = data.crystalCount;
@@ -2194,7 +2197,7 @@ class SafeZone3Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (data.hasHealthDetector) {
+        if (false) {   // (用户) detector 不再随存档/场景恢复 — 每次进图重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -2377,8 +2380,9 @@ class SafeZone3Scene extends MainGameScene {
             const dx = this.player.x - this._sz3ElfPos.x;
             const dy = this.player.y - this._sz3ElfPos.y;
             const near = dx*dx + dy*dy < 60*60;
-            if (this._sz3DyingElfEicon) this._sz3DyingElfEicon.setVisible(near);
-            if (near && this.keyE && Phaser.Input.Keyboard.JustDown(this.keyE)) {
+            const _inCin = this._cinematicLock || (this.dialogSystem && this.dialogSystem.isOpen);   // (用户) 剧情/对话期间不可交互
+            if (this._sz3DyingElfEicon) this._sz3DyingElfEicon.setVisible(near && !_inCin);
+            if (near && !_inCin && this.keyE && Phaser.Input.Keyboard.JustDown(this.keyE)) {
                 if (this.dialogSystem) {
                     this.dialogSystem.show([
                         { speaker: 'Dying Elf', text: '...you... still warm. Not yet... one of us.' },
@@ -2394,8 +2398,9 @@ class SafeZone3Scene extends MainGameScene {
             const dx = this.player.x - this._sz3ElderPos.x;
             const dy = this.player.y - this._sz3ElderPos.y;
             const near = dx*dx + dy*dy < 60*60;
-            if (this._sz3ElderEicon) this._sz3ElderEicon.setVisible(near);
-            if (near && this.keyE && Phaser.Input.Keyboard.JustDown(this.keyE) && !this._sz3ElderTalked) {
+            const _inCin = this._cinematicLock || (this.dialogSystem && this.dialogSystem.isOpen);   // (用户) 剧情/对话期间不可交互
+            if (this._sz3ElderEicon) this._sz3ElderEicon.setVisible(near && !_inCin);
+            if (near && !_inCin && this.keyE && Phaser.Input.Keyboard.JustDown(this.keyE) && !this._sz3ElderTalked) {
                 if (this.dialogSystem) {
                     this.dialogSystem.show([
                         { speaker: 'Elven Elder', text: "A human, here? You followed the blue, didn't you? We all did." },

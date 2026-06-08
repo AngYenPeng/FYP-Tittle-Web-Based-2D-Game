@@ -459,6 +459,10 @@ class HealthSystem {
         this._healFx.setVisible(true);
         if (!this._healFx.anims.isPlaying) this._healFx.play('healing_anim');
         this._healFxUntil = s.time.now + 700;
+        // (用户) Heal 音效: 治疗动画出现就播 1 次, 必须播完才能再播 (sfx 返回 sound, 查 isPlaying)
+        if (typeof AudioSystem !== 'undefined' && (!this._healSnd || !this._healSnd.isPlaying)) {
+            this._healSnd = AudioSystem.sfx(s, 'Heal');
+        }
     }
 
     /** 增命药水 — +1 爱心 (不超过 maxHearts) */
