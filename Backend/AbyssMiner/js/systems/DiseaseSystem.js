@@ -48,6 +48,9 @@ class DiseaseSystem {
 
     init() {
         const s = this.scene;
+        // (用户) 每次进场景重置"趴身蜘蛛"计数 — 否则被蜘蛛趴身时 Settings 退出再读档, 计数残留在复用实例上 → 蜘蛛没了却永久每秒扣血
+        s._clingingSpiderCount = 0;
+        this.clingDamageTickAt = 0;
         const barX = 24;
         const barY = 120;
         const barW = 240;

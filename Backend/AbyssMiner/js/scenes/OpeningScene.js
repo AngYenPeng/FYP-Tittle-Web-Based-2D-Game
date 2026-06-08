@@ -9,6 +9,10 @@ class OpeningScene extends Phaser.Scene {
     preload() {
         if (typeof AudioSystem !== 'undefined') AudioSystem.loadAll(this);   // 加载全部音频
         this.load.spritesheet('Big_title', 'assets/images/Big_title.png', { frameWidth: 800, frameHeight: 400 });   // (用户) 开局大标题 29600×400 / 37 帧 → 每帧 800×400
+        // (用户) 诊断: 加载失败 → 控制台明确提示 (文件名是 Big_title, 不是 Big_tittle)
+        this.load.once('loaderror', (file) => {
+            if (file && file.key === 'Big_title') console.warn('[Opening] Big_title.png 加载失败! 检查: (1) 文件在 assets/images/Big_title.png (2) 文件名拼写=Big_title (不是 tittle / 大小写不符) (3) 图为 29600×400');
+        });
     }
 
     create() {
@@ -21,7 +25,11 @@ class OpeningScene extends Phaser.Scene {
         const goTitle = () => { try { this.scene.start('TitleScene'); } catch (e) {} };
 
         // 缺图兜底: 直接进 TitleScene, 不卡开机
-        if (!this.textures.exists('Big_title')) { goTitle(); return; }
+        if (!this.textures.exists('Big_title')) {
+            console.warn('[Opening] 找不到 Big_title 贴图 → 直接进 Title。请把 29600×400 的 Big_title.png 放进 assets/images/ (文件名拼写: Big_title)');
+            goTitle(); return;
+        }
+        console.log('[Opening] Big_title 已加载, frameTotal =', this.textures.get('Big_title').frameTotal, '— 37 帧时应为 38; 若为 2 则说明尺寸/frameWidth(800) 与实际图不符, 只切出 1 帧');
 
         // 用点现注册 big_title_intro (帧数随贴图自适应, 不复用各场景注册簇)
         if (!this.anims.exists('big_title_intro')) {

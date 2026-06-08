@@ -928,7 +928,8 @@ class TitleScene extends Phaser.Scene {
         try { this.registry.set('runDeaths', data.runDeaths || 0); } catch (e) {}   // (用户成就) 死亡计数随档
         // (用户) Tutorial 阶段的档 → 从开局图文故事 (StartIntro) 重新开始, 不直接跳进剧情半途
         const _tut = (data.scene === 'TutorialScene');
-        this._fadeAndStart(_tut ? 'StartIntroScene' : (data.scene || 'SafeZone1Scene'), _tut ? null : data, false);   // resume → 保留 guide
+        // (用户) 标记"读档载入" → 场景里 detector 等"仅当前 run"道具读档时重置, 前进传送(SecretDoor)时保留. 浅拷贝避免污染存档本体
+        this._fadeAndStart(_tut ? 'StartIntroScene' : (data.scene || 'SafeZone1Scene'), _tut ? null : Object.assign({}, data, { _isSaveLoad: true }), false);   // resume → 保留 guide
     }
 
     _openOptions() {

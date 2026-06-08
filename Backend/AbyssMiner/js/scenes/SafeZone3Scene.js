@@ -2197,7 +2197,7 @@ class SafeZone3Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (false) {   // (用户) detector 不再随存档/场景恢复 — 每次进图重置为未购买 (商店重新可买)
+        if (data.hasHealthDetector && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
