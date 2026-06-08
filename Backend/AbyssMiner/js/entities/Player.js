@@ -54,6 +54,9 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             _g.fillStyle(0xff00ff, 1).fillCircle(this.x, this.y, 2);
         }
         if (!this.body) return;
+        // (用户) 剧情锁: 过场期间玩家位置+动画完全交给剧情 (各 cutscene 自己 play run/idle),
+        //   不再读按键自驱 — 否则锁定期间按住跑会自播 run 动画 (位置被摁住、动画却没人管)
+        if (this.scene && this.scene._cinematicLock) return;
 
         // === 创造模式飞行: WASD 自由移动, 跳过其它移动逻辑 ===
         if (this.scene._creativeFly) {
@@ -140,9 +143,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         // 冲刺中 — 不覆盖 dash 动画
         if (this.scene.isDashing && cur === 'dash') return;
 
-        // 蹲下中：移动用 crouch_walk，静止用 crouch
+        // 蹲下中：空中(蹲跳)或移动用 crouch_walk，静止落地用 crouch
         if (this.scene.isCrouching) {
-            if (isMoving) {
+            if (!onGround || isMoving) {
+                // (用户) 蹲跳动画 = 蹲走动画 (空中保持蹲姿, 用 crouch_walk)
                 if (has('crouch_walk') && cur !== 'crouch_walk') safePlay('crouch_walk');
                 else if (!has('crouch_walk') && has('crouch') && cur !== 'crouch') safePlay('crouch');
             } else {

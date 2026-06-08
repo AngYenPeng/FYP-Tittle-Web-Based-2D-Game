@@ -1,5 +1,5 @@
 /**
- * Mole Trader (地鼠奸商) — 终极独立运作版
+ * Mole Trader (鼹鼠商人) — 终态站立运作版
  */
 class MoleTrader extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
@@ -32,7 +32,7 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
         let player = this.scene.player;
         if (!player || !this.interactionIcon) return;
 
-        // 1. 强制图标同步商人坐标（防掉落穿帮）
+        // 1. 强制图标同步商人坐标（防护掉落穿帮）
         this.interactionIcon.x = this.x;
         if (!this.interactHintShown) {
             this.interactionIcon.y = this.y - 60;
@@ -41,18 +41,18 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
         // 2. 始终面向玩家（玩家在右侧 → flipX=false / 左侧 → flipX=true）
         this.setFlipX(player.x < this.x);
 
-        // 3. 距离判定
+        // 3. 跨距判定
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
         // 剧情/对话期间 → 强制隐藏
         const inCinematicOrDialog = this.scene._cinematicLock ||
             (this.scene.dialogSystem && this.scene.dialogSystem.isOpen);
 
-        if (dist < ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80) && !inCinematicOrDialog) {   // (用户) 图标距离 = 交互距离, 全游戏统一
+        if (dist < ((typeof InteractSystem !== 'undefined' && InteractSystem.RANGE) || 80) && !inCinematicOrDialog) {
             if (!this.interactHintShown) {
                 this.interactHintShown = true;
                 this.interactionIcon.setVisible(true);
-                
+
                 this.scene.tweens.add({
                     targets: this.interactionIcon,
                     y: "-=10",

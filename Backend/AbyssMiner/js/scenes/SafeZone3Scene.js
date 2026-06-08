@@ -158,6 +158,13 @@ class SafeZone3Scene extends MainGameScene {
 
     preload() {
         if (typeof super.preload === 'function') super.preload();
+        // (用户) 背景图层 — SZ2.5 (继承本 preload) + SZ3 各自三层
+        this.load.image('sz2.5_bg_L1', 'assets/images/sz2.5_bg_L1.png');
+        this.load.image('sz2.5_bg_L2', 'assets/images/sz2.5_bg_L2.png');
+        this.load.image('sz2.5_bg_L3', 'assets/images/sz2.5_bg_L3.png');
+        this.load.image('sz3_bg_L1', 'assets/images/sz3_bg_L1.png');
+        this.load.image('sz3_bg_L2', 'assets/images/sz3_bg_L2.png');
+        this.load.image('sz3_bg_L3', 'assets/images/sz3_bg_L3.png');
     }
 
     create() {
@@ -179,11 +186,20 @@ class SafeZone3Scene extends MainGameScene {
 
         this.physics.world.setBounds(0, 0, W, H);
 
-        // 背景
+        // === SZ3 3 层背景 (SZ1/2 同款管线: 原生尺寸不缩放; 仅 L2 左右视差 sf 0.5, Y 1:1) ===
+        // depth: L3 最深(-103) → L2(-102) → L1 最前(-101); 锚点暂置地图中心, 待按格微调
+        {
+            const bgX = W / 2 - 78 * 32, bgY = H / 2 + 58 * 32;   // (用户) 左移 78 格 + 下移 58 格
+            if (this.textures.exists('sz3_bg_L3')) this.bgL3 = this.add.image(bgX, bgY, 'sz3_bg_L3').setScrollFactor(1, 1).setDepth(-103);
+            if (this.textures.exists('sz3_bg_L2')) this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz3_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
+            if (this.textures.exists('sz3_bg_L1')) this.bgL1 = this.add.image(bgX, bgY, 'sz3_bg_L1').setScrollFactor(1, 1).setDepth(-101);
+        }
+
+        // 背景 (旧平面底图 → 下沉 -110 作最深兜底, 不挡视差层)
         if (this.textures.exists('Tutorial_scene_background_image')) {
             this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
             const bgScale = Math.max(W / this.bg.width, H / this.bg.height);
-            this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-100);
+            this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-110);
         }
 
         this._initT1State();
@@ -621,7 +637,7 @@ class SafeZone3Scene extends MainGameScene {
 
         // 镜头: 8 个区域 — 玩家移动时自动切换镜头边界 (_updateChunkCamera)
         this._chunks = [
-            { id: 'zone1', x1: -87,  y1: 15,  x2: -24, y2: 31, camBounds: { x1: -87, y1: 15, x2: -24, y2: 33 } },
+            { id: 'zone1', x1: -87,  y1: 17,  x2: -24, y2: 31, camBounds: { x1: -87, y1: 17, x2: -24, y2: 33 } },   // (用户) 区1顶边镜头边界下移 2 格 (15→17)
             // zone2 + zone3 融合镜头: 检测矩形各自不变, 但共用同一相机边界(union), 跨区不切镜头
             { id: 'zone2', x1: -74,  y1: 32,  x2: -24, y2: 58, camBounds: { x1: -75, y1: 32, x2: -24, y2: 70 } },
             { id: 'zone3', x1: -75,  y1: 58,  x2: -45, y2: 70, camBounds: { x1: -75, y1: 32, x2: -24, y2: 70 } },
@@ -1157,11 +1173,22 @@ class SafeZone3Scene extends MainGameScene {
         const playerTarget = -56 * G + G / 2;
         // Cryst 朝左走 (-42 → -57)
         if (s._sz3Cryst && s._sz3Cryst.sprite) {
+            s.tweens.killTweensOf(s._sz3Cryst.sprite);   // (用户) 先杀接近 tween — 快速跳过对话时它还没跑完, 会与本押送拉锯 + 其 onComplete 把朝向翻回右 → 倒着走
+            s._sz3Cryst._lastCrystX = s._sz3Cryst.sprite.x;
             s._sz3Cryst.sprite.flipX = false;  // 朝左
             if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile && s._sz3Cryst._animProfile.walk) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.walk);   // (用户) 走位播 walk 动画
             s.tweens.add({
                 targets: s._sz3Cryst.sprite, x: crystTarget, duration: 2600, ease: 'Linear',
-                onUpdate: () => { s._sz3Cryst.x = s._sz3Cryst.sprite.x; },
+                onUpdate: () => {
+                    // (用户) 朝向每帧按实际位移方向定 (右移 flipX=true, 左移 false) — 任何残余翻向都摁回
+                    const _px = s._sz3Cryst._lastCrystX;
+                    s._sz3Cryst._lastCrystX = s._sz3Cryst.sprite.x;
+                    if (_px !== undefined) {
+                        const _dx = s._sz3Cryst.sprite.x - _px;
+                        if (Math.abs(_dx) > 0.1) s._sz3Cryst.sprite.flipX = _dx > 0;
+                    }
+                    s._sz3Cryst.x = s._sz3Cryst.sprite.x;
+                },
                 onComplete: () => {
                     s._sz3Cryst.x = s._sz3Cryst.sprite.x;
                     if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.idle);   // (用户) 还原 idle
@@ -1175,7 +1202,14 @@ class SafeZone3Scene extends MainGameScene {
         s._forceStepKey = 'GrassRun';   // (用户) 剧情走位脚步: 借用玩家走路循环轨 (SZ3 黄土面 → GrassRun)
         s.tweens.add({
             targets: s.player, x: playerTarget, duration: 2600, ease: 'Linear',
-            onUpdate: () => { if (s.player.body) s.player.body.reset(s.player.x, s.player.y); },
+            onUpdate: () => {
+                if (s.player.body) s.player.body.reset(s.player.x, s.player.y);
+                // (用户) 走路动画每帧重申 — 押送期间有未知路径会把 run 摁掉 (蝙蝠破图同款防御)
+                const _pa = s.player.anims;
+                if (s.anims.exists('run') && (!_pa.currentAnim || _pa.currentAnim.key !== 'run' || !_pa.isPlaying)) {
+                    try { s.player.play('run', true); } catch (e) {}
+                }
+            },
             onComplete: () => {
                 s._forceStepKey = null;   // (用户) 走位结束收脚步
                 if (s.player.body) s.player.body.setVelocity(0, 0);
@@ -1620,7 +1654,14 @@ class SafeZone3Scene extends MainGameScene {
         s._forceStepKey = 'GrassRun';   // (用户) 剧情走位脚步
         s.tweens.add({
             targets: s.player, x: targetX, duration: 1500, ease: 'Linear',
-            onUpdate: () => { if (s.player.body) s.player.body.reset(s.player.x, s.player.y); },
+            onUpdate: () => {
+                if (s.player.body) s.player.body.reset(s.player.x, s.player.y);
+                // (用户) 走路动画每帧重申 — 押送期间有未知路径会把 run 摁掉 (蝙蝠破图同款防御)
+                const _pa = s.player.anims;
+                if (s.anims.exists('run') && (!_pa.currentAnim || _pa.currentAnim.key !== 'run' || !_pa.isPlaying)) {
+                    try { s.player.play('run', true); } catch (e) {}
+                }
+            },
             onComplete: () => {
                 s._forceStepKey = null;   // (用户) 走位结束收脚步
                 if (s.player.body) s.player.body.setVelocity(0, 0);
@@ -2017,6 +2058,7 @@ class SafeZone3Scene extends MainGameScene {
             return;
         }
         s.moleTrader = new MoleTrader(s, finalX, finalY);
+        s.moleTrader._emergeStarted = true;   // (bug修复) 场景自己处理 emerge → 禁掉实体 preUpdate 的靠近自动钻地 (防玩家靠近触发第二次钻地消失)
         if (s.walls) s.physics.add.collider(s.moleTrader, s.walls);
         if (s.uiCam) {
             try { s.uiCam.ignore(s.moleTrader); } catch(e) {}
@@ -2047,14 +2089,36 @@ class SafeZone3Scene extends MainGameScene {
             s.moleTrader.body.setAllowGravity(false);
             s.moleTrader.body.enable = false;
         }
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'MoleDig');   // (用户) 钻出音效
+        // (用户) trader_dig 动画期间 MoleDig 循环播 (声先播完就重头, 不留静音); 动画完成即停. 文件须在 assets/audio/NPC/MoleDig.wav
+        if (s.moleTrader && !s.moleTrader._digSndHooked) {
+            s.moleTrader._digSndHooked = true;
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
+                if (!anim || anim.key !== 'trader_dig') return;
+                if (typeof AudioSystem === 'undefined' || !s.cache.audio.exists('MoleDig')) return;
+                try {
+                    if (s.moleTrader._digLoopSnd) { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); }
+                    const _ds = s.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                    s.moleTrader._digLoopSnd = _ds;
+                    _ds.play();
+                    // (bug修复) 安全超时: 万一 ANIMATION_COMPLETE 漏触发 (动画被提前打断/商人消失), 4s 后强停防无限循环
+                    s.time.delayedCall(4000, () => { try { if (_ds && _ds.isPlaying) _ds.stop(); if (_ds) _ds.destroy(); } catch (e2) {} if (s.moleTrader && s.moleTrader._digLoopSnd === _ds) s.moleTrader._digLoopSnd = null; });
+                } catch (e) { s.moleTrader._digLoopSnd = null; }
+            });
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
+                if (anim && anim.key === 'trader_dig' && s.moleTrader._digLoopSnd) {
+                    try { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); } catch (e) {}
+                    s.moleTrader._digLoopSnd = null;
+                }
+            });
+        }
         if (s.anims.exists('trader_dig')) {
             if (typeof s.moleTrader.playReverse === 'function') s.moleTrader.playReverse('trader_dig');
             else if (typeof s.moleTrader.play === 'function') s.moleTrader.play('trader_dig');
         }
 
-        // 2.2 秒后切 stand + 对话
-        s.time.delayedCall(2200, () => {
+        // (用户) 钻洞声播完 → 切 stand + 对话 (无声/缺文件兜底 8s)
+        const _toStand = () => {
+            if (s._moleEmergeDone) return; s._moleEmergeDone = true;
             s.moleTrader.setTexture('Trader_stand');
             s.moleTrader.setScale(1);
             s.moleTrader.setPosition(finalX, finalY + 10);  // stand 位置 +10 px (跟 SZ2)
@@ -2065,7 +2129,8 @@ class SafeZone3Scene extends MainGameScene {
             }
             if (s.anims.exists('trader_stand') && s.moleTrader.play) s.moleTrader.play('trader_stand');
             s._sz3MerchantDialog();
-        });
+        };
+        s.time.delayedCall(2200, _toStand);
     }
 
     _sz3MerchantDialog() {

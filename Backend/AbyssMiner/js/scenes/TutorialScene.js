@@ -793,6 +793,9 @@ class TutorialScene extends MainGameScene {
         // === 商人 NPC — 位置 (39, 12) 往下 3 格（原 9）===
         this._npcMole = new MoleTrader(this, (10.5 + 20) * G, 35.5 * G);
         this.moleTrader = this._npcMole;
+        // (用户修复) 出生坠落根因: 上方 collider 设置在本行之前执行, 那时 _npcMole 还 undefined → 碰撞器没建 →
+        //   商人有重力却无地板 → 出生即坠出世界. 在创建后立即补挂.
+        if (this._npcMole) { try { this.physics.add.collider(this._npcMole, this.walls); } catch (e) {} }
 
         // === 水晶矿（位置来自创造模式 export）===
         this._crystalOres = [];

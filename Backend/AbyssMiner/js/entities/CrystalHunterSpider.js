@@ -66,8 +66,11 @@ class CrystalHunterSpider extends Phaser.Physics.Arcade.Sprite {
         const G = 32;
         // 4 方向都手动检测：触发后用 wallRects 验证（向内缩 1px 避免墙角误判）
         const checkDir = (dirKey) => {
-            if (!(this.body.blocked[dirKey] || this.body.touching[dirKey])) return false;
-            if (!this.scene || !this.scene.wallRects) return true;
+            const _flag = this.body.blocked[dirKey] || this.body.touching[dirKey];
+            // (用户) 'down' 不依赖 arcade flag: 单向平台只挡"正在下落"的物体, spider 水平滑过平台顶 / pounce 关重力时
+            //   blocked.down 不触发 → 误判空中 → pounce 永不结束卡帧滑行. 改纯几何: 底边贴住任意 wallRect 顶(含平台)即落地.
+            if (dirKey !== 'down' && !_flag) return false;
+            if (!this.scene || !this.scene.wallRects) return _flag;
             let cl, cr, ct, cb;
             if (dirKey === 'up')    { cl = this.body.left + 1;  cr = this.body.right - 1; ct = this.body.top - 1;    cb = this.body.top - 1; }
             if (dirKey === 'down')  { cl = this.body.left + 1;  cr = this.body.right - 1; ct = this.body.bottom + 1; cb = this.body.bottom + 1; }

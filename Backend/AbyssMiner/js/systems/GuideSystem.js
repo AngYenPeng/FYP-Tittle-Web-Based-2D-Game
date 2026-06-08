@@ -148,7 +148,7 @@ class GuideSystem {
         const FIELDS = ['_animSprite', '_demoObstacle', '_demoGround', '_demoCrystal', '_demoDrop',
             '_demoEnemy', '_demoCrackGfx', '_demoCheckpointSprite', '_demoHpBg', '_demoHpFill',
             '_demoHpLabel', '_demoCorBg', '_demoCorFill', '_demoCorLabel', '_demoDetectorIcon',
-            '_demoPick', '_demoRope', '_demoFKey'];
+            '_demoPick', '_demoRope', '_demoFKey', '_demoHealFx'];
         // 1) 杀 tween (含 tiles / stone 碎片里的局部对象, 如 advmove 的 pick2)
         FIELDS.forEach(k => { if (this[k]) { try { s.tweens.killTweensOf(this[k]); } catch (e) {} } });
         (this._demoTiles || []).forEach(t => { try { s.tweens.killTweensOf(t); } catch (e) {} });
@@ -581,6 +581,16 @@ class GuideSystem {
             try { s.cameras.main.ignore(o); } catch(e) {}
         });
 
+        // (用户) 神像回血治疗动画 — healing_anim 只在主矿洞 create 注册, guide 场景没跑那段 → 用点现注册并在玩家身上循环播
+        if (s.textures.exists('Healing')) {
+            if (!s.anims.exists('healing_anim')) {
+                try { s.anims.create({ key: 'healing_anim', frames: s.anims.generateFrameNumbers('Healing', { start: 0, end: 9 }), frameRate: 14, repeat: -1 }); } catch (e) {}
+            }
+            this._demoHealFx = s.add.sprite(sprite.x, sprite.y, 'Healing').setScrollFactor(0).setDepth(977);
+            try { s.cameras.main.ignore(this._demoHealFx); } catch (e) {}
+            if (s.anims.exists('healing_anim')) this._demoHealFx.play('healing_anim');
+        }
+
         // 初始: HP 30%, Corrosion 60%. 然后 HP 涨满, Corrosion 减到 0
         let hpPct = 0.3, corPct = 0.6;
         this._demoHpFill.width = (barW - 4) * hpPct;
@@ -704,10 +714,11 @@ class GuideSystem {
             s.tweens.add({ targets: sprite, x: endX, duration: 2600, ease: 'Linear',
                 onUpdate: () => {
                     // (用户) 玩家在荆棘带 (|x-cx|<78) 内 → tile 循环播摆动; 离开后播完回静态图
-                    const inBand = Math.abs(sprite.x - cx) < 78;
+                    // (用户) 改按每个 tile 自身位置判定 — 演示玩家走到哪个荆棘附近, 哪个才播 (自然先后顺序, 不再 3 个一起)
                     (this._demoThornTiles || []).forEach(tp => {
                         if (!tp || !tp.scene || !tp.anims) return;
-                        if (inBand) {
+                        const nearThis = Math.abs(sprite.x - tp.x) < 30;
+                        if (nearThis) {
                             if (!tp.anims.isPlaying) tp.play('thorns_move');
                         } else if (!tp.anims.isPlaying && tp.texture && tp.texture.key === 'Thorns_move') {
                             tp.setTexture('Thorns');

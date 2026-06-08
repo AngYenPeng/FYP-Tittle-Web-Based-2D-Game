@@ -36,11 +36,36 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         try { if (scene.cavetiles) scene.physics.add.collider(this, scene.cavetiles); } catch (e) {}
         try { if (scene.platforms) scene.physics.add.collider(this, scene.platforms); } catch (e) {}
         if (scene.uiCam) { try { scene.uiCam.ignore(this); } catch (e) {} }
+
+        // (用户) 骑头吸附在 POST_UPDATE 执行 (物理结算后/渲染前) → 读玩家最终坐标, 消除高速跟随延迟
+        this._mountSnap = () => this._snapMounted();
+        scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this._mountSnap);
+        scene.events.once('shutdown', () => { try { scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this._mountSnap); } catch (e) {} });
+    }
+
+    /** (用户) 骑头吸附 — 由 update + POST_UPDATE 共用; POST_UPDATE 在物理结算后跑, 彻底贴合无延迟 */
+    _snapMounted() {
+        if (this.state !== 'mounted') return;
+        const p = this.scene && this.scene.player;
+        if (!p || !p.body) return;
+        const fx = p.flipX ? -1 : 1;            // 面右(flipX=false)→右移; 面左(flipX=true)→左移
+        if (this.scene.isCrouching) {
+            this.x = p.x + fx * 6;              // 蹲下: 朝向同侧 6px
+            this.y = p.y - 22;                  // 蹲下: 比站立位(-16)再上移 6
+        } else {
+            this.x = p.x;                       // 站立: 居中
+            this.y = p.y - 16;                  // 站立: 上移 16px
+        }
+        this.setFlipX(p.flipX);
     }
 
     /** (用户) 静止姿态: 有 idle 动画就播, 没有就停在站立帧 (run 第 0 帧) */
     _idlePose() {
         if (!this.anims) return;
+        // (用户修复) 动画用点现注册 — small_spider_idle 只在主矿洞 create 簇建, SZ/Hub 场景不跑那段 → 宠物没 idle
+        if (this.scene && this.scene.anims && !this.scene.anims.exists('small_spider_idle') && this.scene.textures.exists('Small_spider_idle')) {
+            try { this.scene.anims.create({ key: 'small_spider_idle', frames: this.scene.anims.generateFrameNumbers('Small_spider_idle', { start: 0, end: 5 }), frameRate: 8, repeat: -1 }); } catch (e) {}
+        }
         if (this.scene && this.scene.anims.exists('small_spider_idle')) {
             if (!this.anims.currentAnim || this.anims.currentAnim.key !== 'small_spider_idle') this.play('small_spider_idle');
         } else {
@@ -66,11 +91,8 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
 
         // ── mounted: 锁在头顶 ──
         if (this.state === 'mounted') {
-            this._idlePose();   // (用户) 骑头也用 small_spider_idle 待机动画
-            const fx = p.flipX ? 1 : -1;        // (用户) 面右 → 左移 8px; 面左 → 右移 8px (坐头顶偏后)
-            this.x = p.x + fx * 8;
-            this.y = p.body.top - 3;            // (用户) 在 -1 基础上再上移 2px
-            this.setFlipX(p.flipX);
+            this._idlePose();    // (用户) 骑头也用 small_spider_idle 待机动画
+            this._snapMounted(); // (用户) 位置吸附 (POST_UPDATE 还会再贴一次, 消延迟)
             return;
         }
 
@@ -79,8 +101,8 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         const d = Math.hypot(dx, dy);
         const b = this.body;
 
-        // ── >10 格: 强制传送回玩家身上 ──
-        if (d > 10 * G) {
+        // ── >20 格: 强制传送回玩家身上 (宠物不随 mob 距离休眠, 始终跟随; 阈值放远到 20 格) ──
+        if (d > 20 * G) {
             b.setVelocity(0, 0);
             this.setPosition(p.x, p.y);   // (用户) 传送位置 = 玩家坐标
             b.setAllowGravity(true);

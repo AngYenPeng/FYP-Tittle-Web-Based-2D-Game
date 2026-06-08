@@ -31,7 +31,7 @@ class BatBoss {
         const G = 32;
 
         // ---- 属性 ----
-        this.hp = 2;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul)
+        this.hp = 200;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul)
         this.maxHp = 200;
         this.dead = false;
         this._phase2 = false;
