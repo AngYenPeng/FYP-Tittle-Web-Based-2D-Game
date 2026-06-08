@@ -347,6 +347,12 @@ class SafeZone4Scene extends MainGameScene {
                 if (_seen.has(k)) return; _seen.add(k);
                 new CavetileWall(this, c * G + G / 2, r * G + G / 2, G, G);
             });
+            // (用户) (-11,-6)→(13,-8) 生成 cavetilewall (同一去重集)
+            for (let c = -11; c <= 13; c++) for (let r = -8; r <= -6; r++) {
+                const k = c + ',' + r;
+                if (_seen.has(k)) continue; _seen.add(k);
+                new CavetileWall(this, c * G + G / 2, r * G + G / 2, G, G);
+            }
         }
 
         // 应用 level data — 已停用 (地图重置: 不再加载旧地形/怪物/boss)
