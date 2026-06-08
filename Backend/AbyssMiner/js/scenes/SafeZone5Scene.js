@@ -14,21 +14,26 @@ var sz6_dialogueLines = [
 "Merchant: The Big Bad is right through there. The Mother of all this mess. Go on, give 'er hell and finish this."
 ];
 var sz6_terrain = [
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1],
-[1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
+[1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1],
 [1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1],
 [1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,1,1],
 [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1],
 [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1],
 [1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1],
 [1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1],
-[0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1],
-[0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-];
-
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+]
 /**
  * SafeZone5Scene — 5 号安全区 (占位框架)
  *
@@ -190,6 +195,15 @@ class SafeZone5Scene extends MainGameScene {
     }
 
 create() {
+
+    // 1. Set the physics world to match your terrain height (Rows * TileSize)
+// Assuming G = 60 and your terrain has 20 rows (20 * 60 = 1200)
+this.physics.world.setBounds(0, 0, 5000, 960); 
+
+// 2. Tell the Camera to STOP scrolling past the floor
+// This prevents the user from seeing the "big space" down there
+this.cameras.main.setBounds(0, 0, 5000, 960);
+
     if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone5');  
     // (合并) 物理 debug draw 关闭 (队友开发期临时开的, 上线不显示碰撞框)
     try {
@@ -216,7 +230,10 @@ create() {
     this.playerCanMove = true;
 
     this.cameras.main.setBackgroundColor('#050510');
-    this.physics.world.setBounds(0, 0, W, H);
+    const mapWidth = sz6_terrain[0].length * 60;
+const mapHeight = sz6_terrain.length * 60;
+this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
     if (this.textures.exists('Tutorial_scene_background_image')) {
         this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
@@ -293,6 +310,10 @@ create() {
                 block.setStrokeStyle(2, 0x3b2d59); 
                 this.physics.add.existing(block, true);
                 this.walls.add(block); 
+
+                if (xPos >= 3200) {
+                this.platforms.add(block);
+            }
                 
                 this.wallRects.push({
                     x: xPos - G/2, y: yPos - G/2,
@@ -324,8 +345,8 @@ create() {
     sz6_bossBarrier.setVisible(false);
     this.physics.world.disable(sz6_bossBarrier); 
 
-    sz6_merchant = this.add.rectangle(530, 800, 40, 80, 0x00ff00);  
-    
+    sz6_merchant = this.add.rectangle(530, 600, 40, 80, 0x00ff00);    
+
     sz6_dialogueBox = this.add.rectangle(800, 750, 1000, 160, 0x000000, 0.85).setScrollFactor(0).setDepth(9999);
     sz6_dialogueBox.setStrokeStyle(3, 0xffffff); 
     sz6_dialogueText = this.add.text(340, 700, "", { fontSize: '24px', fill: '#ffffff', fontFamily: 'monospace', wordWrap: { width: 920 }, lineSpacing: 8 }).setScrollFactor(0).setDepth(10000);
@@ -374,7 +395,10 @@ create() {
     const spawnX = (this._inheritedData && this._inheritedData.spawnX) || 360;
     const spawnY = (this._inheritedData && this._inheritedData.spawnY) || 440;
     this.spawnX = spawnX; this.spawnY = spawnY;
-    this.player = new Player(this, spawnX, spawnY);
+
+    this.player = new Player(this, 80, spawnY);
+
+
 
     this._setupRealPickaxes();
 
@@ -390,6 +414,23 @@ create() {
     this.physics.add.collider(this.bungeeSpiders, this.walls);
     this.physics.add.collider(this.volatileCrystals, this.walls);
 
+    // 🌟【强制兜底】无论 BossAI 内部如何变换技能状态，强制使其在全局保持与 walls 的实体碰撞
+this.time.addEvent({
+    delay: 100,
+    loop: true,
+    callback: () => {
+        if (typeof BossManager !== 'undefined' && BossManager.entity && BossManager.entity.body) {
+            if (!BossManager.entity._hasGlobalWallCollider) {
+                BossManager.entity._hasGlobalWallCollider = true;
+                this.physics.add.collider(BossManager.entity, this.walls);
+                this.physics.add.collider(BossManager.entity, this.platforms);
+                // 限制 Boss 刚体的最大下落速度，防止冲刺位移过大直接挤穿刚体表面
+                BossManager.entity.body.setMaxVelocity(1200, 1500);
+            }
+        }
+    }
+});
+
     const dmgCheck = (p, m) => {
         if (m.canDamagePlayer && m.canDamagePlayer()) {
             if (this._playerHit) this._playerHit(p, m);
@@ -404,7 +445,12 @@ create() {
     this.physics.add.overlap(this.player, this.mimicOres, dmgCheck);
     this.physics.add.overlap(this.player, this.bungeeSpiders, dmgCheck);
     this.physics.add.overlap(this.player, this.volatileCrystals, dmgCheck);
-
+// Thorns (ID: 2) damage overlap tracking handle
+this.physics.add.overlap(this.player, sz6_hazards, () => {
+    if (this.healthSystem && this.healthSystem.damage) {
+        this.healthSystem.damage(2); // Deals 2 damage on spike contact
+    }
+});
     this.healthSystem    = new HealthSystem(this);    this.healthSystem.init();
     this.diseaseSystem   = new DiseaseSystem(this);   this.diseaseSystem.init();
     this.inventorySystem = new BackpackSystem(this);  this.inventorySystem.init();
@@ -714,6 +760,19 @@ create() {
     }
 
 update(time, delta) {
+
+    // 在 update(time, delta) 的第一行添加
+if (typeof BossManager !== 'undefined' && BossManager.entity) {
+    let b = BossManager.entity;
+    // 强制限制 Boss 的 Y 轴高度，如果掉下去了，瞬间拉回来
+    if (b.y > 1150) { 
+        b.y = 800; // 重置到竞技场地板高度
+        if (b.body) b.body.setVelocity(0, 0);
+    }
+    // 确保任何技能状态下，Boss 都是“实体”状态
+    if (b.body && !b.body.enable) b.body.enable = true;
+}
+
     if (this._uiPaused) return;   
     if (!this.player.body) return;
 
@@ -791,18 +850,56 @@ update(time, delta) {
         sz6_dialogueText.setText(sz6_dialogueLines[0]);
     }
 
-    if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
-        sz6_arenaLocked = true;
-        sz6_dialogueState = 6;
-        this.playerCanMove = false;
-        this.player.setPosition(3320, 700);
-        this.cameras.main.setBounds(3280, 0, 1500, 1200);
-        sz6_bossBarrier.setVisible(true);
-        this.physics.world.enable(sz6_bossBarrier);
-        if (typeof BossManager !== 'undefined') {
-            BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, () => {}, true);
+    // REPLACE your entire arena lock block inside update() with this clean handler:
+if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
+    sz6_arenaLocked = true;
+    sz6_dialogueState = 6;
+    this.playerCanMove = false;
+    
+    if (this.player.body) {
+        this.player.body.setVelocity(0, 0);
+        this.player.body.setAcceleration(0, 0);
+    }
+    
+    this.player.setPosition(3320, 660); 
+    this.cameras.main.setBounds(3280, 0, 1500, 1200);
+    
+    sz6_bossBarrier.setVisible(true);
+    this.physics.world.enable(sz6_bossBarrier);
+    
+    if (typeof BossManager !== 'undefined') {
+        // 同步将 walls 和 platforms 传入以作双重实体保障
+        BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, () => {}, true);
+        
+        // 🌟【追加注入】在 Boss 降临的瞬间，强制为其装载世界边界与双重碰撞
+        this.time.delayedCall(50, () => {
+            if (BossManager.entity && BossManager.entity.body) {
+                BossManager.entity.body.setCollideWorldBounds(true);
+                this.physics.add.collider(BossManager.entity, this.walls);
+                this.physics.add.collider(BossManager.entity, this.platforms);
+            }
+        });
+    }
+}
+
+// 🚨 EMERGENCY FLOOR-ANCHOR PATCH
+if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity) {
+    let boss = BossManager.entity;
+    
+    // 1. If Boss goes below the floor (Y > 950), force her back to the arena surface
+    if (boss.y > 950) {
+        boss.y = 600; // Teleport her back to center-arena height
+        if (boss.body) {
+            boss.body.setVelocityY(0);
+            boss.body.setAllowGravity(true);
         }
     }
+    
+    // 2. Force Enable physics if she's in an active state
+    if (boss.body && !boss.body.enable) {
+        boss.body.enable = true;
+    }
+}
 
     if (sz6_arenaLocked && typeof BossManager !== 'undefined') {
         BossManager.update(time, delta, this.player);

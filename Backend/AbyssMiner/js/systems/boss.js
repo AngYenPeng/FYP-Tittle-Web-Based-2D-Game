@@ -18,6 +18,10 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        // Force the boss to treat walls as solid entities at all times
+this.body.onCollide = true;
+this.body.immovable = false;
+
         this.scene = scene;
         this.player = player;
         this.platforms = platforms;
@@ -852,6 +856,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             this.track(this.scene.time.delayedCall(600, () => { 
                 this.isDashing = false;
                 this.body.setVelocityX(0); 
+                this.body.setAllowGravity(true);
+                this.scene.physics.collide(this, this.scene.platforms);
                 if (!this.animLock) this.clearTint(); 
 
                 if (this.lives === 1 && this.dashChainCount < 2 && !this.underPlatformEscaping) {
@@ -1175,6 +1181,14 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
     update(time, delta, player) {
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
+
+        // 🌟 ANTI-DROP ARMOR: Force floor snap if not flying
+    if (this.surface === 'floor' && this.body) {
+        // If boss is moving and not currently dashing/zipping, keep her grounded
+        if (!this.isDashing && !this.isZipping && !this.isCasting) {
+             this.body.setAllowGravity(true);
+        }
+    }
 
         this.detectVibrations(player);
 
@@ -1532,7 +1546,13 @@ const BossManager = {
     entity: null,
     spawn: function(scene, x, y, player, platforms, playerHitCallback, isIntro = false) {
         this.entity = new CrystalMatriarch(scene, x, y, player, platforms, playerHitCallback, isIntro);
-        scene.physics.add.collider(this.entity, platforms);
+        // 🌟 MANDATORY: Link to both groups
+    scene.physics.add.collider(this.entity, platforms);
+    scene.physics.add.collider(this.entity, scene.walls); 
+    
+    // Force the body to be persistent
+    this.entity.body.setCollideWorldBounds(true);
+    this.entity.body.onWorldBounds = true;
         
         if (typeof sz_bossBarrier !== 'undefined') { 
             scene.physics.add.collider(this.entity, sz_bossBarrier); 
