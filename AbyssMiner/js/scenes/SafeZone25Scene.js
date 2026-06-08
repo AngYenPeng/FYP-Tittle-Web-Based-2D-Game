@@ -30,11 +30,20 @@ class SafeZone25Scene extends SafeZone3Scene {
         const H = 720;
         this.physics.world.setBounds(0, 0, W, H);
 
-        // 背景
+        // === SZ2.5 3 层背景 (SZ1/2 同款管线: 原生尺寸不缩放; 仅 L2 左右视差 sf 0.5, Y 1:1) ===
+        // depth: L3 最深(-103) → L2(-102) → L1 最前(-101); 锚点暂置地图中心, 待按格微调
+        {
+            const bgX = W / 2 - 25.5 * 32, bgY = H / 2 - 1 * 32;   // (用户) 左移 25.5 格 (原25再左0.5) + 上移 1 格
+            if (this.textures.exists('sz2.5_bg_L3')) this.bgL3 = this.add.image(bgX, bgY, 'sz2.5_bg_L3').setScrollFactor(1, 1).setDepth(-103);
+            if (this.textures.exists('sz2.5_bg_L2')) this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz2.5_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
+            if (this.textures.exists('sz2.5_bg_L1')) this.bgL1 = this.add.image(bgX, bgY, 'sz2.5_bg_L1').setScrollFactor(1, 1).setDepth(-101);
+        }
+
+        // 背景 (旧平面底图 → 下沉 -110 作最深兜底, 不挡视差层)
         if (this.textures.exists('Tutorial_scene_background_image')) {
             this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
             const bgScale = Math.max(W / this.bg.width, H / this.bg.height);
-            this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-100);
+            this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-110);
         }
 
         this._initT1State();
