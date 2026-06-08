@@ -1218,6 +1218,7 @@ class SafeZone2Scene extends MainGameScene {
             return;
         }
         this.moleTrader = new MoleTrader(this, finalX, finalY);
+        this.moleTrader._emergeStarted = true;   // (bug修复) 场景自己处理 emerge 钻出剧情 → 禁掉实体 preUpdate 的靠近自动钻地 (否则玩家靠近会触发第二次钻地往下钻、商人消失)
         if (this.walls) this.physics.add.collider(this.moleTrader, this.walls);
         if (this.uiCam) {
             try { this.uiCam.ignore(this.moleTrader); } catch(e) {}
@@ -1255,8 +1256,11 @@ class SafeZone2Scene extends MainGameScene {
                 if (typeof AudioSystem === 'undefined' || !this.cache.audio.exists('MoleDig')) return;
                 try {
                     if (this.moleTrader._digLoopSnd) { this.moleTrader._digLoopSnd.stop(); this.moleTrader._digLoopSnd.destroy(); }
-                    this.moleTrader._digLoopSnd = this.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
-                    this.moleTrader._digLoopSnd.play();
+                    const _ds = this.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                    this.moleTrader._digLoopSnd = _ds;
+                    _ds.play();
+                    // (bug修复) 安全超时: 万一 ANIMATION_COMPLETE 漏触发 (动画被提前打断/商人消失), 4s 后强停防无限循环
+                    this.time.delayedCall(4000, () => { try { if (_ds && _ds.isPlaying) _ds.stop(); if (_ds) _ds.destroy(); } catch (e2) {} if (this.moleTrader && this.moleTrader._digLoopSnd === _ds) this.moleTrader._digLoopSnd = null; });
                 } catch (e) { this.moleTrader._digLoopSnd = null; }
             });
             this.moleTrader.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
