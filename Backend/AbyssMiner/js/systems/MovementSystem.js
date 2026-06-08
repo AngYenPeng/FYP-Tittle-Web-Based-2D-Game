@@ -125,7 +125,7 @@ class MovementSystem {
 
         if (jumpPressed) {
             if (s.isHanging) {
-                if (s.isCrouching) { s.isCrouching = false; s.player.y -= 16; }   // (用户·双箱制) 站起翻旗 + 贴图归位
+                // (用户) 蹲着挂镐起跳: 保持蹲姿, 不站起 (与蹲跳一致)
                 s.isHanging = false;
                 s.isGrappling = false;
                 s.grappleSystem.hasSnapped = false;
@@ -138,16 +138,8 @@ class MovementSystem {
                 }
             }
             else if (onGround) {
-                if (s.isCrouching) {
-                    // (用户·双箱制) 站起 = 仅头区(本体顶上 32×16)净空即可; 本体 32×48 永不变形
-                    if (this._headZoneFree(s)) {
-                        s.isCrouching = false;
-                        s.player.y -= 16;   // (用户) 贴图归位
-                        s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
-                    }
-                } else {
-                    s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
-                }
+                // (用户) 蹲着跳: 保持蹲姿起跳, 不站起 (蹲态本体 32×48 不变 + 头实体停用, 无需头顶净空)
+                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
             }
         }
 

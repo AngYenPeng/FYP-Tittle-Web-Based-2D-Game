@@ -240,7 +240,7 @@ class SafeZone4Scene extends MainGameScene {
         // === SZ4 3 层背景 (SZ1/2 同款管线: 原生尺寸不缩放; 仅 L2 左右视差 sf 0.5, Y 1:1) ===
         // depth: L3 最深(-103) → L2(-102) → L1 最前(-101); 锚点暂置地图中心, 待按格微调
         {
-            const bgX = W / 2, bgY = H / 2;
+            const bgX = W / 2 - 31 * 32, bgY = H / 2 - 1 * 32;   // (用户) 左移 31 格 (原20再左11) + 上移 1 格
             if (this.textures.exists('sz4_bg_L3')) this.bgL3 = this.add.image(bgX, bgY, 'sz4_bg_L3').setScrollFactor(1, 1).setDepth(-103);
             if (this.textures.exists('sz4_bg_L2')) this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz4_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
             if (this.textures.exists('sz4_bg_L1')) this.bgL1 = this.add.image(bgX, bgY, 'sz4_bg_L1').setScrollFactor(1, 1).setDepth(-101);

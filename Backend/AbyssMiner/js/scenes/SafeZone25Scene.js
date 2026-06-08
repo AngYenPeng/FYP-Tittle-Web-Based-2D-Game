@@ -33,7 +33,7 @@ class SafeZone25Scene extends SafeZone3Scene {
         // === SZ2.5 3 层背景 (SZ1/2 同款管线: 原生尺寸不缩放; 仅 L2 左右视差 sf 0.5, Y 1:1) ===
         // depth: L3 最深(-103) → L2(-102) → L1 最前(-101); 锚点暂置地图中心, 待按格微调
         {
-            const bgX = W / 2 - 25.5 * 32, bgY = H / 2 - 1 * 32;   // (用户) 左移 25.5 格 (原25再左0.5) + 上移 1 格
+            const bgX = W / 2 - 25.5 * 32, bgY = H / 2 - 0.5 * 32;   // (用户) 左移 25.5 格 + 上移 0.5 格 (原上1再下0.5)
             if (this.textures.exists('sz2.5_bg_L3')) this.bgL3 = this.add.image(bgX, bgY, 'sz2.5_bg_L3').setScrollFactor(1, 1).setDepth(-103);
             if (this.textures.exists('sz2.5_bg_L2')) this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz2.5_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
             if (this.textures.exists('sz2.5_bg_L1')) this.bgL1 = this.add.image(bgX, bgY, 'sz2.5_bg_L1').setScrollFactor(1, 1).setDepth(-101);

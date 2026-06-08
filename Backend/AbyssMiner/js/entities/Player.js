@@ -140,9 +140,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         // 冲刺中 — 不覆盖 dash 动画
         if (this.scene.isDashing && cur === 'dash') return;
 
-        // 蹲下中：移动用 crouch_walk，静止用 crouch
+        // 蹲下中：空中(蹲跳)或移动用 crouch_walk，静止落地用 crouch
         if (this.scene.isCrouching) {
-            if (isMoving) {
+            if (!onGround || isMoving) {
+                // (用户) 蹲跳动画 = 蹲走动画 (空中保持蹲姿, 用 crouch_walk)
                 if (has('crouch_walk') && cur !== 'crouch_walk') safePlay('crouch_walk');
                 else if (!has('crouch_walk') && has('crouch') && cur !== 'crouch') safePlay('crouch');
             } else {

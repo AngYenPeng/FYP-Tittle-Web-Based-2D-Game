@@ -189,7 +189,7 @@ class SafeZone3Scene extends MainGameScene {
         // === SZ3 3 层背景 (SZ1/2 同款管线: 原生尺寸不缩放; 仅 L2 左右视差 sf 0.5, Y 1:1) ===
         // depth: L3 最深(-103) → L2(-102) → L1 最前(-101); 锚点暂置地图中心, 待按格微调
         {
-            const bgX = W / 2 - 78 * 32, bgY = H / 2 + 56 * 32;   // (用户) 左移 78 格 + 下移 56 格
+            const bgX = W / 2 - 78 * 32, bgY = H / 2 + 58 * 32;   // (用户) 左移 78 格 + 下移 58 格
             if (this.textures.exists('sz3_bg_L3')) this.bgL3 = this.add.image(bgX, bgY, 'sz3_bg_L3').setScrollFactor(1, 1).setDepth(-103);
             if (this.textures.exists('sz3_bg_L2')) this.bgL2 = this.add.image(bgX - 20 * 32, bgY, 'sz3_bg_L2').setScrollFactor(0.5, 1).setDepth(-102);
             if (this.textures.exists('sz3_bg_L1')) this.bgL1 = this.add.image(bgX, bgY, 'sz3_bg_L1').setScrollFactor(1, 1).setDepth(-101);
@@ -637,7 +637,7 @@ class SafeZone3Scene extends MainGameScene {
 
         // 镜头: 8 个区域 — 玩家移动时自动切换镜头边界 (_updateChunkCamera)
         this._chunks = [
-            { id: 'zone1', x1: -87,  y1: 15,  x2: -24, y2: 31, camBounds: { x1: -87, y1: 15, x2: -24, y2: 33 } },
+            { id: 'zone1', x1: -87,  y1: 17,  x2: -24, y2: 31, camBounds: { x1: -87, y1: 17, x2: -24, y2: 33 } },   // (用户) 区1顶边镜头边界下移 2 格 (15→17)
             // zone2 + zone3 融合镜头: 检测矩形各自不变, 但共用同一相机边界(union), 跨区不切镜头
             { id: 'zone2', x1: -74,  y1: 32,  x2: -24, y2: 58, camBounds: { x1: -75, y1: 32, x2: -24, y2: 70 } },
             { id: 'zone3', x1: -75,  y1: 58,  x2: -45, y2: 70, camBounds: { x1: -75, y1: 32, x2: -24, y2: 70 } },
@@ -1173,11 +1173,22 @@ class SafeZone3Scene extends MainGameScene {
         const playerTarget = -56 * G + G / 2;
         // Cryst 朝左走 (-42 → -57)
         if (s._sz3Cryst && s._sz3Cryst.sprite) {
+            s.tweens.killTweensOf(s._sz3Cryst.sprite);   // (用户) 先杀接近 tween — 快速跳过对话时它还没跑完, 会与本押送拉锯 + 其 onComplete 把朝向翻回右 → 倒着走
+            s._sz3Cryst._lastCrystX = s._sz3Cryst.sprite.x;
             s._sz3Cryst.sprite.flipX = false;  // 朝左
             if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile && s._sz3Cryst._animProfile.walk) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.walk);   // (用户) 走位播 walk 动画
             s.tweens.add({
                 targets: s._sz3Cryst.sprite, x: crystTarget, duration: 2600, ease: 'Linear',
-                onUpdate: () => { s._sz3Cryst.x = s._sz3Cryst.sprite.x; },
+                onUpdate: () => {
+                    // (用户) 朝向每帧按实际位移方向定 (右移 flipX=true, 左移 false) — 任何残余翻向都摁回
+                    const _px = s._sz3Cryst._lastCrystX;
+                    s._sz3Cryst._lastCrystX = s._sz3Cryst.sprite.x;
+                    if (_px !== undefined) {
+                        const _dx = s._sz3Cryst.sprite.x - _px;
+                        if (Math.abs(_dx) > 0.1) s._sz3Cryst.sprite.flipX = _dx > 0;
+                    }
+                    s._sz3Cryst.x = s._sz3Cryst.sprite.x;
+                },
                 onComplete: () => {
                     s._sz3Cryst.x = s._sz3Cryst.sprite.x;
                     if (s._sz3Cryst._playAnim && s._sz3Cryst._animProfile) s._sz3Cryst._playAnim(s._sz3Cryst._animProfile.idle);   // (用户) 还原 idle
