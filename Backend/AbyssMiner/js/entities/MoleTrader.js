@@ -15,10 +15,14 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(true);
         this.setGravityY(1750);
 
-        // 播放 trader_stand 动画（如果存在）
-        if (scene.anims && scene.anims.exists('trader_stand')) {
-            this.play('trader_stand');
-        }
+        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig (assets/audio/NPC/MoleDig.wav)
+        this.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
+            if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(scene, 'MoleDig');
+        });
+        // (用户) 出场钻地: 钻地期间冻结物理 (关 body+重力) 防掉出世界; 钻完落回出生点站立
+        // (用户) 出生只站立, 不自动钻地 (避免一进场远处就响钻地声); 钻地改为玩家靠近时触发 (见 preUpdate)
+        if (scene.anims && scene.anims.exists('trader_stand')) this.play('trader_stand');
+        this._emergeStarted = false;
 
         this.interactHintShown = false;
 
@@ -43,6 +47,14 @@ class MoleTrader extends Phaser.Physics.Arcade.Sprite {
 
         // 3. 距离判定
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
+
+        // (用户) 玩家靠近 (≤5格) 首次 → 钻地出场 (反向 dig + MoleDig 监听自动发声), 1.8s 后站立
+        if (!this._emergeStarted && dist < 5 * 32 && this.scene.anims && this.scene.anims.exists('trader_dig')) {
+            this._emergeStarted = true;
+            if (typeof this.playReverse === 'function') this.playReverse('trader_dig');
+            else this.play('trader_dig');
+            this.scene.time.delayedCall(1800, () => { if (this.scene.anims && this.scene.anims.exists('trader_stand')) this.play('trader_stand'); });
+        }
 
         // 剧情/对话期间 → 强制隐藏
         const inCinematicOrDialog = this.scene._cinematicLock ||

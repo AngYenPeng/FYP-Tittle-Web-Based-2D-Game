@@ -2088,14 +2088,21 @@ class SafeZone3Scene extends MainGameScene {
             s.moleTrader.body.setAllowGravity(false);
             s.moleTrader.body.enable = false;
         }
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'MoleDig');   // (用户) 钻出音效
+        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig. 文件须在 assets/audio/NPC/MoleDig.wav
+        if (s.moleTrader && !s.moleTrader._digSndHooked) {
+            s.moleTrader._digSndHooked = true;
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
+                if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'MoleDig');
+            });
+        }
         if (s.anims.exists('trader_dig')) {
             if (typeof s.moleTrader.playReverse === 'function') s.moleTrader.playReverse('trader_dig');
             else if (typeof s.moleTrader.play === 'function') s.moleTrader.play('trader_dig');
         }
 
-        // 2.2 秒后切 stand + 对话
-        s.time.delayedCall(2200, () => {
+        // (用户) 钻洞声播完 → 切 stand + 对话 (无声/缺文件兜底 8s)
+        const _toStand = () => {
+            if (s._moleEmergeDone) return; s._moleEmergeDone = true;
             s.moleTrader.setTexture('Trader_stand');
             s.moleTrader.setScale(1);
             s.moleTrader.setPosition(finalX, finalY + 10);  // stand 位置 +10 px (跟 SZ2)
@@ -2106,7 +2113,8 @@ class SafeZone3Scene extends MainGameScene {
             }
             if (s.anims.exists('trader_stand') && s.moleTrader.play) s.moleTrader.play('trader_stand');
             s._sz3MerchantDialog();
-        });
+        };
+        s.time.delayedCall(2200, _toStand);
     }
 
     _sz3MerchantDialog() {

@@ -1247,7 +1247,13 @@ class SafeZone2Scene extends MainGameScene {
         this.tweens.add({ targets: cam, zoom: 2.0, duration: 600, ease: 'Quad.easeOut' });
         cam.pan(finalX, finalY, 600, 'Quad.easeOut');
 
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'MoleDig');   // (用户) 钻出音效
+        // (用户) 检测到 trader_dig 动画播放 (反向/正向都算) → 播 MoleDig. 文件须在 assets/audio/NPC/MoleDig.wav
+        if (this.moleTrader && !this.moleTrader._digSndHooked) {
+            this.moleTrader._digSndHooked = true;
+            this.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
+                if (anim && anim.key === 'trader_dig' && typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'MoleDig');
+            });
+        }
         // 商人钻出来动画: 反向播 trader_dig (从地底升起)
         // 整个动画往右 1 格 (+32), 往下 1.5 格 (+48), 整体放大 0.2 倍 (48 → 57.6)
         // dig 动画 Y 再往上 3+5=8 px (用户多次调整)
@@ -1269,8 +1275,9 @@ class SafeZone2Scene extends MainGameScene {
             }
         }
 
-        // 2 秒动画完成后切回 stand 贴图 + 开始对话
-        this.time.delayedCall(2200, () => {
+        // (用户) 钻洞声播完 → 切 stand + 对话 (无声/缺文件兜底 8s)
+        const _toStand = () => {
+            if (this._moleEmergeDone) return; this._moleEmergeDone = true;
             this.moleTrader.setTexture('Trader_stand');
             this.moleTrader.setScale(1);
             // 商人生成位置 +5+5=10 px 下移 (用户多次调整)
@@ -1285,7 +1292,8 @@ class SafeZone2Scene extends MainGameScene {
                 this.moleTrader.play('trader_stand');
             }
             this._sz2MerchantDialog();
-        });
+        };
+        this.time.delayedCall(2200, _toStand);
     }
 
     _sz2MerchantDialog() {
