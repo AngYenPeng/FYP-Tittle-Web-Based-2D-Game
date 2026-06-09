@@ -7,29 +7,41 @@ var sz6_bullets;
 var sz6_spawnDoor, sz6_bossDoor;
 var sz6_exitWall, sz6_exitStairs, sz6_victoryTrigger;
 var sz6_bossBeatenSequence = false;
+var sz6_roarAlertTriggered = false; // 🌟 新增：防止半路咆哮对话每帧重复触发
 var sz6_dialogueLines = [
 "Merchant: Oi, dirt-scratcher. Didn't peg ya to survive this deep... gotta hand it to ya, you got grit.",
 "Merchant: 'Fore you go kickin' the hornet's nest, listen up. Them shiny blue rocks you been hoarding? They sprout by suckin' the juice outta the dead down here.",
 "Merchant: I ain't buyin' 'em to get filthy rich. I'm baggin' the infection. Every rock I pocket is one less nasty bug crawlin' its way to the topside.",
 "Merchant: The Big Bad is right through there. The Mother of all this mess. Go on, give 'er hell and finish this."
 ];
+// File: SafeZone5Scene.js at the top, along with existing globals
+var sz6_reliefDialogueLines = [ // New lines reflecting relief
+    "Merchant: It's... over. Finally, some quiet down here.",
+    "Merchant: This old place is looking better by the minute. You really cleaned house.",
+    "Merchant: No more bug counting for me, for a while at least.",
+    "Merchant: Well, don't just stand there with your pickaxes. There's a proper quiet surface waiting for you."
+];
+var sz6_currentReliefLine = 0; // Tracks the current line of the relief dialogue
 var sz6_terrain = [
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
-[1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1],
-[1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1],
-[1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,1,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1],
-[1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1],
-[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1],
-[1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1],
-[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1],
-[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+[1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1],
+[1,0,0,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1],
+[1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -52,15 +64,148 @@ class SafeZone5Scene extends MainGameScene {
         if (sz6_skipHint) sz6_skipHint.setVisible(false);
     }
 
-    // 🌟 UNIQUE FIX: Defined victory checker method to prevent backend reference errors
-    revealEndgamePassage() {
-        console.log("Boss beaten! Activating clear path triggers.");
-        if (sz6_exitStairs) {
-            sz6_exitStairs.getChildren().forEach(step => {
-                step.setVisible(true);
-                if (step.body) step.body.enable = true;
+    // New function to turn movement controls back on safely after relief dialogue
+finishReliefDialogue() {
+        sz6_dialogueState = 8; // 商人释怀白播放完毕
+        this.playerCanMove = true; // 解锁控制权，允许玩家自己手动走过商人去爬楼梯
+
+        if (sz6_dialogueBox) sz6_dialogueBox.setVisible(false);
+        if (sz6_dialogueText) sz6_dialogueText.setVisible(false);
+        if (sz6_dialogueHint) sz6_dialogueHint.setVisible(false);
+        if (sz6_skipHint) sz6_skipHint.setVisible(false);
+
+        // 🌟 镜头恢复：谈话结束，镜头在 1.2 秒内平滑拉远，恢复至最舒服的探索缩放倍率（2.5），并重新死死跟随主角！
+        this.cameras.main.zoomTo(2.5, 1200, 'Sine.easeInOut');
+        this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
+    }
+
+setupMerchantFinalDialogue() {
+        this._readyForReliefDialogue = true; 
+        sz6_dialogueState = 1;               
+        this.playerCanMove = false;          
+        if (this.player.body) this.player.body.setVelocity(0, 0);
+
+        // 🌟 运镜聚焦：镜头在 0.8 秒内滑移聚焦到老鼠商人的面部，并放大到 3.4 倍切特写！
+        this.cameras.main.stopFollow();
+        this.cameras.main.pan(sz6_merchant.x, sz6_merchant.y - 15, 800, 'Cubic.easeInOut');
+        this.cameras.main.zoomTo(3.4, 800, 'Cubic.easeInOut');
+        
+        sz6_dialogueBox.setVisible(true);
+        sz6_dialogueText.setVisible(true);
+        sz6_dialogueHint.setVisible(true);
+        sz6_skipHint.setVisible(true);
+        sz6_dialogueText.setText(sz6_reliefDialogueLines[0]); 
+    }
+
+revealEndgamePassage() {
+        console.log("Boss beaten! Activating specialized split-skin purification sequence.");
+        if (this.finalHint) this.finalHint.destroy();
+
+        const cam = this.cameras.main;
+        cam.stopFollow(); 
+
+        cam.setBounds(1440, 120, 1760, 580); 
+        cam.pan(sz6_exitWall.x, sz6_exitWall.y, 1000, 'Cubic.easeInOut');
+        cam.zoomTo(3.2, 1000, 'Cubic.easeInOut');
+
+        this.time.delayedCall(1100, () => {
+            this.tweens.add({
+                targets: sz6_exitWall,
+                x: '+=6',
+                duration: 50,
+                yoyo: true,
+                repeat: 10,
+                onComplete: () => {
+                    this.sound.play('snd_boss_explode', { volume: 0.9 });
+                    cam.flash(600, 255, 255, 255); 
+                    cam.shake(500, 0.04);          
+
+                    let originX = sz6_exitWall.x;
+                    let originY = sz6_exitWall.y;
+
+                    if (sz6_exitWall) sz6_exitWall.destroy(); 
+
+                    if (sz6_exitStairs) {
+                        sz6_exitStairs.getChildren().forEach(step => {
+                            step.setVisible(true);
+                            if (step.body) step.body.enable = true;
+                        });
+                    }
+
+                    // 释放全图黄色纯净矿脉转化波
+                    let flashWave = this.add.circle(originX, originY, 10, 0xffcc44, 0.4).setDepth(20);
+                    this.tweens.add({
+                        targets: flashWave,
+                        radius: 3500,
+                        duration: 1400,
+                        ease: 'Quad.easeOut',
+                        onUpdate: () => {
+                            let currentRadius = flashWave.radius;
+
+                            // A. 强制巨幕背景换皮为黄金图层
+                            if (this.bg && this.bg.setTexture) {
+                                this.bg.setTexture('Yellow_bg');
+                                this.bg.clearTint(); 
+                            }
+
+                            // B. 🌟 三层深度晶体分层置换逻辑
+                            if (this.walls && this.walls.getChildren) {
+                                this.walls.getChildren().forEach(w => {
+                                    if (Phaser.Math.Distance.Between(w.x, w.y, originX, originY) < currentRadius && w.texture) {
+                                        // 🟢 第 1 层：天花板/玩家脚下的地表地板 -> 换成带绿草皮的边缘块
+                                        if (w.texture.key === 'tile_floor') {
+                                            w.setTexture('Yellow_dirt_T'); 
+                                        } 
+                                        // 🟤 第 2/3 层：根据方块所在的垂直深度（Row 轴位置）进行地底资源细分
+                                        else if (w.texture.key === 'tile_wall') {
+                                            let blockRow = Math.floor(w.y / 32); // 计算这个方块在地图里的真实行号
+                                            
+                                            if (blockRow >= 14) {
+                                                // 🌟 满足你的核心要求：如果是深处的地底下腹（Row 14 及以下），物理替换成第三种黄金深泥土块（Yellow_dirt_5LC3.png）
+                                                w.setTexture('Yellow_dirt_block_skin_3'); // 👈 如果你未注册，保底可直接写入资源缓存名 'Yellow_dirt_3L2'
+                                            } else {
+                                                // 如果是地表之下的浅层内壁，使用第二种泥土块（Yellow_dirt_5LC2.png）
+                                                w.setTexture('Yellow_dirt_3L2'); 
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        },
+                        onComplete: () => {
+                            flashWave.destroy();
+
+                            // 商人钻出：高度和位置经过了像素重构，完美贴合你调好的新台阶孔位
+                            if (sz6_merchant) {
+                                let startY = originY + 160;  // 藏在更深的地下
+                                let endY = originY - 60;    // 最终完美双脚踩在 Row 14 梯口的地表平线上！
+
+                                sz6_merchant.setPosition(originX - 120, startY); 
+                                sz6_merchant.setVisible(true);
+                                sz6_merchant.setAlpha(0);
+                                sz6_merchant.setFlipX(true); // 脸朝左迎接走过来的玩家
+
+                                this.tweens.add({
+                                    targets: sz6_merchant,
+                                    y: endY,        
+                                    alpha: 1,
+                                    duration: 1000,
+                                    ease: 'Back.easeOut',
+                                    onComplete: () => {
+                                        this.physics.add.existing(sz6_merchant, true);
+                                        if (sz6_merchant.body && sz6_merchant.body.updateFromGameObject) {
+                                            sz6_merchant.body.updateFromGameObject();
+                                        }
+                                        // 唤醒镜头移过去聚焦说话
+                                        this.setupMerchantFinalDialogue();
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
             });
-        }
+        });
     }
 
     // 真稿子系统 — 直接定义在场景内 (不依赖 GameScene.js)
@@ -99,6 +244,24 @@ class SafeZone5Scene extends MainGameScene {
         this.pick2.setCollideWorldBounds(true);
         this.physics.add.collider(this.pick1, this.walls, () => this.handlePickCollide(this.pick1, 1));
         this.physics.add.collider(this.pick2, this.walls, () => this.handlePickCollide(this.pick2, 2));
+        // 🌟 核心修复：建立飞镐对 Boss 伤害的实时重叠监听器
+    // 获取当前被砸中的真实 Boss 实例
+    let boss = BossManager.entity;
+    if (!boss || !boss.active || boss.isDead || boss.isReviving) return;
+
+    // 只有当稿子正处于被丢出去的攻击飞行、掉落状态时，才计算伤害
+    if (pick.state === 'flying_max' || pick.state === 'flying_gravity' || pick.state === 'dropping') {
+        
+        // 1. 让 Boss 受到 1 点近战稿击伤害
+        boss.takeDamage(1); 
+        
+        // 2. 触发关卡摄像机轻微受击震动，增强打击感
+        this.cameras.main.shake(200, 0.015);
+        
+        // 3. 强制把被弹飞的稿子收回（Recall），防止它穿透 Boss 身体
+        this.recallSystem.startRecall(pick); 
+    }
+
         // (用户) 已登记的空气墙 → 稿子碰撞器 (空气墙对稿子 = 真墙; 处理"墙先建/稿子后建"的顺序)
         if (this._pickExtraWalls) this._pickExtraWalls.forEach(w => this._addPickWallCollider(w));
         this.ropeNodes1 = []; this.ropeNodes2 = [];
@@ -197,6 +360,8 @@ class SafeZone5Scene extends MainGameScene {
         this.grappleSystem.update();
         this.recallSystem.update();
         this.throwSystem.updateUI();
+
+    
     }
 
 
@@ -210,10 +375,69 @@ class SafeZone5Scene extends MainGameScene {
     }
 
     preload() {
-        if (typeof super.preload === 'function') super.preload();
-    }
+    if (typeof super.preload === 'function') super.preload();
+
+        // 🌟 修复追加：将你 assets/images 目录下的黄色净化贴图注册进 Phaser 缓存
+    this.load.image('Yellow_dirt_T', 'assets/images/Yellow_dirt_T.png');
+        this.load.image('Yellow_dirt_3L2', 'assets/images/Yellow_dirt_3L2.png');
+        this.load.image('Yellow_dirt_block_skin_3', 'assets/images/Yellow_dirt_5LC3.png'); // 对应 Row 14 以下的深层块
+        this.load.image('Yellow_bg', 'assets/images/Yellow_dirt_5LC2.png');
+
+    // 1. 背景音乐 (BGM)
+    this.load.audio('bgm_safezone5', 'assets/audio/BGM/SafeZone5_Ambient.mp3'); // 关卡探索BGM
+    this.load.audio('bgm_spider_boss', 'assets/audio/BGM/SpiderBoss_Theme.mp3'); // Boss战激昂BGM
+
+    // 2. Boss 动作与受击音效
+    this.load.audio('snd_boss_roar', 'assets/audio/SpiderBoss/Spider_Roar.mp3');     // 开场咆哮
+    this.load.audio('snd_boss_hurt', 'assets/audio/SpiderBoss/Spider_Hurt.mp3');     // Boss受击
+    this.load.audio('snd_boss_dead', 'assets/audio/SpiderBoss/Spider_Dead.mp3');     // Boss死亡
+    this.load.audio('snd_boss_explode', 'assets/audio/SpiderBoss/Spider_Explode.mp3');// 最终爆炸
+
+    // 3. Boss 技能与攻击音效
+    this.load.audio('snd_web_shoot', 'assets/audio/SpiderBoss/Web_Shoot.mp3');       // 吐蛛网 / 轰炸
+    this.load.audio('snd_boss_dash', 'assets/audio/SpiderBoss/Spider_Dash.mp3');     // 疯狂冲锋
+    this.load.audio('snd_venom_spit', 'assets/audio/SpiderBoss/Venom_Spit.mp3');     // 吐毒液
+    this.load.audio('snd_egg_lay', 'assets/audio/SpiderBoss/Egg_Lay.mp3');
+
+
+        // 🌟 1. 加载地刺静态贴图 (32x32 像素)
+    this.load.image('thorns_skin', 'assets/images/Thorns.png');
+    
+    // 🌟 2. 加载商人动画序列帧 (总宽 288x48，共 6 帧，单帧为 48x48)
+    this.load.spritesheet('Trader_stand', 'assets/images/Trader_stand.png', { 
+        frameWidth: 48, 
+        frameHeight: 48 
+    });
+    
+    // 🌟 3. 加载木门动画序列帧 (总宽 576x96，共 6 帧，单帧为 96x96)
+    this.load.spritesheet('door_skin', 'assets/images/Key_door_open.png', { 
+        frameWidth: 96, 
+        frameHeight: 96 
+    });
+
+    // 🌟 1. Load Background skin
+    this.load.image('bg_block', 'assets/images/Background_block.png');
+    
+    // 🌟 2. Load Wall & Floor skins (Using files visible in your directory)
+    this.load.image('tile_floor', 'assets/images/Cavetile_wall_T.png');     // Top floor surface
+    this.load.image('tile_wall', 'assets/images/Cavetile_wall_2L.png');    // Solid inner walls
+    
+    // 🌟 ADD THIS: Preload the actual spider texture frames into the asset cache registry
+    this.load.spritesheet('boss_idle', 'assets/Spider/Spider-Idle.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('boss_run', 'assets/Spider/Spider-Run.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('boss_attack', 'assets/Spider/Spider-Attack.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('boss_dead', 'assets/Spider/Spider-Dead.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('boss_hurt', 'assets/Spider/Spider-Hurt.png', { frameWidth: 64, frameHeight: 64 });
+}
 
 create() {
+
+    console.log("Texture 'boss_idle' exists:", this.textures.exists('boss_idle'));
+    
+    // 如果返回 false，打印已加载的所有纹理名称，看看你到底把 Boss 注册成了什么名字
+    if (!this.textures.exists('boss_idle')) {
+        console.log("All loaded textures:", this.textures.getTextureKeys());
+    }
 
     // 1. Set the physics world to match your terrain height (Rows * TileSize)
 // Assuming G = 60 and your terrain has 20 rows (20 * 60 = 1200)
@@ -221,9 +445,12 @@ this.physics.world.setBounds(0, 0, 5000, 960);
 
 // 2. Tell the Camera to STOP scrolling past the floor
 // This prevents the user from seeing the "big space" down there
-this.cameras.main.setBounds(0, 0, 5000, 960);
+this.cameras.main.setBounds(1440, 0, 1760, 500);
 
     if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone5');  
+    // 启动关卡探索背景音乐（循环播放，音量 0.5）
+this.currentBGM = this.sound.add('bgm_safezone5', { loop: true, volume: 0.5 });
+this.currentBGM.play();
     // (合并) 物理 debug draw 关闭 (队友开发期临时开的, 上线不显示碰撞框)
     try {
         const w = this.physics.world;
@@ -238,9 +465,9 @@ this.cameras.main.setBounds(0, 0, 5000, 960);
     this.activeEnd1 = 14; this.activeEnd2 = 14;
     this._registerMonsterAnims();
 
-    const G = 60;
-    const W = 6000;
-    const H = 1200;
+    const G = 32;
+    const W = 3200;
+    const H = 800;
 
     sz6_arenaLocked = false;
     sz6_dialogueState = 0;
@@ -248,17 +475,25 @@ this.cameras.main.setBounds(0, 0, 5000, 960);
     sz6_bossBeatenSequence = false;
     this.playerCanMove = true;
 
-    this.cameras.main.setBackgroundColor('#050510');
-    const mapWidth = sz6_terrain[0].length * 60;
-const mapHeight = sz6_terrain.length * 60;
-this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
-this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
+    if (typeof BossManager !== 'undefined') {
+    BossManager.entity = null; // Clears old references to prevent premature win condition loops on boot
+}
 
-    if (this.textures.exists('Tutorial_scene_background_image')) {
-        this.bg = this.add.image(W / 2, H / 2, 'Tutorial_scene_background_image');
-        const bgScale = Math.max(W / this.bg.width, H / this.bg.height);
-        this.bg.setScale(bgScale).setScrollFactor(0).setDepth(-100);
-    }
+    this.cameras.main.setBackgroundColor('#050510');
+    const mapWidth = sz6_terrain[0].length * 32;
+const mapHeight = sz6_terrain.length * 32;
+this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+this.cameras.main.setBounds(0, 0, 1578, mapHeight);
+
+    // 🌟 CLEAN FIX: Checks for your preloaded block texture and stretches the tile sprite to match world bounds
+if (this.textures.exists('bg_block')) {
+    // Center it in the middle of your 3200x800 world layout space
+    this.bg = this.add.tileSprite(W / 2, H / 2, W, H, 'bg_block');
+    
+    // setScrollFactor(1) makes the background naturally parallax/scroll behind the player
+    // If you want it stuck to your camera window instead, leave it at 0
+    this.bg.setScrollFactor(1).setDepth(-100);
+}
 
     this._initT1State();
     this.input.mouse.disableContextMenu();
@@ -312,12 +547,23 @@ this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
 
     this.buildCaveDecorations();
 
-    sz6_spawnDoor = this.add.rectangle(35, 660, 30, 120, 0x111122).setStrokeStyle(3, 0x443355).setDepth(5);
-    sz6_bossDoor = this.add.rectangle(3300, 630, 40, 300, 0x221133).setStrokeStyle(4, 0x9900ff).setDepth(5);
-    sz6_exitWall = this.add.rectangle(4770, 900, 60, 120, 0x1a0f2e).setStrokeStyle(2, 0x3b2d59).setDepth(11);
-    
-    this.physics.add.existing(sz6_exitWall, true);
-    this.platforms.add(sz6_exitWall);
+    // 🌟 REPLACED: Positions the spawn door exactly on the new 32px starting floor
+sz6_spawnDoor = this.add.sprite(20, 350, 'door_skin', 0).setDepth(5);
+sz6_spawnDoor.setDisplaySize(32, 96);
+
+// 🌟 REPLACED: Shrinks and moves the arena entry door to Column 54 (X: 1728)
+sz6_bossDoor = this.add.sprite(1588, 320, 'door_skin', i => i.setFrame(0)).setDepth(5);
+sz6_bossDoor.setDisplaySize(128, 128);
+
+// 🌟 REPLACED: 修正物理隔离墙的坐标，使其严丝合缝地挡在右侧隐藏楼梯的入口前方 (X: 2832)
+        sz6_exitWall = this.add.image(2550, 600, 'tile_wall').setDepth(11);
+        sz6_exitWall.setDisplaySize(48, 250); // 强行拉高加厚，确保形成一道不可逾越的高墙
+        
+        this.physics.add.existing(sz6_exitWall, true);
+        if (sz6_exitWall.body && sz6_exitWall.body.updateFromGameObject) {
+            sz6_exitWall.body.updateFromGameObject(); // 强行刷新物理包围盒，防止玩家穿模
+        }
+        this.walls.add(sz6_exitWall);
 
     for (let r = 0; r < sz6_terrain.length; r++) {
         for (let c = 0; c < sz6_terrain[r].length; c++) {
@@ -325,26 +571,41 @@ this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
             let yPos = r * G + (G / 2);
 
             if (sz6_terrain[r][c] === 1) { 
-                let block = this.add.rectangle(xPos, yPos, G, G, 0x1a0f2e);
-                block.setStrokeStyle(2, 0x3b2d59); 
-                this.physics.add.existing(block, true);
-                this.walls.add(block); 
+    // 🌟 SMART SKINNING: If row above is empty air (0), it's a floor top! Otherwise it's a solid inner wall block.
+    let isFloorSurface = (r === 0 || sz6_terrain[r - 1][c] === 0);
+    let skinKey = isFloorSurface ? 'tile_floor' : 'tile_wall';
 
-                if (xPos >= 3200) {
-                this.platforms.add(block);
-            }
-                
-                this.wallRects.push({
-                    x: xPos - G/2, y: yPos - G/2,
-                    width: G, height: G,
-                    left: xPos - G/2, right: xPos + G/2,
-                    top: yPos - G/2, bottom: yPos + G/2
-                });
-            } else if (sz6_terrain[r][c] === 2) {
-                let spike = this.add.triangle(xPos, yPos + 15, 0, 30, 30, 30, 15, 0, 0xff0055);
-                this.physics.add.existing(spike, true);
-                sz6_hazards.add(spike);
-            } else if (sz6_terrain[r][c] === 3) {
+    // Create the block as an image texture rather than a solid primitive rectangle
+    let block = this.add.image(xPos, yPos, skinKey);
+    block.setDisplaySize(G, G); // Assures asset limits conform exactly to your 32px constraints
+    
+    this.physics.add.existing(block, true);
+    this.walls.add(block); 
+
+    if (xPos >= 1728) {
+        this.platforms.add(block);
+    }
+    
+    this.wallRects.push({
+        x: xPos - G/2, y: yPos - G/2,
+        width: G, height: G,
+        left: xPos - G/2, right: xPos + G/2,
+        top: yPos - G/2, bottom: yPos + G/2
+    });
+} else if (sz6_terrain[r][c] === 2) {
+    // 🌟 用加载好的真实尖刺图片替换原有的彩色三角形
+    let spike = this.add.image(xPos, yPos, 'thorns_skin');
+    spike.setDisplaySize(G, G); // 强制缩放到 32px 大小完美契合网格
+    
+    this.physics.add.existing(spike, true);
+    
+    // 适当缩小刺的物理判定区，防止玩家稍微擦边就被判定受伤
+    if (spike.body) {
+        spike.body.setSize(24, 16);
+        spike.body.setOffset(4, 16);
+    }
+    sz6_hazards.add(spike);
+}else if (sz6_terrain[r][c] === 3) {
                 let step = this.add.rectangle(xPos, yPos, G, G, 0x1a0f2e);
                 step.setStrokeStyle(2, 0x3b2d59);
                 this.physics.add.existing(step, true);
@@ -356,22 +617,57 @@ this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
     }
 
     this.add.text(120, 520, ">> DEEP MINES AHEAD >>", { fontSize: '24px', fill: '#00ffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setDepth(10);
-    let finalHint = this.add.text(2600, 400, ">> WARNING: MATRIARCH LAIR >>", { fontSize: '28px', fill: '#ff0000', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setDepth(10);
-    this.tweens.add({ targets: finalHint, alpha: 0.2, duration: 800, yoyo: true, repeat: -1 });
+   // 🌟 核心修改：改为 this.finalHint，使其变成全局可访问的对象
+this.finalHint = this.add.text(2600, 400, ">> WARNING: MATRIARCH LAIR >>", { fontSize: '28px', fill: '#ff0000', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setDepth(10);
 
-    sz6_bossBarrier = this.add.rectangle(3300, 700, 40, 800, 0x8888ff, 0.5);
+    // 🌟 REPLACED: Aligns the physics force field barrier to match the entry gate location
+sz6_bossBarrier = this.add.rectangle(1538, 300, 24, 250, 0x8888ff, 0.5);
     this.physics.add.existing(sz6_bossBarrier, true);
     sz6_bossBarrier.setVisible(false);
     sz6_bossBarrier.body.enable = false; // 🌟 FIXED
 
-    sz6_merchant = this.add.rectangle(530, 600, 40, 80, 0x00ff00);    
+    sz6_merchant = this.add.sprite(225, 342, 'trader_stand').setDepth(6);
+    this.sz6_merchantOriginX = 225; // Define new class property
+    this.sz6_merchantOriginY = 342; // Define new class property
+    sz6_merchant.setDisplaySize(48, 48);  
+    sz6_merchant.setFlipX(true);
+    if (this.anims.exists('trader_stand')) {
+    sz6_merchant.play('trader_stand');
+}  
 
-    sz6_dialogueBox = this.add.rectangle(800, 750, 1000, 160, 0x000000, 0.85).setScrollFactor(0).setDepth(9999);
-    sz6_dialogueBox.setStrokeStyle(3, 0xffffff); 
-    sz6_dialogueText = this.add.text(340, 700, "", { fontSize: '24px', fill: '#ffffff', fontFamily: 'monospace', wordWrap: { width: 920 }, lineSpacing: 8 }).setScrollFactor(0).setDepth(10000);
+    // 🌟 视觉升级：放大对白框尺寸（1200x220）并显著提升字号，使其极具剧场感
+        sz6_dialogueBox = this.add.rectangle(800, 720, 1200, 220, 0x000000, 0.9).setScrollFactor(0).setDepth(9999);
+        sz6_dialogueBox.setStrokeStyle(4, 0xffd86a); // 换成高贵发光金框
+        
+        sz6_dialogueText = this.add.text(240, 640, "", { 
+            fontSize: '30px', // 👈 字号由 24px 放大到 30px
+            fill: '#ffffff', 
+            fontFamily: 'monospace', 
+            fontStyle: 'bold',
+            wordWrap: { width: 1120 }, 
+            lineSpacing: 10 
+        }).setScrollFactor(0).setDepth(10000);
     sz6_dialogueHint = this.add.text(1120, 800, "[ Click to Progress ]", { fontSize: '16px', fill: '#ffff00', fontStyle: 'bold' }).setScrollFactor(0).setDepth(10000);
     sz6_skipHint = this.add.text(1240, 680, "SKIP >>", { fontSize: '16px', fill: '#ff5555', fontStyle: 'bold' }).setScrollFactor(0).setInteractive({ useHandCursor: true }).setDepth(10000);
-    
+    // 🌟 修复注入：为 SKIP 按钮绑定跨场景智能跳过功能
+        sz6_skipHint.on('pointerdown', (pointer) => {
+            pointer.downX = pointer.x; // 阻止事件穿透引发近战挥砍
+            if (this._readyForReliefDialogue) {
+                this.finishReliefDialogue(); // 跳过通关对话
+            } else if (this._readyForRoarAlert) {
+                // 跳过半路咆哮提示
+                sz6_dialogueBox.setVisible(false);
+                sz6_dialogueText.setVisible(false);
+                sz6_dialogueHint.setVisible(false);
+                sz6_skipHint.setVisible(false);
+                this.playerCanMove = true;
+                sz6_dialogueState = 2;
+                this._readyForRoarAlert = false;
+            } else {
+                this.finishDialogue(); // 跳过开场白对话
+            }
+        });
+
     sz6_dialogueBox.setVisible(false);
     sz6_dialogueText.setVisible(false);
     sz6_dialogueHint.setVisible(false);
@@ -415,7 +711,7 @@ this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
     const spawnY = (this._inheritedData && this._inheritedData.spawnY) || 440;
     this.spawnX = spawnX; this.spawnY = spawnY;
 
-    this.player = new Player(this, 80, spawnY);
+    this.player = new Player(this, 70, 200);
 
 
 
@@ -560,7 +856,7 @@ this.physics.add.overlap(this.player, sz6_hazards, () => {
     this._chunks = [];
     this._currentChunkId = null;
 
-    this.cameras.main.setZoom(1.8);
+    this.cameras.main.setZoom(2.5);
     this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
 
     this.cameraSystem = new CameraSystem(this.cameras.main, this.player);
@@ -581,11 +877,11 @@ this.physics.add.overlap(this.player, sz6_hazards, () => {
         }
     });
 
-    this._cfgConvMin = 500;
-    this._cfgConvMax = 830;
-    this._cfgArenaX  = 3350;
-    this._cfgBossX   = 4050;
-    this._cfgBossY   = 150;
+    this._cfgConvMin = 150;   // Merchant dialogue min range step boundary
+this._cfgConvMax = 450;   // Merchant dialogue max range step boundary
+this._cfgArenaX  = 1750;  // Arena entry trigger line (Scaled to 32px column 55)
+this._cfgBossX   = 1800;  // Boss hanging overhead center point X
+this._cfgBossY   = 80;    // Boss hanging overhead center point Y (Ceiling mount)
     this._cfgVictoryX = 5880;
     this._cfgVictoryY = 300;
 
@@ -604,45 +900,64 @@ this.physics.add.overlap(this.player, sz6_hazards, () => {
     this.game.canvas.style.cursor = 'none';
 
     this.input.on('pointerdown', (pointer) => {
-        if (sz6_dialogueState === 1) {
-            sz6_currentLine++;
-            if (sz6_currentLine >= sz6_dialogueLines.length) {
-                this.finishDialogue();
-            } else {
-                sz6_dialogueText.setText(sz6_dialogueLines[sz6_currentLine]);
-            }
-            return;
-        }
-        if (!this.player.body || this.isPlayerStunned || this.isDead) return;
-        if (this._cinematicLock) return;
-        if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
-        if (this.backpackSystem?.isOpen || this.settingsSystem?.isOpen || this.creativeSystem?.isOpen) return;
-        if (this.dialogSystem?.isOpen || this.guideSystem?.isOpen) return;
-        if (this._suppressNextClick) {
-            this._suppressNextClick = false;
-            return;
-        }
-        if (this._isClickOnHUDButton(pointer)) return;
+            if (sz6_dialogueState === 1) {
+                // 🌟 新增判定：如果是半路惊悚咆哮，点击任意地方直接恢复行动关闭对话
+                if (this._readyForRoarAlert) {
+                    sz6_dialogueBox.setVisible(false);
+                    sz6_dialogueText.setVisible(false);
+                    sz6_dialogueHint.setVisible(false);
+                    sz6_skipHint.setVisible(false);
+                    this.playerCanMove = true;
+                    sz6_dialogueState = 2;
+                    this._readyForRoarAlert = false;
+                    return;
+                }
 
-        let item = this.inventorySystem?.getActiveItem?.();
-        let holdingPickaxe = item && item.type === 'pickaxe';
-        let side = this.player.pState?.activeHand;
-        let pick = side === 'left' ? this.pick1 : this.pick2;
-
-        if (pointer.button === 2) {
-            if (holdingPickaxe && this._pickaxeUpgraded) {
-                pick.state === 'idle' ? this.throwSystem.releaseThrow(pointer) : this.recallSystem.startRecall(pick);
+                if (this._readyForReliefDialogue) {
+                    sz6_currentReliefLine++;
+                    if (sz6_currentReliefLine >= sz6_reliefDialogueLines.length) {
+                        this.finishReliefDialogue(); 
+                    } else {
+                        sz6_dialogueText.setText(sz6_reliefDialogueLines[sz6_currentReliefLine]);
+                    }
+                } else {
+                    sz6_currentLine++;
+                    if (sz6_currentLine >= sz6_dialogueLines.length) {
+                        this.finishDialogue();
+                    } else {
+                        sz6_dialogueText.setText(sz6_dialogueLines[sz6_currentLine]);
+                    }
+                }
+                return;
             }
-        } else if (pointer.button === 0) {
-            if (holdingPickaxe && pick.state === 'attached' && this._pickaxeUpgraded) {
-                this.grappleSystem.startZip(pick);
-            } else {
-                if (this.meleeSystem.execute()) {
-                    this._checkMeleeOnCrystalOres();
+
+            if (!this.player.body || this.isPlayerStunned || this.isDead) return;
+            if (this._cinematicLock) return;
+            if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
+            if (this.backpackSystem?.isOpen || this.settingsSystem?.isOpen || this.creativeSystem?.isOpen) return;
+            if (this.dialogSystem?.isOpen || this.guideSystem?.isOpen) return;
+            if (this._suppressNextClick) { this._suppressNextClick = false; return; }
+            if (this._isClickOnHUDButton(pointer)) return;
+
+            let item = this.inventorySystem?.getActiveItem?.();
+            let holdingPickaxe = item && item.type === 'pickaxe';
+            let side = this.player.pState?.activeHand;
+            let pick = side === 'left' ? this.pick1 : this.pick2;
+
+            if (pointer.button === 2) {
+                if (holdingPickaxe && this._pickaxeUpgraded) {
+                    pick.state === 'idle' ? this.throwSystem.releaseThrow(pointer) : this.recallSystem.startRecall(pick);
+                }
+            } else if (pointer.button === 0) {
+                if (holdingPickaxe && pick.state === 'attached' && this._pickaxeUpgraded) {
+                    this.grappleSystem.startZip(pick);
+                } else {
+                    if (this.meleeSystem.execute()) {
+                        this._checkMeleeOnCrystalOres();
+                    }
                 }
             }
-        }
-    });
+        });
 
     this._applyInheritedState();
     if (typeof SaveSystem !== 'undefined') SaveSystem.autoSave(this);
@@ -704,6 +1019,24 @@ this.physics.add.overlap(this.player, sz6_hazards, () => {
     }
 
     _registerAnims() {
+
+        // 🌟 ADD THIS to build the animation loops the boss AI expects:
+if (this.textures.exists('boss_idle') && !this.anims.exists('anim_boss_idle')) {
+    this.anims.create({ key: 'anim_boss_idle', frames: this.anims.generateFrameNumbers('boss_idle', { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
+}
+if (this.textures.exists('boss_run') && !this.anims.exists('anim_boss_run')) {
+    this.anims.create({ key: 'anim_boss_run', frames: this.anims.generateFrameNumbers('boss_run', { start: 0, end: 5 }), frameRate: 12, repeat: -1 });
+}
+if (this.textures.exists('boss_attack') && !this.anims.exists('anim_boss_attack')) {
+    this.anims.create({ key: 'anim_boss_attack', frames: this.anims.generateFrameNumbers('boss_attack', { start: 0, end: 4 }), frameRate: 14, repeat: 0 });
+}
+if (this.textures.exists('boss_dead') && !this.anims.exists('anim_boss_dead')) {
+    this.anims.create({ key: 'anim_boss_dead', frames: this.anims.generateFrameNumbers('boss_dead', { start: 0, end: 4 }), frameRate: 10, repeat: 0 });
+}
+if (this.textures.exists('boss_hurt') && !this.anims.exists('anim_boss_hurt')) {
+    this.anims.create({ key: 'anim_boss_hurt', frames: this.anims.generateFrameNumbers('boss_hurt', { start: 0, end: 2 }), frameRate: 12, repeat: 0 });
+}
+
         // 安全注册 — 检查 texture 存在 + 有效 frames
         const safeCreate = (key, textureKey, frameCfg, frameRate, repeat) => {
             if (this.anims.exists(key)) return;
@@ -780,19 +1113,26 @@ this.physics.add.overlap(this.player, sz6_hazards, () => {
 
 update(time, delta) {
 
-    // 在 update(time, delta) 的第一行添加
-if (typeof BossManager !== 'undefined' && BossManager.entity) {
-    let b = BossManager.entity;
-    // 强制限制 Boss 的 Y 轴高度，如果掉下去了，瞬间拉回来
-    if (b.y > 1150) { 
-        b.y = 800; // 重置到竞技场地板高度
-        if (b.body) b.body.setVelocity(0, 0);
-    }
-    // 确保任何技能状态下，Boss 都是“实体”状态
-    if (b.body && !b.body.enable) b.body.enable = true;
-}
-
     if (this._uiPaused) return;   
+    // 🌟 新增功能：半路惊悚咆哮动态触发器
+        if (!sz6_roarAlertTriggered && this.player.x > 900 && this.player.x < 1200) {
+            sz6_roarAlertTriggered = true; // 锁死防止多帧重复触发
+            this._readyForRoarAlert = true; // 标记当前对白属于预警白
+            
+            this.sound.play('snd_boss_roar', { volume: 0.7 }); // 播发深渊爬行吼叫
+            this.cameras.main.shake(400, 0.012);              // 摄像机产生地震剧烈摇晃
+
+            sz6_dialogueState = 1;                             // 截断操作，强入对话
+            this.playerCanMove = false;
+            if (this.player.x && this.player.body) this.player.body.setVelocity(0, 0);
+
+            // 呼出大对白框显示内心独白
+            sz6_dialogueBox.setVisible(true);
+            sz6_dialogueText.setVisible(true);
+            sz6_dialogueHint.setVisible(true);
+            sz6_skipHint.setVisible(true);
+            sz6_dialogueText.setText("Miner: ...What on earth was that?! The cavern walls are violently trembling. The Matriarch Mother must be nesting right ahead...");
+        }
     if (!this.player.body) return;
 
     if (this._hints) this._hints.forEach(h => h.update());
@@ -858,7 +1198,7 @@ if (typeof BossManager !== 'undefined' && BossManager.entity) {
         this._gridCoordVisible = false;
     }
 
-    if (sz6_dialogueState === 0 && this.player.x > this._cfgConvMin && this.player.x < this._cfgConvMax && this.player.y > 700) {
+    if (sz6_dialogueState === 0 && this.player.x > this._cfgConvMin && this.player.x < this._cfgConvMax && this.player.y > 200) {
         sz6_dialogueState = 1;
         this.playerCanMove = false;
         this.player.body.setVelocity(0, 0);
@@ -874,28 +1214,46 @@ if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
     sz6_arenaLocked = true;
     sz6_dialogueState = 6;
     this.playerCanMove = false;
+    if (sz6_merchant) sz6_merchant.setVisible(false);
+
+    if (this.currentBGM) {
+        this.currentBGM.stop();
+    }
+    this.currentBGM = this.sound.add('bgm_spider_boss', { loop: true, volume: 0.6 });
+    this.currentBGM.play();
+
+    // 播放开场震撼咆哮音效
+    this.sound.play('snd_boss_roar', { volume: 0.8 });
+
+    this.cameras.main.setZoom(2.8); // 这里设置你认为完美的固定放大倍数
+    this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
     
     if (this.player.body) {
         this.player.body.setVelocity(0, 0);
         this.player.body.setAcceleration(0, 0);
     }
     
-    this.player.setPosition(3320, 660); 
-    this.cameras.main.setBounds(3280, 0, 1500, 1200);
+    // 1. 将玩家安全投递到第 1 层（Row 9 高台平面的安全站立高度）
+    this.player.setPosition(1600, 270); 
+
+    // 2. 🌟 精准裁剪竞技场的垂直视角高度（从 800px 裁剪到 520px）
+    // 这样镜头底部在 y=520 处就会死死卡住，绝对不会向下滚动去跟镜头显示第 15 行的坑底！
+    this.cameras.main.setBounds(1520, 0, 1025, 700);
     
     sz6_bossBarrier.setVisible(true);
     this.physics.world.enable(sz6_bossBarrier);
     
     if (typeof BossManager !== 'undefined') {
-        // 同步将 walls 和 platforms 传入以作双重实体保障
         BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, () => {}, true);
         
-        // 🌟【追加注入】在 Boss 降临的瞬间，强制为其装载世界边界与双重碰撞
         this.time.delayedCall(50, () => {
             if (BossManager.entity && BossManager.entity.body) {
                 BossManager.entity.body.setCollideWorldBounds(true);
                 this.physics.add.collider(BossManager.entity, this.walls);
                 this.physics.add.collider(BossManager.entity, this.platforms);
+                
+                // 3. 🌟 强制将 Boss AI 的初始表面状态纠正为 air 浮空突袭状态，防止其第 1 帧就去找底层
+                BossManager.entity.surface = 'air';
             }
         });
     }
@@ -922,9 +1280,21 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
 
     if (sz6_arenaLocked && typeof BossManager !== 'undefined') {
     BossManager.update(time, delta, this.player);
+
+    // 🌟 修复注入：只有 Boss 在场且存活时，飞镐才动态扫描物理重叠
+    if (BossManager.entity && BossManager.entity.active) {
+        this.physics.overlap([this.pick1, this.pick2], BossManager.entity, (pick, boss) => {
+            if (pick.state === 'flying_max' || pick.state === 'flying_gravity' || pick.state === 'dropping') {
+                boss.takeDamage(1); 
+                this.cameras.main.shake(200, 0.015);
+                this.recallSystem.startRecall(pick); 
+            }
+        });
+    }
     
     // 🌟 FIXED: Added 'BossManager.entity &&' so it doesn't trick itself on frame 1
     if (BossManager.entity && !sz6_bossBeatenSequence && !BossManager.entity.active) {
+        this._bossDeathHandled = true;
         sz6_bossBeatenSequence = true;
         this.revealEndgamePassage();
     }
@@ -1022,6 +1392,77 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
             }
         });
     }
+  // ================= 🌟 史诗电影级终章谢幕触发器 (主更新循环) =================
+    // 检查 Boss 被击败，且主角真正爬上了最右侧的通关楼梯 (x > 2900)
+    // 引入 this._endingStarted 判定锁，确保整套逻辑在通关时有且仅执行一次
+    // ================= 🌟 史诗电影级终章谢幕触发器 (主更新循环) =================
+    // 修改判定：只有当 Boss 死了、玩家和商人聊完了天 (sz6_dialogueState === 8)、并且走到了最顶端的最终边界
+    if (this._readyForReliefDialogue && sz6_dialogueState === 8 && this.player.x > 2920) {
+        sz6_dialogueState = 9; // 锁死，防止逻辑重复执行引发文字重叠
+        this.playerCanMove = false;
+        if (this.player.body) this.player.body.setVelocity(0, 0);
+
+        console.log("Player reached the final surface boundary! Rolling cinema credits.");
+
+        let blackScreen = this.add.rectangle(800, 400, 2000, 2000, 0x000000).setScrollFactor(0).setDepth(99999);
+        blackScreen.alpha = 0;
+
+        this.tweens.add({
+            targets: blackScreen,
+            alpha: 1,
+            duration: 2000,
+            onComplete: () => {
+                let creditTexts = [
+                    "With a final, echoing crash of the twin pickaxes,\nthe heart of the abyss shattered...",
+                    "Through unimaginable effort and unbreakable grit,\nthe corrupted mother was pacified.",
+                    "The toxic, blue bacterium crystalline grid began to fade,\nits volatile sickness draining away from the ancient stone.",
+                    "In its place, a warmth washed over the deep mines.\nThe malignant shards transmuted, crystallizing into pure, dormant Yellow Stone.",
+                    "The rhythmic pulse of the earth returned to a calm cadence.\nThe deep dark was finally... at peace.",
+                    "THANK YOU FOR PLAYING\n\n[ ABYSS MINER: CAPSTONE EDITION ]",
+                    "DEVELOPED BY TRI-CORE STUDIOS\n\nANG YEN PENG\nDYLAN TAN CHUN WEI\nLOW YONG YI"
+                ];
+
+                let idx = 0;
+                let showNext = () => {
+                    if (idx >= creditTexts.length) {
+                        this.scene.start('TitleScene'); 
+                        return;
+                    }
+                    let lbl = this.add.text(800, 360, creditTexts[idx], {
+                        fontSize: idx >= 5 ? '46px' : '34px',
+                        fill: idx === 3 ? '#ffcc44' : idx >= 5 ? '#00ffff' : '#ffffff',
+                        fontFamily: 'Courier',
+                        fontStyle: 'bold',
+                        align: 'center',
+                        lineSpacing: 16
+                    }).setOrigin(0.5).setScrollFactor(0).setDepth(100000).setAlpha(0);
+
+                    this.tweens.add({
+                        targets: lbl,
+                        alpha: 1,
+                        duration: 1000,
+                        onComplete: () => {
+                            this.time.delayedCall(idx >= 5 ? 4000 : 2500, () => {
+                                if (!this || !lbl.active) return;
+                                this.tweens.add({
+                                    targets: lbl,
+                                    alpha: 0,
+                                    duration: 1000,
+                                    onComplete: () => {
+                                        lbl.destroy();
+                                        idx++;
+                                        showNext();
+                                    }
+                                });
+                            });
+                        }
+                    });
+                };
+                showNext();
+            }
+        });
+    }
+    // ===========================================================================
 }
     _updateYellowDirtSpread(delta) {
         const sp = this._yellowDirtSpread;
@@ -1121,24 +1562,49 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
     }
 
     /** 玩家近战时检查是否打中水晶矿 */
+    /** 玩家近战时检查是否打中水晶矿 或 蜘蛛 Boss */
     _checkMeleeOnCrystalOres() {
-        if (!this._crystalOres || !this.player) return;
-        // 前方半圆 RANGE=100 + 后方 BACK=32 (半身+0.5格), Y 自然受半圆约束
+        if (!this.player) return;
+        
         const RANGE_SQ = 100 * 100, BACK = 40;
         const px = this.player.x, py = this.player.y;
         const facingRight = !this.player.flipX;
-        this._crystalOres.forEach(ore => {
-            if (ore.destroyed) return;
-            const dx = ore.x - px, dy = ore.y - py;
-            if (dx * dx + dy * dy > RANGE_SQ) return;
-            if (facingRight && dx < -BACK) return;
-            if (!facingRight && dx > BACK) return;
-            ore.takeHit(3.5);
-            if (this.meleeSystem) this.meleeSystem._swingHit = true;   // (用户) 有反应 → 实打实音
-            if (typeof MeleeSystem !== 'undefined') {
-                MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);
+
+        // 🌟 1. 精准追加：检查是否挥砍中蜘蛛 Boss
+        let boss = BossManager.entity;
+        if (boss && boss.active && !boss.isDead && !boss.isReviving) {
+            const dx = boss.x - px, dy = boss.y - py;
+            
+            // 如果 Boss 在砍击半径内，且方向正确
+            if ((dx * dx + dy * dy <= RANGE_SQ) && 
+                (!facingRight || dx >= -BACK) && 
+                (facingRight || dx <= BACK)) {
+                
+                // 砍中 Boss，造成 1 点近战直接伤害！
+                boss.takeDamage(1); 
+                
+                if (this.meleeSystem) this.meleeSystem._swingHit = true; 
+                if (typeof MeleeSystem !== 'undefined') {
+                    MeleeSystem.playSlashEffect(this, boss, px, py);
+                }
             }
-        });
+        }
+
+        // 2. 保留原有的打矿石判定
+        if (this._crystalOres) {
+            this._crystalOres.forEach(ore => {
+                if (ore.destroyed) return;
+                const dx = ore.x - px, dy = ore.y - py;
+                if (dx * dx + dy * dy > RANGE_SQ) return;
+                if (facingRight && dx < -BACK) return;
+                if (!facingRight && dx > BACK) return;
+                ore.takeHit(3.5);
+                if (this.meleeSystem) this.meleeSystem._swingHit = true; 
+                if (typeof MeleeSystem !== 'undefined') {
+                    MeleeSystem.playSlashEffect(this, ore.sprite || ore, px, py);
+                }
+            });
+        }
     }
 
     _checkPendingRespawns() {

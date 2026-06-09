@@ -16,11 +16,21 @@
  */
 class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, player, platforms, playerHitCallback, isIntro = false) {
+
         // Fallback checks to prevent crashing if texture is missing from preload
         const fallbackTexture = scene.textures.exists('boss_idle') ? 'boss_idle' : 'Miner_stand';
         super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
+        scene.physics.world.createDebugGraphic();
+this.debugGraphics = scene.add.graphics();
+this.debugGraphics.setDepth(9999);
+// 强制开启 ARCADE 物理引擎的碰撞边界处理，防止冲刺过快直接穿墙
+this.body.setCollideWorldBounds(true);
+this.body.onWorldBounds = true;
+
+// 确保 Body 绝对不会进入“空壳”状态
+this.body.enable = true;
 
         // Safe animation player wrapper to prevent runtime asset registration crashes
         this.safePlay = (key, startFrame = true) => {
@@ -40,9 +50,10 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.platforms = platforms;
         this.playerHitCallback = playerHitCallback;
 
-        this.setScale(4);
-        this.body.setSize(40, 40); 
-        this.body.setOffset(12, 12);
+        this.baseScale = 4.75; 
+        this.setScale(this.baseScale);
+        this.body.setSize(42, 42, true);   // Slims and flattens the collision matrix box properties
+        this.body.setOffset(10, 5);
         this.body.setAllowGravity(true); 
         this.setDepth(12); 
 
@@ -102,15 +113,15 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         if (isIntro) {
             this.isCasting = true; 
             this.body.setAllowGravity(false);
-            this.x = 4050; 
-            this.y = 150; 
+            this.x = 2112; 
+            this.y = 96; 
             this.alpha = 1; 
             
             this.healthBarBg.setAlpha(0);
             this.healthBar.setAlpha(0);
             this.bossNameText.setAlpha(0);
 
-            this.cinematicDarkness = scene.add.rectangle(this.x, 600, 5000, 5000, 0x000000, 0.85).setDepth(10);
+            this.cinematicDarkness = scene.add.rectangle(this.x, 400, 3200, 1000, 0x000000, 0.85).setDepth(10);
             this.introWeb = scene.add.graphics().setDepth(11);
             this.cornerTerritoryWebs = scene.add.graphics().setDepth(5).setAlpha(0);
             this.angle = 180;
@@ -118,7 +129,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             // Pendulum Swing Animation
             this.introSwingTween = scene.tweens.add({
                 targets: [this], 
-                x: '+=120',
+                x: '+=60',
                 angle: '+=15',
                 duration: 900,
                 yoyo: true,
@@ -129,7 +140,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
                         this.introWeb.clear();
                         this.introWeb.lineStyle(3, 0xffffff, 0.8);
                         this.introWeb.beginPath();
-                        this.introWeb.moveTo(4050, -100);
+                        this.introWeb.moveTo(2112, 320);
                         this.introWeb.lineTo(this.x, this.y);
                         this.introWeb.strokePath();
                     }
@@ -161,8 +172,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         let cam = this.scene.cameras.main;
         cam.stopFollow();
         
-        cam.pan(this.x - 170, this.y + 160, 1000, 'Cubic.easeInOut');
-        cam.zoomTo(0.8, 1000, 'Cubic.easeInOut'); 
+        cam.pan(this.x - 150, this.y + 160, 1000, 'Cubic.easeInOut');
+        cam.zoomTo(1.5, 500, 'Cubic.easeInOut'); 
 
         this.introLines = [
             "MATRIARCH: *Kkrrrr-hiss*... The frantic scurry of a trapped insect...\nDid you truly believe you could invade the heart of my nest unpunished?",
@@ -241,8 +252,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
         this.scene.tweens.add({
             targets: this,
-            x: 3900, 
-            y: 455,  
+            x: 2112, 
+            y: 250,  
             duration: 650, 
             ease: 'Expo.easeIn', 
             onUpdate: () => {
@@ -250,19 +261,32 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
                     dropWeb.clear();
                     dropWeb.lineStyle(4, 0xffffff, 0.8);
                     dropWeb.beginPath();
-                    dropWeb.moveTo(4050, -100); 
+                    dropWeb.moveTo(2112, 320); 
                     dropWeb.lineTo(this.x, this.y); 
                     dropWeb.strokePath();
                 }
             },
             onComplete: () => {
-                if (dropWeb) dropWeb.destroy(); 
-                this.surface = 'floor';
-                this.angle = 0; 
+        if (dropWeb) dropWeb.destroy(); 
+        
+        // 🌟 核心修复：当 Boss 成功砸到地面时，让背景里的紫色蛛网在 0.5 秒内渐变消失并彻底释放内存
+        if (this.cornerTerritoryWebs) {
+            this.scene.tweens.add({
+                targets: this.cornerTerritoryWebs,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => {
+                    if (this.cornerTerritoryWebs) this.cornerTerritoryWebs.destroy();
+                }
+            });
+        }
+
+        this.surface = 'floor';
+        this.angle = 0;
                 
                 if (this.player && this.player.body) {
-                    this.player.body.setVelocityY(-450);
-                    this.player.body.setVelocityX(450); 
+                    this.player.body.setVelocityY(-350);
+                    this.player.body.setVelocityX(250); 
                 }
 
                 if (this.scene && this.scene.playerCanMove !== undefined) {
@@ -316,8 +340,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         if (this.cornerTerritoryWebs) {
             this.cornerTerritoryWebs.alpha = 1;
             this.cornerTerritoryWebs.lineStyle(4, 0xaa00aa, 0.35);
-            for (let i = 0; i < 4; i++) { this.cornerTerritoryWebs.lineBetween(this.x, this.y, this.x - 400 + (i * 120), this.y - 800); }
-            for (let i = 0; i < 4; i++) { this.cornerTerritoryWebs.lineBetween(this.x, this.y, this.x + 700 - (i * 120), this.y - 800); }
+            for (let i = 0; i < 4; i++) { this.cornerTerritoryWebs.lineBetween(this.x, this.y, this.x - 400 + (i * 120), this.y - 1000); }
+            for (let i = 0; i < 4; i++) { this.cornerTerritoryWebs.lineBetween(this.x, this.y, this.x + 700 - (i * 120), this.y - 1000); }
             this.cornerTerritoryWebs.setScale(0.5); this.cornerTerritoryWebs.x = this.x * 0.5; this.cornerTerritoryWebs.y = this.y * 0.5;
             this.scene.tweens.add({ targets: this.cornerTerritoryWebs, scaleX: 1, scaleY: 1, x: 0, y: 0, duration: 350, ease: 'Cubic.easeOut' });
         }
@@ -334,7 +358,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             onComplete: () => {
                 this.body.setAllowGravity(true);
                 this.scene.cameras.main.startFollow(this.player, true, 0.05, 0.05);
-                this.scene.cameras.main.zoomTo(0.8, 1000, 'Sine.easeInOut'); 
+                this.scene.cameras.main.zoomTo(2.5, 1000, 'Sine.easeInOut'); 
                 this.isCasting = false;
                 this.startAttackLoop(2500);
             }
@@ -469,6 +493,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
         this.track(this.scene.time.delayedCall(400, () => {
             if (!this.active || this.isDead) return;
+
+            this.scene.sound.play('snd_venom_spit', { volume: 0.6 });
             
             for (let i = 0; i < 4; i++) {
                 let venom = this.track(this.scene.add.circle(this.x + (dir * 80), this.y + 30, 15, 0x00ff00));
@@ -524,12 +550,14 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
         this.track(this.scene.time.delayedCall(300, () => {
             if (!this.active || this.isDead) return;
+
+            this.scene.sound.play('snd_web_shoot', { volume: 0.5 });
             
             for (let i = 0; i < 6; i++) {
                 this.track(this.scene.time.delayedCall(i * 100, () => {
                     if (!this.active || this.isDead) return;
 
-                    let webProjectile = this.track(this.scene.add.circle(spawnX, spawnY, 12, 0xffffff));
+                    let webProjectile = this.track(this.scene.add.circle(spawnX, spawnY, 6, 0xffffff));
                     webProjectile.setDepth(11);
                     this.scene.physics.add.existing(webProjectile);
                     webProjectile.body.setAllowGravity(false);
@@ -622,8 +650,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.isCasting = true;
         this.body.setVelocity(0,0);
         
-        let startY = this.y;
-        let targetY = this.y + 600; 
+        let startY = this.y; 
+        let targetY = this.y + 400;
 
         let warnBox = this.track(this.scene.add.rectangle(this.x, startY + 300, 150, 600, 0xff0000, 0.4));
         warnBox.setDepth(10);
@@ -737,6 +765,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
         this.track(this.scene.time.delayedCall(500, () => {
             if (!this.active || this.isDead) return;
+
+            this.scene.sound.play('snd_egg_lay', { volume: 0.6 });
             
             let egg = this.track(this.scene.add.ellipse(this.x, this.y - 20, 80, 100, 0x00ff00)); 
             egg.setDepth(10);
@@ -818,7 +848,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             if (warnBox) warnBox.destroy();
             if (!this.active || this.isDead) return;
 
-            this.body.setVelocityX(dirX * 2200); 
+            this.scene.sound.play('snd_boss_dash', { volume: 0.7 });
+
+            this.body.setVelocityX(dirX * 1100); 
             this.scene.cameras.main.shake(600, 0.015);
 
             let dashFxEvent = this.scene.time.addEvent({ 
@@ -917,6 +949,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
                 this.scene.time.delayedCall(500, () => {
                     if (warnLine) warnLine.destroy();
                     if (!this.scene || this.isDead) return;
+
+                    this.scene.sound.play('snd_web_shoot', { volume: 0.5 });
 
                     let mortarWeb = this.track(this.scene.add.circle(targetX, this.y - 500, 25, 0xffffff)).setDepth(11);
                     this.scene.physics.add.existing(mortarWeb);
@@ -1046,7 +1080,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.scene.cameras.main.shake(500, 0.03);
         this.spawnDebris(this.x, this.y, 0x444444, 30);
 
-        this.setScale(3.2);       
+        this.setDisplaySize(65, 65);    
+        this.body.setSize(50, 50);
+        this.body.setOffset(5, 2);   
         this.alpha = 0.55;         
         this.moveSpeed += 90;    
 
@@ -1068,7 +1104,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.safePlay('anim_boss_attack', true);
         this.setFlipY(true); 
 
-        let oldPos = this.playerHistory[0] || {x: this.player.x, y: this.player.y};
+        let oldPos = (this.playerHistory && this.playerHistory.length > 0) 
+        ? this.playerHistory[0] 
+        : {x: this.player.x, y: this.player.y};
 
         let flash = this.scene.add.circle(this.x, this.y, 50, 0xffffff, 0.6);
         this.scene.tweens.add({ targets: flash, scale: 2, alpha: 0, duration: 500, onComplete: () => flash.destroy()});
@@ -1076,22 +1114,24 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.track(this.scene.time.delayedCall(500, () => {
             if (!this.active || this.isDead) return;
 
+            this.scene.sound.play('snd_web_shoot', { volume: 0.5 });
+
             let dropPoints = [
-                oldPos.x, 
-                Phaser.Math.Between(3400, 3600), 
-                Phaser.Math.Between(4500, 4700), 
-                Phaser.Math.Between(3900, 4200)  
-            ];
+    oldPos.x, 
+    Phaser.Math.Between(1750, 2100), // 对应 32px 竞技场左侧天花板
+    Phaser.Math.Between(2200, 2600), // 对应 32px 竞技场中部天花板
+    Phaser.Math.Between(2700, 3050)  // 对应 32px 竞技场右侧天花板
+];
 
             dropPoints.forEach(x => {
-                let warn = this.track(this.scene.add.rectangle(x, 600, 120, 1200, 0xff0000, 0.2)); 
+                let warn = this.track(this.scene.add.rectangle(x, 400, 64, 400, 0xff0000, 0.2)); 
                 warn.setDepth(10);
                 this.scene.tweens.add({targets: warn, alpha: 0.6, duration: 150, yoyo: true, repeat: 4});
                 this.track(this.scene.time.delayedCall(800, () => {
                     if (warn) warn.destroy();
                     if (!this.scene || this.isDead) return;
-                    let webDrop = this.track(this.scene.add.circle(x, 150, 45, 0xffffff)); webDrop.setDepth(11);
-                    this.scene.physics.add.existing(webDrop); webDrop.body.setVelocityY(1600); 
+                    let webDrop = this.track(this.scene.add.circle(x, 150, 20, 0xffffff)); webDrop.setDepth(11);
+                    this.scene.physics.add.existing(webDrop); webDrop.body.setVelocityY(800); 
                     this.scene.physics.add.overlap(this.player, webDrop, () => { if (webDrop.active) { webDrop.destroy(); this.playerHitCallback(this.player, this); } }, null, this.scene);
                     this.scene.physics.add.collider(webDrop, this.platforms, () => { if (webDrop.active) { this.createDestructibleWeb(webDrop.x, webDrop.y); webDrop.destroy(); } });
                     this.track(this.scene.time.delayedCall(2000, () => { if(webDrop.active) webDrop.destroy(); }));
@@ -1107,7 +1147,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
 
     createDestructibleWeb(x, y) {
         if (!this.active || this.isDead || !this.scene) return;
-        let web = this.track(this.scene.add.ellipse(x, y, 90, 30, 0xaaaaaa, 0.8)); web.setDepth(9); 
+        let web = this.track(this.scene.add.ellipse(x, y - 12, 60, 20, 0xaaaaaa, 0.8)); web.setDepth(9); 
         this.scene.physics.add.existing(web); web.body.setAllowGravity(false); web.body.setImmovable(true); this.stickyWebs.add(web); 
         this.scene.tweens.add({ targets: web, alpha: 0.4, scaleX: 1.1, yoyo: true, repeat: -1, duration: 600 });
         if (typeof bullets !== 'undefined') {
@@ -1159,6 +1199,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
     takeDamage(amount = 1) {
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
         this.hp -= amount; 
+
+        this.scene.sound.play('snd_boss_hurt', { volume: 0.6 });
+
         if (this.healthBar && this.healthBar.active) { this.healthBar.width = (this.hp / this.maxHealth) * 600; }
 
         if (this.lives === 1) {
@@ -1187,6 +1230,24 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
     }
 
     update(time, delta, player) {
+
+        // 在 boss.js 的 update(time, delta, player) 最开头添加：
+if (this.body) {
+    // 强制每帧检查她是否与地板相交，如果因为技能进入了半空，立刻强制锁定到平台
+    this.scene.physics.collide(this, this.platforms);
+    this.scene.physics.collide(this, this.scene.walls);
+    this.debugGraphics.clear();
+this.debugGraphics.lineStyle(2, 0xff0000);
+this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
+this.scene.physics.world.drawDebug = true;
+}
+
+        // 在 update 方法的末尾
+this.debugGraphics.clear();
+this.debugGraphics.lineStyle(2, 0xff0000);
+this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
+this.scene.physics.world.drawDebug = true; // 强制开启调试绘制
+
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 
         // 🌟 ANTI-DROP ARMOR: Force floor snap if not flying
@@ -1298,9 +1359,10 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         let bLeft = this.body.blocked.left || this.body.touching.left;
         let bRight = this.body.blocked.right || this.body.touching.right;
 
-        let targetX = player.x; let targetY = player.y;
+        let targetX = player.x; 
+        let targetY = Phaser.Math.Clamp(player.y, 150, 700);
         if ((this.surface === 'floor' || this.surface === 'ceiling') && Math.abs(player.y - this.y) > 120) { 
-            targetX = this.x > 4050 ? 4650 : 3450; 
+            targetX = this.x > 2112 ? 2560 : 1760; 
         }
 
         let moveDirX = 0;
@@ -1310,7 +1372,8 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             this.body.setVelocityX(0); 
         }
 
-        let moveDirY = (targetY > this.y + 20) ? 1 : (targetY < this.y - 20) ? -1 : 0;
+        // 限制 Boss 的 Y 轴活动范围，不要让她去 Row 15 寻找目标
+let moveDirY = (targetY > this.y + 20) ? 1 : (targetY < this.y - 20) ? -1 : 0;
 
         let deltaX = player.x - this.x;
         if (Math.abs(deltaX) > 80) { 
@@ -1372,13 +1435,24 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
             else if (!bUp) { this.surface = 'air'; }
         }
 
+        // 🌟 修复每帧强行缩回 1.8 的 Bug，改用我们在上面定义的 this.baseScale 变量
         if ((this.body.velocity.x !== 0 || this.body.velocity.y !== 0) && this.track && this.skitterBoost > 0) {
             let legWasp = Math.sin(time * (0.02 * this.skitterBoost)) * 0.18;
-            if (this.surface === 'left_wall' || this.surface === 'right_wall') { this.scaleX = 4 + legWasp; this.scaleY = 4; } else { this.scaleX = 4; this.scaleY = 4 + legWasp; }
-        } else { this.scaleX = 4; this.scaleY = 4; }
+            if (this.surface === 'left_wall' || this.surface === 'right_wall') { 
+                this.scaleX = this.baseScale + legWasp; this.scaleY = this.baseScale; 
+            } else { 
+                this.scaleX = this.baseScale; this.scaleY = this.baseScale + legWasp; 
+            }
+        } else { 
+            this.scaleX = this.baseScale; this.scaleY = this.baseScale; 
+        }
 
         let distWalked = Phaser.Math.Distance.Between(this.x, this.y, this.lastWebX, this.lastWebY);
-        if (distWalked >= 400 && this.surface !== 'air') { this.createDestructibleWeb(this.x, this.y + (this.surface === 'ceiling' ? -20 : 20)); this.lastWebX = this.x; this.lastWebY = this.y; }
+        if (distWalked >= 400 && this.surface !== 'air') { 
+    this.createDestructibleWeb(this.x, this.y + (this.surface === 'ceiling' ? -12 : 12)); 
+    this.lastWebX = this.x; 
+    this.lastWebY = this.y; 
+}
 
         if (!this.animLock) { if (this.skitterBoost === 0) { this.anims.pause(); } else { this.anims.resume(); this.safePlay('anim_boss_run', true); } }
     }
@@ -1386,7 +1460,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
     triggerReviveSequence() {
         this.isReviving = true; this.isCasting = true; this.isDashing = false; this.isZipping = false; this.zipStep = 0; this.animLock = false; this.lives -= 1;
         this.clearAttacks(); this.body.setVelocity(0,0); this.body.setAllowGravity(true); this.surface = 'air'; this.angle = 0; this.rotation = 0; this.setFlipY(false); if (this.zipGraphics) { this.zipGraphics.destroy(); this.zipGraphics = null; } this.clearTint();
-        this.safePlay('anim_boss_idle', true); this.scene.cameras.main.flash(1000, 255, 255, 255); this.scene.cameras.main.shake(1500, 0.05); this.spawnDebris(this.x, this.y, 0xffffff, 50);
+        this.safePlay('anim_boss_idle', true); 
+        this.scene.sound.play('snd_boss_roar', { volume: 0.8 });
+        this.scene.cameras.main.flash(1000, 255, 255, 255); this.scene.cameras.main.shake(1500, 0.05); this.spawnDebris(this.x, this.y, 0xffffff, 50);
 
         this.hp = this.maxHealth; if (this.healthBar && this.healthBar.active) this.healthBar.width = 600;
         if (this.bossNameText && this.bossNameText.active) {
@@ -1417,6 +1493,13 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.clearAttacks(); 
         this.body.setVelocity(0, 0); 
         this.body.setAllowGravity(true); 
+
+        if (this.scene.currentBGM) {
+        this.scene.currentBGM.stop();
+    }
+    this.scene.sound.play('snd_boss_dead', { volume: 0.7 });
+
+    this.safePlay('anim_boss_dead', true);
         
         if (this.zipGraphics) { this.zipGraphics.destroy(); this.zipGraphics = null; }
         this.clearTint();
@@ -1435,7 +1518,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         const cam = this.scene.cameras.main; 
         cam.stopFollow(); 
         cam.pan(this.x, this.y, 1000, 'Sine.easeInOut'); 
-        cam.zoomTo(1, 800, 'Sine.easeInOut'); 
+        cam.zoomTo(2.5, 800, 'Sine.easeInOut'); 
 
         this.deathLines = [
             "MATRIARCH: *Gasp... hiss*... The link... is breaking... my hold over the brood... is gone...",
@@ -1446,10 +1529,21 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         this.deathLineIndex = 0;
         this.nextAllowedClickTime = this.scene.time.now + 600; 
 
-        // 🌟 GEOMETRY VECTOR FIX: Remapped death UI window boxes from 533 to 800 layout markers
-        this.deathBoxBg = this.scene.add.rectangle(800, 500, 720, 130, 0x111122, 0.95).setStrokeStyle(3, 0xff0055).setDepth(200).setScrollFactor(0);
-        this.deathText = this.scene.add.text(800, 485, '', { fontSize: '16px', fill: '#ffffff', fontFamily: 'Courier', fontStyle: 'bold', align: 'center', wordWrap: { width: 660 } }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.deathPrompt = this.scene.add.text(800, 545, "[ CLICK MOUSE TO REVEAL FINAL MOMENTS ]", { fontSize: '12px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        // 🌟 修复：放大对白框到屏幕 80% 宽度，并优化文本对齐
+    this.deathBoxBg = this.scene.add.rectangle(800, 800, 1400, 200, 0x000000, 0.95)
+        .setStrokeStyle(4, 0xff0055)
+        .setDepth(200)
+        .setScrollFactor(0);
+
+    this.deathText = this.scene.add.text(800, 800, '', { 
+        fontSize: '32px', // 👈 字体放大到 32px
+        fill: '#ffffff', 
+        fontFamily: 'Courier', 
+        fontStyle: 'bold', 
+        align: 'center', 
+        wordWrap: { width: 1300 } // 👈 增加换行宽度，让对白框能容纳更多文字
+    }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        this.deathPrompt = this.scene.add.text(800, 545, "[ CLICK MOUSE TO REVEAL FINAL MOMENTS ]", { fontSize: '30px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
         this.advanceDeathDialogueLine();
         
@@ -1497,6 +1591,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
                 this.setPosition(originalX + Phaser.Math.Between(-15, 15), originalY + Phaser.Math.Between(-15, 15));
             },
             onComplete: () => {
+
+                gameScene.sound.play('snd_boss_explode', { volume: 0.9 });
+
                 cam.flash(1000, 255, 255, 255); 
                 cam.shake(1200, 0.06);
 
@@ -1514,8 +1611,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
                     gameScene.playerCanMove = true;
                 }
 
+                cam.setBounds(1440, 0, 1760, 608);
                 cam.startFollow(this.player, true, 0.05, 0.05);
-                cam.zoomTo(0.7, 1200, 'Sine.easeInOut');
+                cam.zoomTo(2.0, 1200, 'Sine.easeInOut');
 
                 let playerHealth = (typeof health !== 'undefined') ? health : 100;
                 fetch('/api/game/save-progress', {
