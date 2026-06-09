@@ -30,12 +30,19 @@ class OpeningScene extends Phaser.Scene {
             goTitle(); return;
         }
         console.log('[Opening] Big_title 已加载, frameTotal =', this.textures.get('Big_title').frameTotal, '— 37 帧时应为 38; 若为 2 则说明尺寸/frameWidth(800) 与实际图不符, 只切出 1 帧');
+        // (用户) 诊断: 单行 37×800=29600px 超显卡贴图上限(通常16384) → texImage2D out of range → 标题空白. 需重导成网格(每边<4096最稳, 如5列×8行=4000×3200)
+        try {
+            const _src = this.textures.get('Big_title').getSourceImage();
+            const _w = _src && (_src.width || _src.naturalWidth), _h = _src && (_src.height || _src.naturalHeight);
+            if (_w && _w > 16384) console.warn('[Opening] Big_title 宽 ' + _w + 'px 超过显卡上限 16384 → 贴图上传失败, 标题会空白! 请把图重导成网格 (每帧仍 800×400, 排成多行, 如 5列×8行=4000×3200, 37帧按从左到右从上到下顺序 + 3个空白补满 40 格)。');
+        } catch (e) {}
 
         // 用点现注册 big_title_intro (帧数随贴图自适应, 不复用各场景注册簇)
         if (!this.anims.exists('big_title_intro')) {
             try {
                 const ft = this.textures.get('Big_title').frameTotal;
-                this.anims.create({ key: 'big_title_intro', frames: this.anims.generateFrameNumbers('Big_title', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 18, repeat: 0 });
+                // (用户) 固定播 37 帧 (0~36): 重导成网格后即使多了空白补格(如5×8=40格,3个空白)也只播内容帧; ft 不足时按实际封顶
+                this.anims.create({ key: 'big_title_intro', frames: this.anims.generateFrameNumbers('Big_title', { start: 0, end: Math.min(36, Math.max(0, ft - 1)) }), frameRate: 18, repeat: 0 });
             } catch (e) {}
         }
 
