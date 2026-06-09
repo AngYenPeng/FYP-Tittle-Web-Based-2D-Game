@@ -200,6 +200,8 @@ class SafeZone4Scene extends MainGameScene {
         this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
         this._sz4CutsceneStarted = false; this._sz4CutsceneActive = false; this._sz4CutsceneDone = false; this._sz4BossActive = false;
         this._batBossDeathStarted = false; this._batBossCrashing = false; this._batBossLanded = false;
+        // (修复) 通关后开新档剧情全跳过: boss 状态/指南/镜头守卫标志没在 init 清, 复用实例残留 true → boss 当成已死, intro/战斗全跳过
+        this._batBossAwake = false; this._batBossDead = false; this._finalBossDead = false; this._platformGuideUnlocked = false; this._sz4PanGuard = false;
     }
 
     preload() {

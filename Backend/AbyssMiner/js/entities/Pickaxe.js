@@ -88,7 +88,7 @@ class Pickaxe extends Phaser.Physics.Arcade.Sprite {
         if (this.state === 'attached') {
             if (!this._stuckApplied) {
                 this._stuckApplied = true; this._applyStickAngle();
-                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: 0.5 });   // (用户) 稿子钉墙音
+                if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: AudioSystem.sfxVolume * 0.5 });   // (修复·用户) 稿子钉墙音 — 乘 sfxVolume
             }
             return;
         }

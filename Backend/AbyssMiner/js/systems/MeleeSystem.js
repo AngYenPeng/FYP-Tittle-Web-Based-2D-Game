@@ -148,7 +148,7 @@ class MeleeSystem {
         //   KeyDoor·CrystalDoor·碎后残渣无反应 = 挥空音. 延迟一拍播放 —
         //   场景旁路判定 (T1 石堆 / SZ 水晶矿) 在 execute() 之后同帧跑, 等它们回写 _swingHit 再定音色
         s.time.delayedCall(0, () => {
-            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, this._swingHit ? 'PickaxeHitThings' : 'PickaxeHitAir', { volume: 0.5 });
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, this._swingHit ? 'PickaxeHitThings' : 'PickaxeHitAir', { volume: AudioSystem.sfxVolume * 0.5 });   // (修复) 乘 sfxVolume — 否则砍空气/砍到东西不受设置音量控制
         });
         return true;
     }

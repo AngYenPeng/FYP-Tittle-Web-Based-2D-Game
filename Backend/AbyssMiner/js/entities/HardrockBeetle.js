@@ -36,6 +36,19 @@ class HardrockBeetle extends Phaser.Physics.Arcade.Sprite {
         this.attackDir = 1;
     }
 
+    /** (用户修复) 落地纯几何: 单向平台 blocked.down 不可靠 → 甲虫冲刺滑上平台时 if(!onGround) return 卡住带速滑行. 底边下方 1px 贴任意 wallRect 顶(含平台)即落地. */
+    _onGroundGeo() {
+        const b = this.body;
+        if (!b) return false;
+        if (b.blocked.down || b.touching.down) return true;
+        if (!this.scene || !this.scene.wallRects) return false;
+        const cl = b.left + 1, cr = b.right - 1, edge = b.bottom + 1;
+        for (const w of this.scene.wallRects) {
+            if (cr >= w.left && cl <= w.right && edge >= w.top && edge <= w.bottom) return true;
+        }
+        return false;
+    }
+
     canDamagePlayer() { return this.state === 'dashing'; }
 
     update(time, delta, player) {
@@ -43,7 +56,7 @@ class HardrockBeetle extends Phaser.Physics.Arcade.Sprite {
         if (this.forceAggroTimer > 0) this.forceAggroTimer -= delta;
         if (this.attackCD > 0) this.attackCD -= delta;
 
-        let onGround = this.body.blocked.down || this.body.touching.down;
+        let onGround = this._onGroundGeo();
         if (!onGround) return;
 
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);

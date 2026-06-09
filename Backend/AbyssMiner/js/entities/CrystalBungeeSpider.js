@@ -146,7 +146,14 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
         }
 
         if (this.state === 'falling') {
+            // (修复) 落地纯几何: 这块原本只用 blocked.down (单向平台不触发) → bungee 蜘蛛落到平台顶不落地. 加几何兜底, 与 CrystalHunterSpider 同款.
             let onGround = this.body.blocked.down || this.body.touching.down;
+            if (!onGround && this.scene && this.scene.wallRects) {
+                const b = this.body, cl = b.left + 1, cr = b.right - 1, edge = b.bottom + 1;
+                for (const w of this.scene.wallRects) {
+                    if (cr >= w.left && cl <= w.right && edge >= w.top && edge <= w.bottom) { onGround = true; break; }
+                }
+            }
             if (onGround) {
                 this.state = 'wander';
                 this.dir = Math.random() > 0.5 ? 1 : -1;

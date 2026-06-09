@@ -154,6 +154,7 @@ class SafeZone1Scene extends MainGameScene {
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
         this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
         this._sz1MerchantCutsceneDone = false; this._sz1MerchantCutsceneStarted = false; this._sz1MerchantPending = false;
+        this._platformGuideUnlocked = false; this._teleportingToSafeZone2 = false;   // (修复) 通关后开新档剧情全跳过: 这些标志没在 init 清, 复用实例残留 true
     }
 
     preload() {

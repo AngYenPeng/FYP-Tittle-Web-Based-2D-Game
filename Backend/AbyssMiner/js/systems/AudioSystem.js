@@ -93,7 +93,7 @@ class AudioSystem {
         if (AudioSystem._jumpN >= AudioSystem._jumpTarget) {
             AudioSystem._jumpN = 0;
             AudioSystem._jumpTarget = 3 + Math.floor(Math.random() * 2);
-            AudioSystem.sfx(scene, 'JumpUp', { volume: 0.5 });
+            AudioSystem.sfx(scene, 'JumpUp', { volume: AudioSystem.sfxVolume * 0.5 });   // (修复) 乘 sfxVolume — 否则不受设置音量控制
         }
     }
 

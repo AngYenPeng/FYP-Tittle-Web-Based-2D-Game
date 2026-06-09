@@ -19,6 +19,9 @@ class SafeZone3Scene extends MainGameScene {
         this._sistersIntroRun = false; this._sisterTeaseRunning = false; this._sz3IntroStarted = false; this._sz3IntroPhase = 0; this._citrinePhase = 'fresh';
         // (用户) 实体数组每次进图清空 — CrystalNpc/Chest 是包装对象, 退场时 sprite 被销毁但包装残留在数组里, 读档时 update 迭代到死精灵 → 崩溃
         this._crystalNpcs = []; this._chests = [];
+        // (修复) 通关后开新档剧情全跳过: 这些剧情/对话/任务/传送标志没在 init 清, 复用实例残留 true
+        this._sz3ElderTalked = false; this._sz3ElfTalked = false; this._sz3HasToy = false;
+        this._sisterTweensPaused = false; this._sz3BgmCleanHooked = false; this._teleportingToSafeZone4 = false; this._platformGuideUnlocked = false;
     }
 
     // ════════════════════════════════════════════════════════════════

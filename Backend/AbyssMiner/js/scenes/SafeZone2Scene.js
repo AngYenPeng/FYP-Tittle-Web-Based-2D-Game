@@ -158,6 +158,7 @@ class SafeZone2Scene extends MainGameScene {
         this._crystalNpcRewardGiven = false; this._crystalNpcDialogState = 0; this.sz2CnpcRewardPlotDone = false;
         // (用户) Boss 实体引用每次进图清掉 — 否则读档时 _bosses 残留上次已销毁的 Golem, update 迭代到它 → this.scene undefined 崩溃; 同时让 boss 可重打、剧情重播
         this._golem = null; this._bosses = []; this._golemDead = false; this._wasPlayerInBossRoom = false;
+        this._moleEmergeDone = false; this._platformGuideUnlocked = false; this._teleportingNext = false;   // (修复) 通关后开新档: 商人钻出过场/指南/传送标志没清, 复用实例残留 true → 过场跳过
     }
 
     preload() {

@@ -74,7 +74,7 @@ class YCrystalBlock {
         if (this.destroyed) return;
         this.hp -= damage;
         // (用户) 黄/蓝水晶共用音效: 每下敲击 PickaxeHitThings (跟蓝水晶一致)
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: 0.6 });
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: AudioSystem.sfxVolume * 0.6 });   // (修复) 乘 sfxVolume
         // 受击闪红 (跟蓝水晶一致)
         this.sprite.setTint(0xff0000);
         this.scene.time.delayedCall(120, () => {
