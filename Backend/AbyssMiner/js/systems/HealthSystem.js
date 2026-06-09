@@ -281,7 +281,7 @@ class HealthSystem {
         s.isPlayerStunned = false;
 
         // 清侵蚀度 (复活时清零)
-        if (s.diseaseSystem && s.diseaseSystem.reset) s.diseaseSystem.reset();
+        if (s.diseaseSystem && s.diseaseSystem.resetOnDeath) s.diseaseSystem.resetOnDeath();   // (用户) resetOnDeath ⊇ reset, 多清"趴身蜘蛛计数 + 让蜘蛛松手" — 修复被蜘蛛趴身致死后复活仍无限扣血 (死亡动画期间蜘蛛又趴回来, reset 不清趴身)
 
         if (s.player) {
             s.player.clearTint();

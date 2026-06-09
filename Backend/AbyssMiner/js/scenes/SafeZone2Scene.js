@@ -156,6 +156,8 @@ class SafeZone2Scene extends MainGameScene {
         this._sz2BossFightStarted = false; this._sz2BossWallsBuilt = false; this._sz2WasInZone2 = false; this._sz2MerchantRiseTriggered = false;
         this._bossIntroStarted = false; this._inBossIntro = false; this._bossIntroDialogDone = false; this._bossIntroTakeoffDone = false; this._bossIntroFinished = false;
         this._crystalNpcRewardGiven = false; this._crystalNpcDialogState = 0; this.sz2CnpcRewardPlotDone = false;
+        // (用户) Boss 实体引用每次进图清掉 — 否则读档时 _bosses 残留上次已销毁的 Golem, update 迭代到它 → this.scene undefined 崩溃; 同时让 boss 可重打、剧情重播
+        this._golem = null; this._bosses = []; this._golemDead = false; this._wasPlayerInBossRoom = false;
     }
 
     preload() {
@@ -696,7 +698,7 @@ class SafeZone2Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (data.hasHealthDetector && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -890,7 +892,7 @@ class SafeZone2Scene extends MainGameScene {
 
         // Boss update — cinematic 期间跳过；玩家不在 boss 房也跳过 (避免攻击到 zone1)
         if (this._bosses && !this._inBossIntro && playerInBossRoom) {
-            this._bosses.forEach(b => { if (b && b.update) b.update(time, delta, this.player); });
+            this._bosses.forEach(b => { if (b && b.update && b.scene) b.update(time, delta, this.player); });   // (用户) && b.scene: 跳过已销毁的 boss, 防读档崩溃
         }
 
         // (32, 30~32) — 玩家用钥匙开 KeyDoor 后, 走到门左侧 3 格 → 传送到 SZ3 起点
@@ -2090,10 +2092,10 @@ class SafeZone2Scene extends MainGameScene {
                 });
             }
 
-            // 1000ms: boss 周围小染黄 (3 格半径 = 96px)
+            // 1000ms: 神像地面周围小染黄 (3 格半径 = 96px)
             this.time.delayedCall(1000, () => {
                 this._yellowDirtSpread = {
-                    cx: bx, cy: by,
+                    cx: 20 * G + G / 2, cy: 21 * G + G / 2,   // (用户修复) 染色中心固定在神像地面(col20,row21), 不用 golem 死亡坐标 — golem 常死在空中(浮空 row14), 染在空中半径内没地面方块 → "神像出现后附近没变yellowdirt"
                     radius: 0, maxRadius: 96,
                     active: true
                 };

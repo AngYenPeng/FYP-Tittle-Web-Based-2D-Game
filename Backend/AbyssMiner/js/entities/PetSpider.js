@@ -100,6 +100,13 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         if (!p || !p.body || !this.body) return;
         const G = 32;
 
+        // (用户) 剧情期间 (_cinematicLock): 宠物蜘蛛不爬头; 已在头上则强制下来, 剧情结束前不可再上
+        //   覆盖 SZ3 开局(落地→起身→随 Cryst 走到神像) 和 给 cnpc 5/10/20 后的强制剧情 (两者都设 _cinematicLock=true)
+        if (s._cinematicLock) {
+            if (this.state === 'mounted') this.dismount();
+            this._stillMs = 0;   // 清静止计时, 剧情期间永远到不了 5s → 不会上头
+        }
+
         // ── mounted: 锁在头顶 ──
         if (this.state === 'mounted') {
             this._idlePose();    // (用户) 骑头也用 small_spider_idle 待机动画

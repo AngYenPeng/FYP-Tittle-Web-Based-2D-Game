@@ -15,6 +15,8 @@ class SafeZone25Scene extends SafeZone3Scene {
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉残留瞬态 (实例复用会串场)
         this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._sz25ShakeStarted = false;
+        // (用户) 死亡序列/传送标志每次进图清掉 — 否则在怪潮中被杀、爱心碎裂时存档退出, _sz25DeathSeq 残留 true → 震动/刷怪/去SZ3传送三个条件全带 !_sz25DeathSeq → 全被挡死 "啥都没了"
+        this._sz25DeathSeq = false; this._sz25Transitioning = false; this._sz25SpawnAcc = 0;
     }
 
     create() {
