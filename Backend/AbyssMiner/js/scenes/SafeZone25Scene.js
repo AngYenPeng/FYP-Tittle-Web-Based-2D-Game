@@ -472,10 +472,25 @@ class SafeZone25Scene extends SafeZone3Scene {
     }
 
     // 干净 update — 只保留沙盒需要的循环 (无剧情/无 SZ4 传送/无特殊 NPC)
-    /** SZ25 死亡: 画面渐黑 + 停震动 + 黑屏显示爱心 → 最右爱心 -1 → 复活 */
+    /** SZ25 死亡: 最后一命 → 永久死亡 (DeathScene); 否则 画面渐黑 + 停震动 + 黑屏爱心 → 最右爱心 -1 → 复活 */
     _sz25HandleDeath() {
         if (this._sz25DeathSeq) return;
         this._sz25DeathSeq = true;
+        const hs = this.healthSystem;
+        const preHearts = Math.max(0, hs.hearts);   // 死前爱心数 (显示这么多颗)
+
+        // (用户) 最后一颗心 → 不复活, 走永久死亡序列 (miner_dead 动画 + 存档阵亡标记 + LastLive 心碎/Heartbeat → DeathScene); 与 GameScene 一致
+        //   永久死亡序列自己接管听觉 (stopBGM → Heartbeat → DeathScene BGM), 所以这条路不放 GameOver BGM / Death_Grow
+        if (preHearts <= 1) {
+            hs.hearts = 0;
+            if (hs._permanentDeath) { hs._permanentDeath(); return; }
+            // 兜底: 缺该方法则直接进 DeathScene
+            if (typeof AudioSystem !== 'undefined') AudioSystem.stopBGM();
+            try { this.scene.start('DeathScene'); } catch (e) { try { this.scene.start('TitleScene'); } catch (e2) {} }
+            return;
+        }
+
+        // —— 非最后一命: 黑屏爱心 + 复活 ——
         if (typeof AudioSystem !== 'undefined') {
             AudioSystem.playGameOver(this);   // (用户) 死亡 BGM
             AudioSystem.sfx(this, 'Death_Grow');   // (用户) 死亡瞬间音效
@@ -485,8 +500,6 @@ class SafeZone25Scene extends SafeZone3Scene {
                 this.tweens.add({ targets: _tb, volume: 0, duration: 3000, onComplete: () => { try { _tb.stop(); } catch (e) {} } });
             }
         }
-        const hs = this.healthSystem;
-        const preHearts = Math.max(0, hs.hearts);   // 死前爱心数 (显示这么多颗)
 
         // 冻结玩家 + 无敌 + 停震动
         hs.isDead = true; this.isDead = true;
@@ -515,57 +528,96 @@ class SafeZone25Scene extends SafeZone3Scene {
         });
     }
 
-    /** 黑屏里显示 n 颗独立爱心, 最右边那颗 -1 (淡出缩小) → 复活 */
+    /** 黑屏里显示 n 颗独立爱心, 最右边那颗 -1 (碎裂动画) → 复活; 与主死亡画面一致, 用 Heart 图非文字 */
     _sz25ShowHeartLoss(n) {
-        const cw = this.cameras.main.width, ch = this.cameras.main.height;
-        const spacing = 64;
-        const startX = cw / 2 - (n - 1) * spacing / 2;
+        const cam = this.cameras.main;
+        const cw = cam.width, ch = cam.height;
+        const spacing = 128;   // (用户) 与 GameScene 死亡爱心一致: 放大 2 倍 + 间距翻倍
+        const cnt = Math.max(0, n | 0);
+        const startX = cw / 2 - (cnt - 1) * spacing / 2;
         const arr = [];
-        for (let i = 0; i < n; i++) {
-            const h = this.add.text(startX + i * spacing, ch / 2, '\u2764', {
-                fontSize: '52px', color: '#ff3355', fontFamily: '"VT323", monospace'
-            }).setOrigin(0.5).setScrollFactor(0).setDepth(100000);
-            try { this.cameras.main.ignore(h); } catch (e) {}
+        for (let i = 0; i < cnt; i++) {
+            const h = this.textures.exists('Heart')
+                ? this.add.image(startX + i * spacing, ch / 2, 'Heart').setDisplaySize(104, 104)   // (用户) Heart 贴图 (32 原生 → 104 显示)
+                : this.add.text(startX + i * spacing, ch / 2, '\u2764', {
+                    fontSize: '104px', color: '#ff3355', fontFamily: '"VT323", monospace'   // 缺图回退文字
+                });
+            h.setOrigin(0.5).setScrollFactor(0).setDepth(100000);
+            if (this.uiCam) { try { cam.ignore(h); } catch (e) {} }   // 有 uiCam 才让主相机忽略 (uiCam 渲染); 无 uiCam 则主相机画 — 否则爱心不显示
             arr.push(h);
         }
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'LoseALife');   // (用户) 爱心列队出现瞬间
         this._sz25DeathHearts = arr;
-        if (n <= 0) { this.time.delayedCall(700, () => this._sz25Respawn()); return; }
-        // 最右边那颗 → 碎掉 (抖动 → 碎裂飞溅), 碎完游戏解锁/复活
+        if (cnt <= 0) { this.time.delayedCall(700, () => this._sz25Respawn()); return; }
+        // 最右边那颗 → 碎掉 (HeartBreak 动画), 碎完复活
         this.time.delayedCall(450, () => {
-            this._sz25ShatterHeart(arr[n - 1], () => {
+            this._sz25ShatterHeart(arr[cnt - 1], cnt, () => {
                 this.time.delayedCall(300, () => this._sz25Respawn());
             });
         });
     }
 
-    /** 一颗爱心碎掉: 抖动 + 变灰 → 缩放旋转淡出 + 飞溅 6 块碎片 */
-    _sz25ShatterHeart(heart, onDone) {
+    /** 一颗爱心碎掉: HeartBreak 11 帧碎裂动画 (缺图回退文字碎裂); 与 GameScene 一致 */
+    _sz25ShatterHeart(heart, n, onDone) {
         if (!heart || !heart.active) { if (onDone) onDone(); return; }
         const hx = heart.x, hy = heart.y;
-        if (heart.setColor) heart.setColor('#999999');   // 变灰 (将碎)
-        // 1) 抖动
+        // 惰性注册 heart_break (SZ 场景不跑 GameScene.create 的动画注册段)
+        if (this.textures.exists('HeartBreak') && !this.anims.exists('heart_break')) {
+            try {
+                const _hb = this.textures.get('HeartBreak');
+                this.anims.create({ key: 'heart_break', frames: this.anims.generateFrameNumbers('HeartBreak', { start: 0, end: Math.max(0, _hb.frameTotal - 2) }), frameRate: 18, repeat: 0 });
+            } catch (e) {}
+        }
+        if (this.textures.exists('HeartBreak') && this.anims.exists('heart_break')) {
+            this.tweens.add({
+                targets: heart, x: hx + 6, duration: 38, yoyo: true, repeat: 5, ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    try { heart.destroy(); } catch (e) {}
+                    const br = this.add.sprite(hx, hy, 'HeartBreak').setOrigin(0.5).setScrollFactor(0).setDepth(100001);
+                    br.setDisplaySize(104, 104);
+                    if (this.uiCam) { try { this.cameras.main.ignore(br); } catch (e) {} }
+                    if (!this._sz25DeathHearts) this._sz25DeathHearts = [];
+                    this._sz25DeathHearts.push(br);   // 复活时统一清理
+                    br.play('heart_break');
+                    // (用户) 还剩≥2颗心 → HeartBreak; 最后1颗心 → LastLifeBreak (开始1秒后)
+                    if (typeof AudioSystem !== 'undefined') {
+                        if (n >= 2) AudioSystem.sfx(this, 'HeartBreak');
+                        else this.time.delayedCall(1000, () => AudioSystem.sfx(this, 'LastLifeBreak'));
+                    }
+                    br.once('animationcomplete-heart_break', () => {
+                        this.tweens.add({ targets: br, alpha: 0, duration: 220, delay: 140 });
+                    });
+                    this.time.delayedCall(820, () => { if (onDone) onDone(); });
+                }
+            });
+            return;
+        }
+        // 回退 (无 HeartBreak 贴图): 文字碎裂 + 飞溅
+        if (heart.setColor) heart.setColor('#999999');
         this.tweens.add({
-            targets: heart, x: hx + 3, duration: 38, yoyo: true, repeat: 5, ease: 'Sine.easeInOut',
+            targets: heart, x: hx + 6, duration: 38, yoyo: true, repeat: 5, ease: 'Sine.easeInOut',
             onComplete: () => {
+                if (typeof AudioSystem !== 'undefined') {
+                    if (n >= 2) AudioSystem.sfx(this, 'HeartBreak');
+                    else this.time.delayedCall(1000, () => AudioSystem.sfx(this, 'LastLifeBreak'));
+                }
                 if (heart.setColor) heart.setColor('#ff3355');
-                // 2) 本体碎裂 (缩小旋转淡出)
                 this.tweens.add({ targets: heart, scaleX: 0.1, scaleY: 0.1, angle: 130, alpha: 0, duration: 260, ease: 'Quad.easeIn' });
-                // 3) 飞溅碎片
                 for (let i = 0; i < 6; i++) {
                     const f = this.add.text(hx, hy, '\u2764', {
-                        fontSize: '20px', color: '#ff3355', fontFamily: '"VT323", monospace'
+                        fontSize: '40px', color: '#ff3355', fontFamily: '"VT323", monospace'
                     }).setOrigin(0.5).setScrollFactor(0).setDepth(100001);
-                    try { this.cameras.main.ignore(f); } catch (e) {}
+                    if (this.uiCam) { try { this.cameras.main.ignore(f); } catch (e) {} }
+                    if (!this._sz25DeathHearts) this._sz25DeathHearts = [];
+                    this._sz25DeathHearts.push(f);
                     const ang = (Math.PI * 2 / 6) * i + Math.random() * 0.6;
-                    const dist = 40 + Math.random() * 30;
+                    const dist = 80 + Math.random() * 60;
                     this.tweens.add({
                         targets: f,
-                        x: hx + Math.cos(ang) * dist,
-                        y: hy + Math.sin(ang) * dist + 30,
+                        x: hx + Math.cos(ang) * dist, y: hy + Math.sin(ang) * dist + 60,
                         angle: Math.random() * 360, alpha: 0, scaleX: 0.3, scaleY: 0.3,
                         duration: 460, ease: 'Quad.easeOut',
-                        onComplete: () => { if (f && f.destroy) f.destroy(); }
+                        onComplete: () => { try { if (f && f.destroy) f.destroy(); } catch (e) {} }
                     });
                 }
                 this.time.delayedCall(480, () => { if (onDone) onDone(); });
@@ -617,7 +669,7 @@ class SafeZone25Scene extends SafeZone3Scene {
         this.isPlayerStunned = false; this.isPlayerInvincible = false;
         // 移除爱心 + 黑屏淡出
         if (this._sz25DeathHearts) {
-            this._sz25DeathHearts.forEach(h => { if (h && h.destroy) h.destroy(); });
+            this._sz25DeathHearts.forEach(h => { try { if (h && h.destroy) h.destroy(); } catch (e) {} });   // 碎片/碎心 sprite 也在这数组里, tween 自毁后再 destroy 一次 → try 防抛错
             this._sz25DeathHearts = null;
         }
         if (this._sz25DeathBlack) {

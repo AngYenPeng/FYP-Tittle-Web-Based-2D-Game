@@ -16,6 +16,9 @@ class TutorialScene extends MainGameScene {
         this._cinematicLock = false;
         // (用户) 一次性剧情/引导触发标志每次进图清掉 — 否则读档时残留 true → "穿水晶门讲外面水晶"等剧情被跳过 (与 SZ1 同类 bug); 网站刷新清内存才恢复
         this._crystalDoorPlotTriggered = false; this._stoneGuideUnlocked = false; this._platformGuideUnlocked = false; this._signpostSpawned = false; this._currentChunkId = null;
+        // (用户) 商人钥匙剧情三标志每次进图清掉 — 否则存档退出重进 (实例复用) 后商人残留 "已买钥匙" 状态直接说 "Now go, kid." 跳过卖钥匙; 网页刷新才恢复
+        //   _keyPlotDone: 门控 "Now go, kid." (主因)  _keyPlotTriggered: 门控钥匙剧情触发 (不清→重买钥匙不重播剧情)  _crystalQuestActive: 门控 "Got the goods?" (水晶剧情会重设)
+        this._keyPlotDone = false; this._keyPlotTriggered = false; this._crystalQuestActive = false;
     }
 
     preload() {
