@@ -20,7 +20,8 @@ class SafeZone25Scene extends SafeZone3Scene {
     }
 
     create() {
-        // (用户) SZ25 BGM 改为怪潮触发时才播 (3s 淡入), 入场静默
+        // (用户) 入场/非怪潮阶段 BGM 暂用 SZ3 下半部; 怪潮触发时切 bgm_SafeZone25 (3s 淡入)
+        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SZ3_Lower');
         // (用户修复) 不再进场强制解锁 — 从 registry 读; SZ3 升级镐 NPC 才是合法解锁点 (原捷径导致免对话解锁)
         this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');
         this.WARNING_DISTANCE = 280; this.HEAVY_FLY_LIMIT = 214; this.CRITICAL_DISTANCE = 380;
@@ -661,6 +662,8 @@ class SafeZone25Scene extends SafeZone3Scene {
         this._sz25Transitioning = false;
         this._sz25SpawnAcc = 0;
         if (this.cameras.main.shakeEffect && this.cameras.main.shakeEffect.reset) this.cameras.main.shakeEffect.reset();
+        // (用户) 复活回到非怪潮阶段 → 恢复环境 BGM (怪潮 bgm_SafeZone25 死亡时已淡出)
+        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SZ3_Lower');
         // 镜头回 zone1
         this._currentChunkId = null;
         if (this._updateChunkCamera) this._updateChunkCamera();
@@ -689,13 +692,13 @@ class SafeZone25Scene extends SafeZone3Scene {
         const allGroups = ['spiders', 'bats', 'slimes', 'beetles', 'earthworms', 'bungeeSpiders', 'mimicOres', 'volatileCrystals'];
         let total = 0;
         allGroups.forEach(g => { if (this[g] && this[g].getChildren) total += this[g].getChildren().length; });
-        if (total >= 150) return;
+        if (total >= 300) return;
 
         const sx = 49 * G + G / 2, sy = 6 * G + G / 2;
         const pool = ['spider', 'slime', 'bat', 'earthworm', 'beetle'];
         const n = Phaser.Math.Between(1, 3);
         for (let i = 0; i < n; i++) {
-            if (total >= 150) break;
+            if (total >= 300) break;
             const pick = Phaser.Utils.Array.GetRandom(pool);
             const ox = sx + Phaser.Math.Between(-8, 8);
             const oy = sy + Phaser.Math.Between(-8, 8);
@@ -729,9 +732,13 @@ class SafeZone25Scene extends SafeZone3Scene {
         }
     }
 
-    /** 覆盖: 追逐序列里所有怪物无视距离都 update (horde 从任意距离追玩家) */
+    /** 覆盖: 追逐序列里所有怪物无视距离都 update (horde 从任意距离追玩家); 顺带剔除掉出镜头 2 秒的怪潮怪 */
     _updateMonstersFiltered(time, delta) {
         if (!this.player) return;
+        const cam = this.cameras.main;
+        const v = cam && cam.worldView;     // 当前镜头可见世界矩形
+        const M = 48;                        // 镜头外余量 (≈1.5 格, 防贴边抖动)
+        const toCull = [];
         const groups = ['spiders', 'bats', 'slimes', 'beetles', 'earthworms', 'bungeeSpiders', 'mimicOres', 'volatileCrystals'];
         for (const grpName of groups) {
             const grp = this[grpName];
@@ -743,8 +750,18 @@ class SafeZone25Scene extends SafeZone3Scene {
                 if (m._sz25Horde) m.forceAggroTimer = 1e12;  // 持续强制警戒
                 m.update(time, delta, this.player);          // 无距离过滤
                 if (m.checkProximity) m.checkProximity(this.player);   // (用户) 爆裂水晶接近触发 — 此循环此前漏调
+                // (用户) 怪潮刷的怪掉出镜头外持续 2 秒 → 删除. 需先进过画面才开始计时 (防刚在刷怪点生成、还在赶来的被误删); 场景固定怪 (无 _sz25Horde) 不动
+                if (m._sz25Horde && v && m.active) {
+                    const inView = (m.x >= v.x - M && m.x <= v.right + M && m.y >= v.y - M && m.y <= v.bottom + M);
+                    if (inView) { m._sz25WasInView = true; m._sz25OffscreenMs = 0; }
+                    else if (m._sz25WasInView) {
+                        m._sz25OffscreenMs = (m._sz25OffscreenMs || 0) + delta;
+                        if (m._sz25OffscreenMs >= 2000) toCull.push(m);
+                    }
+                }
             }
         }
+        for (const m of toCull) { try { if (m && m.destroy) m.destroy(); } catch (e) {} }   // 循环外删, 防遍历中改组
     }
 
     /** SZ25 → SZ3 状态传递 (字段同 SZ2 跳转) */
@@ -764,6 +781,8 @@ class SafeZone25Scene extends SafeZone3Scene {
     }
 
     update(time, delta) {
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 

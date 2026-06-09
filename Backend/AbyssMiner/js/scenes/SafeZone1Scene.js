@@ -152,7 +152,7 @@ class SafeZone1Scene extends MainGameScene {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
-        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._chests = [];   // (用户修复) _chests 重进图必清: Phaser 复用场景实例, 不清则上轮旧 chest(sprite 已销毁)残留, update 跑到它 → _open 对死 sprite setTexture 宕机
         this._sz1MerchantCutsceneDone = false; this._sz1MerchantCutsceneStarted = false; this._sz1MerchantPending = false;
         this._platformGuideUnlocked = false; this._teleportingToSafeZone2 = false;   // (修复) 通关后开新档剧情全跳过: 这些标志没在 init 清, 复用实例残留 true
     }
@@ -761,6 +761,8 @@ class SafeZone1Scene extends MainGameScene {
     }
 
     update(time, delta) {
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 

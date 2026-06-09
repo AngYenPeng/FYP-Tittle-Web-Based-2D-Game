@@ -91,7 +91,7 @@ class TitleScene extends Phaser.Scene {
             title = this.add.sprite(W / 2, H * 0.30, 'Title').setScale(0.5);
             // (用户) 循环节奏: 播一遍 → 停在末帧 10 秒 → 重播, 无限循环
             title.on('animationcomplete-title_anim', () => {
-                this.time.delayedCall(10000, () => { if (title.active && title.scene) title.play('title_anim'); });
+                this.time.delayedCall(3000, () => { if (title.active && title.scene) title.play('title_anim'); });
             });
             title.play('title_anim');
         } else {

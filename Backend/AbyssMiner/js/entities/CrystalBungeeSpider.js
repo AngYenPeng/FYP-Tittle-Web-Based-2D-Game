@@ -166,8 +166,10 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
         const G = 32;
         // 4 方向手动检测内缩 1px
         const checkDir = (dirKey) => {
-            if (!(this.body.blocked[dirKey] || this.body.touching[dirKey])) return false;
-            if (!this.scene || !this.scene.wallRects) return true;
+            const _flag = this.body.blocked[dirKey] || this.body.touching[dirKey];
+            // (用户修复) 'down' 不依赖 arcade flag: 单向平台 / 关重力时 blocked.down 不触发 → 纯几何兜底 (与 CrystalHunterSpider 同款), 否则蜘蛛在平台上 onGround 永假 → pounce 卡死无限滑
+            if (dirKey !== 'down' && !_flag) return false;
+            if (!this.scene || !this.scene.wallRects) return _flag;
             let cl, cr, ct, cb;
             if (dirKey === 'up')    { cl = this.body.left + 1;  cr = this.body.right - 1; ct = this.body.top - 1;    cb = this.body.top - 1; }
             if (dirKey === 'down')  { cl = this.body.left + 1;  cr = this.body.right - 1; ct = this.body.bottom + 1; cb = this.body.bottom + 1; }
@@ -435,15 +437,21 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
                 if (this.timer <= 0) {
                     this.state = 'pounce';
                     this.clearTint();
+                    this.body.setAllowGravity(true);   // (用户修复) 扑击必须有重力会落地 (垂丝掉落用过自定义 gravityY, 这里复位成世界重力)
+                    this.body.setGravityY(0);
+                    this._pounceTime = 0;
                     this.body.setVelocityY(-350);
                     this.body.setVelocityX(dirToPlayer * 300);
                 }
                 break;
             case 'pounce':
-                if (onGround && this.body.velocity.y >= 0) {
+                this._pounceTime = (this._pounceTime || 0) + delta;
+                // (用户修复) 落地(含平台几何) / 撞墙 / 超时(1200ms 兜底) 任一即结束扑击, 否则永久卡攻击动作 + 无限滑行到撞墙
+                if ((onGround && this.body.velocity.y >= 0) || onWall || this._pounceTime >= 1200) {
                     this.state = 'cooldown';
                     this.timer = 1200;
                     this.body.setVelocityX(0);
+                    this._pounceTime = 0;
                 }
                 break;
             case 'cooldown':

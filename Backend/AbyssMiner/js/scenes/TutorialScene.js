@@ -14,6 +14,7 @@ class TutorialScene extends MainGameScene {
         this.tutorialId = (data && data.tutorialId) || 1;
         // (用户) 每次进图=全新第一次: 清掉残留瞬态 (实例复用会串场)
         this._cinematicLock = false;
+        this.isPlayerInvincible = false; this.isPlayerStunned = false;   // (用户修复) 同上无敌残留修复 — Tutorial 独有自己的 preload 且不调 super.preload(), 收不到 GameScene.preload 的复位; 这里 init 每次进图复位兜底
         // (用户) 一次性剧情/引导触发标志每次进图清掉 — 否则读档时残留 true → "穿水晶门讲外面水晶"等剧情被跳过 (与 SZ1 同类 bug); 网站刷新清内存才恢复
         this._crystalDoorPlotTriggered = false; this._stoneGuideUnlocked = false; this._platformGuideUnlocked = false; this._signpostSpawned = false; this._currentChunkId = null;
         // (用户) 商人钥匙剧情三标志每次进图清掉 — 否则存档退出重进 (实例复用) 后商人残留 "已买钥匙" 状态直接说 "Now go, kid." 跳过卖钥匙; 网页刷新才恢复
@@ -1187,6 +1188,8 @@ class TutorialScene extends MainGameScene {
      * 因为继承的版本会跑绳索/grapple/recall 等 T1 不需要的逻辑
      */
     update(time, delta) {
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (this.tutorialId !== 1) {
             // T2/T3 仍用主关卡 update

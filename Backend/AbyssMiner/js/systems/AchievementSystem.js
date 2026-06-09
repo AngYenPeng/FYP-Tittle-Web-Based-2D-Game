@@ -45,6 +45,7 @@ const AchievementSystem = {
         this._save(d);
         const def = this.DEFS.find(a => a.id === id);
         this._toast(scene, def ? def.title : id);
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(scene, 'Achievement');   // (用户) 获得成就音效, 播 1 次
         return true;
     },
 

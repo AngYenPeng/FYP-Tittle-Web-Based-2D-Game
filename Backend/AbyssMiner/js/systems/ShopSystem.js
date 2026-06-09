@@ -21,7 +21,7 @@ class ShopSystem {
         const _sd = (window.AbyssDiff ? AbyssDiff.get() : null);
         if (_sd) {
             if (!_sd.shopLife) this.items = this.items.filter(it => it.id !== 'life_potion');
-            if (_sd.priceMul !== 1) this.items.forEach(it => { it.price = Math.round(it.price * _sd.priceMul); });
+            if (_sd.priceMul !== 1) this.items.forEach(it => { it.price = Math.ceil(it.price * _sd.priceMul); });   // (用户) 向上取整
         }
     }
 

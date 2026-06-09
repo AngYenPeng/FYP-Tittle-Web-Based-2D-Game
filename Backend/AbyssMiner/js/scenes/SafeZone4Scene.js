@@ -213,7 +213,7 @@ class SafeZone4Scene extends MainGameScene {
     }
 
     create() {
-        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone4');  // BGM (SafeZone4.mp3 放进 BGM/ 即生效)
+        if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SZ3_Lower');  // (用户) 环境 BGM 暂用 SZ3 下半部 (SafeZone4 专属曲缺失); boss 战会切 bgm_BatBossFight
 
         // pickaxeUpgraded — 从 registry 读 (跨场景有效, 刷新网页自动重置 — 暂无后台存档)
         this._pickaxeUpgraded = !!this.registry.get('pickaxeUpgraded');  // (用户修复) 原"进场即解锁"是开发捷径 — 改从 registry 读
@@ -645,7 +645,7 @@ class SafeZone4Scene extends MainGameScene {
         // pointerdown
         this.input.on('pointerdown', (pointer) => {
             if (!this.player.body || this.isPlayerStunned || this.isDead) return;
-            if (this._cinematicLock) return;
+            if (this._cinematicLock || this._sz4CutsceneActive) return;   // (用户修复) 演出期间也拦死点击 — 防 _cinematicLock 被意外重置后近战/丢稿泄漏
             if (this.shopSystem?.isOpen || this.hudSystem?.gamePausedByConfirm) return;
             if (this.backpackSystem?.isOpen || this.settingsSystem?.isOpen || this.creativeSystem?.isOpen) return;
             if (this.dialogSystem?.isOpen || this.guideSystem?.isOpen) return;
@@ -714,7 +714,7 @@ class SafeZone4Scene extends MainGameScene {
             if (this._batBoss._hpBg)  this._batBoss._hpBg.setVisible(false);
             if (this._batBoss._hpBar) this._batBoss._hpBar.setVisible(false);
             this.events.on('batboss_defeated', (data) => {
-                if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone4');  // (用户) boss 死 → 退回区域 BGM
+                if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SZ3_Lower');  // (用户) boss 死 → 退回区域 BGM
                 if (this._batBossDeathStarted) return;
                 this._batBossDeathStarted = true;
                 this._batBossDead = true;
@@ -776,11 +776,11 @@ class SafeZone4Scene extends MainGameScene {
         this._cinematicLock = true;
         this.cameras.main.fadeIn(800);
         this.time.delayedCall(900, () => {
-            this._cinematicLock = false;
+            if (!this._sz4CutsceneActive) this._cinematicLock = false;   // (用户) 区2剧情已接管 → 不解锁, 交给剧情自己释放
         });
         // (用户) 兜底: 解锁用的是场景时钟, 进场窗口期时钟若被暂停 (guide 弹窗等) 回调会冻住 → 键盘永久失灵.
-        //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁
-        setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
+        //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁; 但若此刻已冲进区2触发剧情(_sz4CutsceneActive), 不可解锁, 否则会打断剧情镜头
+        setTimeout(() => { try { if (this._cinematicLock && !this._sz4CutsceneActive) this._cinematicLock = false; } catch (e) {} }, 2000);
     }
 
     _applyInheritedState() {
@@ -903,6 +903,8 @@ class SafeZone4Scene extends MainGameScene {
     }
 
     update(time, delta) {
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 
@@ -980,7 +982,7 @@ class SafeZone4Scene extends MainGameScene {
         if (!this.isDead) this._sz4WasInBossRoom = this._sz4InBossRoomNow;   // (用户) 死亡期间冻结, 复活在线内也不秒建
         // 玩家死亡 → 移除玩家墙 (保留永久怪物墙) + 停 zone2 攻击 + boss 回 idle; 复活后重新走进 boss 房才重建玩家墙
         if (this.isDead) {
-            if (this._sz4BossActive && typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone4');  // 死亡 → 退回区域 BGM
+            if (this._sz4BossActive && typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SZ3_Lower');  // 死亡 → 退回区域 BGM
             if (this._sz4PlayerWall) {
                 if (this._pickExtraWalls) { const i = this._pickExtraWalls.indexOf(this._sz4PlayerWall); if (i >= 0) this._pickExtraWalls.splice(i, 1); }
                 this._sz4PlayerWall.destroy(); this._sz4PlayerWall = null;
@@ -994,6 +996,12 @@ class SafeZone4Scene extends MainGameScene {
                 }
                 if (this._sz4BatNests) this._sz4BatNests.forEach(n => { if (n.stopSummoning) n.stopSummoning(); });
             }
+        }
+        // (用户) 自愈环境曲: 活着 + 不在区2演出 + 不在 boss 战 + 无 GameOver 短曲 → 确保 SZ3 下半部在播.
+        //   覆盖"区2演出 stopBGM 后、若演出中途死亡复活, 走回 boss 房那段没人重启 BGM"的静默缺口. bgm() 有同 key 守卫, 已在播则 no-op.
+        if (!this.isDead && !this._sz4CutsceneActive && !this._sz4BossActive && typeof AudioSystem !== 'undefined'
+            && !(AudioSystem.gameOverPlaying && AudioSystem.gameOverPlaying())) {
+            AudioSystem.bgm(this, 'bgm_SZ3_Lower');
         }
         // 钟乳石下落 (BatBoss 咆哮掉的) + 荆棘 (碰到扣血) — 空数组时无开销
         if (this._stalactites) this._stalactites.forEach(s => s.update());
@@ -1071,37 +1079,39 @@ class SafeZone4Scene extends MainGameScene {
 
         if (paused || this.isDead) return;
 
-        if (!this.isPlayerStunned && this.movementSystem) {
+        if (this._sz4CutsceneActive && this.player && this.player.body) {
+            // (用户修复) 区2演出期间完全不跑移动系统 — 否则键盘移动/跳会被处理出移动动画 (脱离控制 / 原地踏步).
+            //   位移与动画 100% 交给剧情走位; 任何残留/迟到的冲刺·近战·抓钩 + 蓄力每帧清除. (点击近战另由 pointerdown 的 _sz4CutsceneActive 拦死)
+            if (this.isDashing && this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
+            if (this.isMeleeAttacking && this.meleeSystem && this.meleeSystem.cancelMelee) this.meleeSystem.cancelMelee();
+            if ((this.isGrappling || this.isHanging) && this.grappleSystem && this.grappleSystem.stopGrapple) this.grappleSystem.stopGrapple();
+            this.isMeleeAttacking = false; this.isCharging = false; this.chargeTime = 0;
+            if (this._sz4CutPhase === 'walk' || this._sz4CutPhase === 'land') {
+                this.player.body.setVelocityX(0);     // 走/落地阶段: 只清横向 (纵向留给重力/走位)
+            } else {
+                this.player.body.setVelocity(0, 0);   // strike 等阶段: 完全静止
+            }
+            this._updateSz4Cutscene(time, delta);
+            this._updateRealPickaxes(time, delta);
+        } else if (!this.isPlayerStunned && this.movementSystem) {
             this.movementSystem.update(time, delta);
 
-            // (用户) 区2边界穿墙保险: 战斗中玩家中心越过边界墙(左列-11/上行-4/右列13)或跌穿地面
-            // → 回溯到穿墙前记录的最后合法位置 (即最靠近穿墙点的安全点)
+            // (用户) 区2边界穿墙保险: 战斗中玩家中心越过边界(左-10/右13/上-3/下24格) → 沿越界轴夹回边界, 只清越界轴速度。
+            //   旧实现 body.reset 到"最后合法 player.x"=记忆点回溯; 但越界判定用 body.center, 而冲刺/攻击会改 body 原点+偏移,
+            //   导致 player.x 与 body.center 失配 → reset 后中心仍在界外 → 每帧重置+清零速度=原地踏步被定身(用户报告的 bug)。
+            //   改为按 body.center 实时夹紧: 同步移动 sprite 与 body 位置到最近边界(界内), 只清越界那一轴的速度,
+            //   夹后中心恰好落在边界(不算越界) → 下一帧即解除, 玩家可正常往房间内移动/跳跃, 只是出不去房间。
             if (this._sz4BossActive && this.player && this.player.body) {
                 const G4 = 32;
-                const _px = this.player.body.center.x, _py = this.player.body.center.y;
-                const _out = (_px < -10 * G4 || _px > 13 * G4 || _py < -3 * G4 || _py > 24 * G4);
-                if (!_out) { this._sz4InX = this.player.x; this._sz4InY = this.player.y; }
-                else if (this._sz4InX !== undefined) {
-                    this.player.body.reset(this._sz4InX, this._sz4InY);
-                }
+                const b = this.player.body;
+                const minX = -10 * G4, maxX = 13 * G4, minY = -3 * G4, maxY = 24 * G4;
+                const cx = b.center.x, cy = b.center.y;
+                const tx = Phaser.Math.Clamp(cx, minX, maxX);
+                const ty = Phaser.Math.Clamp(cy, minY, maxY);
+                if (tx !== cx) { const dx = tx - cx; this.player.x += dx; b.x += dx; b.velocity.x = 0; }
+                if (ty !== cy) { const dy = ty - cy; this.player.y += dy; b.y += dy; b.velocity.y = 0; }
             }
-            // 区2进场剧情走路: 在 movementSystem 之后跑 (覆盖 cinematic 清零的 velocityX)
-            // (用户) 剧情绝对接管 — 每帧重申: 高速冲入时任何残余/迟到的冲刺·抓钩·近战与外来速度当帧清除,
-            //   玩家移动权 100% 归剧情走位 (cancelDash 不清速度 + 单次入场清理拦不住后续灌入, 故每帧执法)
-            if (this._sz4CutsceneActive && this.player && this.player.body) {
-                if (this.isDashing && this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
-                if (this.isMeleeAttacking && this.meleeSystem && this.meleeSystem.cancelMelee) this.meleeSystem.cancelMelee();
-                if ((this.isGrappling || this.isHanging) && this.grappleSystem && this.grappleSystem.stopGrapple) this.grappleSystem.stopGrapple();
-                if (this._sz4CutPhase === 'walk') {
-                    this.player.body.setVelocityX(0);     // 走路阶段: 先清外来 X, 下一行剧情走位重新给 ±150
-                } else if (this._sz4CutPhase === 'land') {
-                    this.player.body.setVelocityX(0);     // (用户) 落地阶段: 只清横向(防惯性冲过头), 纵向留给重力让玩家掉回地面
-                } else {
-                    this.player.body.setVelocity(0, 0);   // 其他阶段(strike等): 完全静止
-                }
-            }
-            if (this._sz4CutsceneActive) this._updateSz4Cutscene(time, delta);
-        this._updateRealPickaxes(time, delta);
+            this._updateRealPickaxes(time, delta);
         }
 
         if (this.backpackSystem) {
@@ -1346,6 +1356,7 @@ class SafeZone4Scene extends MainGameScene {
     _startSz4Cutscene() {
         this._sz4CutsceneActive = true;
         this._cinematicLock = true;
+        if (typeof AudioSystem !== 'undefined') AudioSystem.stopBGM();   // (用户) 区2进场对话/演出期间静默; 演出结束 _sz4CutRelease 会起 bgm_BatBossFight
         this._sz4CutPhase = 'land';   // (用户) 先落地阶段: 进区2若在空中, 先停横向只靠重力掉回地面, 落地后才走位 — 防空中走/空中打完攻击动画
         this._sz4LandStartMs = this.time.now;
         this._sz4PanGuard = false;

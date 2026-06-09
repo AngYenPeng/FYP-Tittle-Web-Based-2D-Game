@@ -202,9 +202,11 @@ class BatBoss {
         // 半血切换
         if (!this._phase2 && this.hp <= this.maxHp / 2) {
             this._phase2 = true;
-            this._windTimer = Phaser.Math.Between(3000, 10000);
+            // (用户) 进二阶段: 冲击波从主动技能改为被动 — 每 4~7s 自动放一波 (与 dash/roar 并行, 不占主动出招)
+            this._passiveWindTimer = Phaser.Math.Between(4000, 7000);
+            this._burstOffsets = null; this._burstSpawned = 0;
+            if (!this._rings) this._rings = [];
         }
-        if (this._phase2 && (this.state === 'idle')) this._windTimer -= delta;
 
         switch (this.state) {
             case 'idle':       this._updateIdle(dt, p); break;
@@ -216,6 +218,11 @@ class BatBoss {
             case 'roar':       this._updateRoar(dt, p); break;
             case 'roar_wait':  this._updateRoarWait(dt, p); break;
         }
+
+        // (用户) 二阶段被动冲击波: 环的扩散/击退/清理脱离状态机, 任何状态都跑 (wind_rings 状态自己跑这段, 跳过防重复)
+        if (this.state !== 'wind_rings') this._updateRings(dt, time, p);
+        // (用户) 二阶段被动触发: 每 4~7s 一波 5 圈冲击波, 与 dash/roar 并行 (玩家未进 boss 房则不放)
+        if (this._phase2 && this._attackEnabled !== false) this._tickPassiveWind(dt, time);
 
         // (用户) y=14 行硬下限: 任何状态越界立即顶回, 向下速度清零; 冲刺越界则立即结束冲刺
         const FYU = this.FLOOR_Y || (14 * 32);
@@ -235,7 +242,7 @@ class BatBoss {
         this._wander(dt);
         if (this._attackEnabled === false) return;  // 玩家未进 boss 房镜头 → 只漂浮巡逻, 不出招
         if (this._t >= this._cooldownDur) {
-            this._startSkill(this._pickSkill());
+            this._startSkill(this._pickSkill(p));
         }
     }
 
@@ -257,19 +264,26 @@ class BatBoss {
         this._faceTowards(this.scene.player ? this.scene.player.x : this.x);
     }
 
-    _pickSkill() {
+    _pickSkill(p) {
+        // (用户) 玩家位置低于飞行下限 FLOOR_Y(蝙蝠俯冲被 line 222-226 硬顶在 FLOOR_Y, 下不去 + dash_go 越界立即掐断)
+        //        → 此时 dash 必然够不到/一冲就废, 只用远程: 冲击波(wind) / 钟乳石(roar)
+        const dashUseless = !!(p && p.y > this.FLOOR_Y);
         let skill;
         if (this._phase2) {
-            if (this._windTimer <= 0) { this._windTimer = Phaser.Math.Between(3000, 10000); return 'wind'; }
-            skill = (Math.random() < 0.6) ? 'dash' : 'roar';
+            // (用户) 二阶段 wind 已改为被动 (_tickPassiveWind), 不再占主动出招; 主动只在 dash/roar 里二选一
+            if (dashUseless) skill = 'roar';                          // 玩家低位: dash 够不到, 只能咆哮砸钟乳石
+            else skill = (Math.random() < 0.6) ? 'dash' : 'roar';
         } else {
             const r = Math.random();
-            skill = r < 0.25 ? 'wind' : (r < 0.75 ? 'dash' : 'roar');
+            if (dashUseless) skill = (r < 0.5) ? 'wind' : 'roar';     // 玩家低位: 冲击波/钟乳石各半
+            else skill = r < 0.25 ? 'wind' : (r < 0.75 ? 'dash' : 'roar');
         }
-        // 最多连续 3 次
+        // 最多连续 3 次同招 → 强制换 (玩家低位时换池也剔除 dash)
         if (skill === this._lastSkill && this._sameCount >= 3) {
-            const pool = (this._phase2 ? ['dash', 'roar'] : ['wind', 'dash', 'roar']).filter(x => x !== skill);
-            skill = pool[Math.floor(Math.random() * pool.length)];
+            let pool = this._phase2 ? ['dash', 'roar'] : ['wind', 'dash', 'roar'];
+            if (dashUseless) pool = pool.filter(x => x !== 'dash');
+            pool = pool.filter(x => x !== skill);
+            if (pool.length) skill = pool[Math.floor(Math.random() * pool.length)];
         }
         return skill;
     }
@@ -288,7 +302,7 @@ class BatBoss {
     }
 
     _enterCooldown() {
-        this._cooldownDur = this._phase2 ? 1500 : 3000;   // (用户) 二阶段冷却 2.5s→1.5s
+        this._cooldownDur = this._phase2 ? 2000 : 3000;   // (用户) 二阶段一套技能后冷却 2s
         this._setState('idle');
         this._wanderTarget = this._randomArenaPoint();
     }
@@ -306,14 +320,16 @@ class BatBoss {
         }
     }
 
-    _spawnRing() {
+    _spawnRing(spd) {
         if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, Math.random() < 0.5 ? 'ForceWingsFlap' : 'ForceWingsFlap2');   // (用户) 冲击波音效 2选1 随机
         const g = this.scene.add.circle(this.x, this.y, 8, 0x66ccff, 0).setStrokeStyle(3, 0x88ddff, 0.9).setDepth(19);
         if (this.scene.uiCam) { try { this.scene.uiCam.ignore(g); } catch (e) {} }
-        this._rings.push({ g, r: 8, cx: this.x, cy: this.y, hit: false });
+        // (用户) 每个环自带外扩速度: 一阶段主动 wind 默认 RING_SPEED(10格/秒); 二阶段被动 wind 传 8~15格/秒
+        this._rings.push({ g, r: 8, cx: this.x, cy: this.y, hit: false, spd: (spd != null ? spd : this.RING_SPEED) });
         this._ringsSpawned++;
     }
 
+    // 一阶段主动 wind: 悬停后从本体放 3 圈, 每秒 1 圈, 默认外扩速度; 扩散/击退/清理统一走 _updateRings
     _updateWindRings(dt, time, p) {
         this._wander(dt);   // 放技能时也漂移
         this._ringTick += dt * 1000;
@@ -322,14 +338,22 @@ class BatBoss {
             this._ringTick -= 1000;
             this._spawnRing();
         }
-        // 扩散 + 击退判定
+        this._updateRings(dt, time, p);   // 扩散 + 击退 + 清理
+        // 3 圈全放完且都消散 → 冷却
+        if (this._ringsSpawned >= 3 && this._rings.length === 0) {
+            this._enterCooldown();
+        }
+    }
+
+    // 冲击波环统一驱动 (一阶段 wind_rings 自己调; 二阶段被动/任意状态由主 update 调) — 每环按自身 spd 外扩
+    _updateRings(dt, time, p) {
+        if (!this._rings || !this._rings.length) return;
         const maxR = Math.hypot(this.arena.x2 - this.arena.x1, this.arena.y2 - this.arena.y1);
         for (let i = this._rings.length - 1; i >= 0; i--) {
             const ring = this._rings[i];
-            ring.r += this.RING_SPEED * dt;
+            ring.r += (ring.spd != null ? ring.spd : this.RING_SPEED) * dt;
             ring.g.setRadius(ring.r);
             ring.g.setStrokeStyle(3, 0x88ddff, Math.max(0, 0.9 * (1 - ring.r / maxR)));
-            // 玩家距 ring 中心
             const pd = Math.hypot(p.x - ring.cx, p.y - ring.cy);
             if (!ring.hit && Math.abs(pd - ring.r) < 24) {
                 ring.hit = true;
@@ -339,10 +363,41 @@ class BatBoss {
             }
             if (ring.r >= maxR) { try { ring.g.destroy(); } catch (e) {} this._rings.splice(i, 1); }
         }
-        // 3 圈全放完且都消散 → 冷却
-        if (this._ringsSpawned >= 3 && this._rings.length === 0) {
-            this._enterCooldown();
+    }
+
+    // (用户) 二阶段被动冲击波: 每 4~7s 触发一波 — 3 秒内放 5 圈, 相邻≥0.3s, 每圈外扩 8~15格/秒; 与 dash/roar 并行
+    _tickPassiveWind(dt, time) {
+        if (!this._burstOffsets) {
+            // 不在放波 → 倒计时, 到点开新一波
+            this._passiveWindTimer -= dt * 1000;
+            if (this._passiveWindTimer <= 0) {
+                this._burstOffsets = this._makeWindBurstOffsets();
+                this._burstStart = time;
+                this._burstSpawned = 0;
+                this._passiveWindTimer = Phaser.Math.Between(4000, 7000);   // 下一波间隔
+            }
+            return;
         }
+        // 正在放波 → 按 offsets 到点逐圈生成 (一帧可补多圈)
+        const elapsed = time - this._burstStart;
+        while (this._burstSpawned < this._burstOffsets.length && elapsed >= this._burstOffsets[this._burstSpawned]) {
+            this._spawnRing(Phaser.Math.Between(8, 15) * 32);   // 每圈外扩 8~15格/秒
+            this._burstSpawned++;
+        }
+        if (this._burstSpawned >= this._burstOffsets.length) this._burstOffsets = null;   // 5 圈放完, 等下一波
+    }
+
+    // 5 个生成时刻(ms): 都落在 [0,3000], 相邻间隔≥300; broken-stick 随机分配余量
+    _makeWindBurstOffsets() {
+        const N = 5, minGap = 300, win = 3000;
+        const slack = win - minGap * (N - 1);   // =1800 可随机分配
+        const cuts = [0, slack];
+        for (let i = 0; i < N - 2; i++) cuts.push(Math.random() * slack);
+        cuts.sort((a, b) => a - b);
+        const offsets = [0];
+        let acc = 0;
+        for (let i = 1; i < N; i++) { acc += minGap + (cuts[i] - cuts[i - 1]); offsets.push(acc); }
+        return offsets;   // [0, ...] 共 5 个, 相邻≥300, 末尾=3000
     }
 
     // ── DASH ──
@@ -420,7 +475,7 @@ class BatBoss {
             this._sideDir = null;
             this._vel(0, 0);
             this._setState('dash_charge');
-            this._chargeDur = this._phase2 ? 550 : 650;   // 蓄力时间 ((用户) 二阶段 0.55s)
+            this._chargeDur = this._phase2 ? 500 : 650;   // 蓄力时间 ((用户) 二阶段 0.5s)
             this._dashTargetX = p.x; this._dashTargetY = p.y;
             this._makeDashTelegraph(p);
             return;
@@ -497,28 +552,44 @@ class BatBoss {
     _updateRoar(dt, p) {
         this._wander(dt);   // 放技能时也漂移
         this._faceTowards(p.x);
+        const roarDur = this._phase2 ? 1250 : 2000;   // (用户) 二阶段咆哮 1.25s, 一阶段 2s
         if (!this._roarStarted) {
             this._roarStarted = true;
+            this._shakeStarted = false;   // 二阶段震屏移到 roar_wait, 这里先重置标记
             if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'Bat_Scream');   // (用户) 召唤钟乳石的咆哮音效
-            // 咆哮 2s + 震动 2s
-            if (this.scene.cameras && this.scene.cameras.main) {
+            // (用户) 一阶段: 咆哮 2s 同时震屏 2s; 二阶段: 震屏改到咆哮结束后的 roar_wait(0.75s)
+            if (!this._phase2 && this.scene.cameras && this.scene.cameras.main) {
                 try { this.scene.cameras.main.shake(2000, this.SHAKE_INTENSITY); } catch (e) {}
             }
-            // 咆哮特效 (一圈黄环扩张)
+            // 咆哮特效 (一圈黄环扩张), 时长跟随咆哮
             const ro = this.scene.add.circle(this.x, this.y, 20, 0xffaa33, 0).setStrokeStyle(4, 0xffcc55, 0.8).setDepth(19);
             this._roarFx = ro;
             if (this.scene.uiCam) { try { this.scene.uiCam.ignore(ro); } catch (e) {} }
-            this.scene.tweens.add({ targets: ro, scaleX: 6, scaleY: 6, alpha: 0, duration: 2000, onComplete: () => { try { ro.destroy(); } catch (e) {} if (this._roarFx === ro) this._roarFx = null; } });
+            this.scene.tweens.add({ targets: ro, scaleX: 6, scaleY: 6, alpha: 0, duration: roarDur, onComplete: () => { try { ro.destroy(); } catch (e) {} if (this._roarFx === ro) this._roarFx = null; } });
         }
-        if (this._t >= 2000) { this._setState('roar_wait'); }
+        if (this._t >= roarDur) { this._setState('roar_wait'); }
     }
 
     _updateRoarWait(dt, p) {
         this._wander(dt);   // 放技能时也漂移
-        // 咆哮结束 1s 后掉钟乳石
-        if (this._t >= 1000) {
-            this._dropStalactites(p);
-            this._enterCooldown();
+        if (this._phase2) {
+            // (用户) 二阶段: 咆哮结束后震屏 0.75s, 震动开始 0.25s 后掉钟乳石
+            if (!this._shakeStarted) {
+                this._shakeStarted = true;
+                if (this.scene.cameras && this.scene.cameras.main) {
+                    try { this.scene.cameras.main.shake(750, this.SHAKE_INTENSITY); } catch (e) {}
+                }
+            }
+            if (this._t >= 250) {
+                this._dropStalactites(p);
+                this._enterCooldown();
+            }
+        } else {
+            // 一阶段: 咆哮结束 1s 后掉钟乳石
+            if (this._t >= 1000) {
+                this._dropStalactites(p);
+                this._enterCooldown();
+            }
         }
     }
 
@@ -545,6 +616,7 @@ class BatBoss {
             this._rings = [];
         }
         this._ringsSpawned = 0;
+        this._burstOffsets = null; this._burstSpawned = 0;   // (用户) 二阶段被动冲击波: 玩家死亡时清掉进行中的一波
         if (this._chargeFx) { try { this._chargeFx.destroy(); } catch (e) {} this._chargeFx = null; }
         if (this._roarFx)   { try { this._roarFx.destroy(); }   catch (e) {} this._roarFx = null; }
         if (this.scene) this.scene._windKnockVx = 0;

@@ -353,15 +353,20 @@ class CrystalHunterSpider extends Phaser.Physics.Arcade.Sprite {
                 if (this.timer <= 0) {
                     this.state = 'pounce';
                     this.clearTint();
+                    this.body.setAllowGravity(true);   // (用户修复) 扑击必须有重力会落地 — 否则飞直线/穿平台永不落地 → onGround 永假 → 永久卡 pounce + 无限向前滑
+                    this._pounceTime = 0;
                     this.body.setVelocityY(-350);
                     this.body.setVelocityX(dirToPlayer * 300);
                 }
                 break;
             case 'pounce':
-                if (onGround && this.body.velocity.y >= 0) {
+                this._pounceTime = (this._pounceTime || 0) + delta;
+                // (用户修复) 落地(含平台几何判定) / 撞墙 / 超时(1200ms 兜底) 任一即结束扑击, 否则永久卡攻击动作 + 无限滑行到撞墙
+                if ((onGround && this.body.velocity.y >= 0) || onWall || this._pounceTime >= 1200) {
                     this.state = 'cooldown';
                     this.timer = 1200;
                     this.body.setVelocityX(0);
+                    this._pounceTime = 0;
                 }
                 break;
             case 'cooldown':

@@ -19,6 +19,12 @@ class OpeningScene extends Phaser.Scene {
             if (file && (file.key === 'Big_title1' || file.key === 'Big_title2'))
                 console.warn('[Opening] ' + file.key + '.png 加载失败! 检查: (1) 文件在 assets/images/' + file.key + '.png (2) 文件名拼写/大小写一致 (3) 每帧 800×400, 单张宽度 <16384px');
         });
+        // (用户) Big_title 在本场景二次加载几秒 — 让统一加载层显示这段进度 (否则停在 BootScene 的 "Building world... 100%")
+        if (window.AzmLoading) {
+            window.AzmLoading.setLabel('Loading title...');
+            window.AzmLoading.setProgress(0);
+            this.load.on('progress', (p) => { if (window.AzmLoading) window.AzmLoading.setProgress(p); });
+        }
     }
 
     create() {
@@ -27,6 +33,8 @@ class OpeningScene extends Phaser.Scene {
         const sw = cam.width, sh = cam.height;
         cam.setBackgroundColor('#000000');
         this.add.rectangle(sw / 2, sh / 2, sw, sh, 0x000000).setDepth(0);   // 兜底黑底
+        // (用户修复) 关键: 隐藏统一加载层 — 它是 z-index 9999 的黑色 DOM 覆盖层, 不 hide 会盖住 canvas 里的 Big_title (原本拖到 TitleScene 才 hide → 标题全程被挡看不见)
+        if (window.AzmLoading) window.AzmLoading.hide();
 
         const goTitle = () => { try { this.scene.start('TitleScene'); } catch (e) {} };
 
@@ -40,7 +48,10 @@ class OpeningScene extends Phaser.Scene {
 
         const ft1 = this.textures.get('Big_title1').frameTotal;
         const ft2 = has2 ? this.textures.get('Big_title2').frameTotal : 0;
-        console.log('[Opening] Big_title1 frameTotal =', ft1, '/ Big_title2 frameTotal =', ft2, '— 两张内容帧合计应为 37');
+        // (用户修复) frameTotal 含 1 个 __BASE 帧(整张图当一帧) → 实际精灵帧数 = frameTotal - 1
+        const a1 = Math.max(0, ft1 - 1);
+        const a2 = Math.max(0, ft2 - 1);
+        console.log('[Opening] Big_title1 帧数 =', a1, '/ Big_title2 帧数 =', a2, '(frameTotal', ft1, '/', ft2, ', 已减 __BASE) — 合计', a1 + a2, '帧');
         // 诊断: 单张仍过宽则贴图上传会失败(空白)
         try {
             ['Big_title1', 'Big_title2'].forEach((k) => {
@@ -55,9 +66,9 @@ class OpeningScene extends Phaser.Scene {
         if (!this.anims.exists('big_title_intro')) {
             try {
                 const TOTAL = 37;
-                const n1 = Math.min(ft1, TOTAL);
-                const n2 = Math.max(0, Math.min(ft2, TOTAL - n1));
-                let frames = this.anims.generateFrameNumbers('Big_title1', { start: 0, end: Math.max(0, n1 - 1) });
+                const n1 = Math.min(a1, TOTAL);
+                const n2 = Math.max(0, Math.min(a2, TOTAL - n1));
+                let frames = n1 > 0 ? this.anims.generateFrameNumbers('Big_title1', { start: 0, end: n1 - 1 }) : [];
                 if (n2 > 0) frames = frames.concat(this.anims.generateFrameNumbers('Big_title2', { start: 0, end: n2 - 1 }));
                 this.anims.create({ key: 'big_title_intro', frames: frames, frameRate: 18, repeat: 0 });
             } catch (e) {}
@@ -70,6 +81,7 @@ class OpeningScene extends Phaser.Scene {
         const frameCount = anim && anim.frames ? anim.frames.length : 0;
         if (anim && frameCount > 0) {
             intro.play('big_title_intro');
+            if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'BigTitle');   // (用户) BigTitle 动画播放时播 1 次
             intro.once('animationcomplete-big_title_intro', () => this.time.delayedCall(1000, goTitle));   // 播完停最后一帧 1 秒再进
             const animMs = (frameCount / 18) * 1000 + 1500;   // 兜底: 完成事件没触发(切后台等)也强制进
             this.time.delayedCall(animMs, goTitle);
