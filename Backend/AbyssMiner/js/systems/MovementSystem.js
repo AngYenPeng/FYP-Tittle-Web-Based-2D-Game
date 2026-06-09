@@ -1,3 +1,6 @@
+// (用户) 可变跳跃高度: 点按 = 满跳高度的这个比例 (剩余高度 ∝ 上升速度², 故速度乘 √比例)
+const JUMP_TAP_HEIGHT_FRAC = 0.5;   // 点按≈50%; 按住到最高点≈100%
+
 class MovementSystem {
     constructor(scene) {
         this.scene = scene;
@@ -131,7 +134,7 @@ class MovementSystem {
                 s.grappleSystem.hasSnapped = false;
                 s.player.body.setAllowGravity(true);
                 s.player.body.checkCollision.none = false;
-                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+                s.player.setVelocityY(jumpForce); s._jumpCutArmed = true; if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                 if (s.activeGrapplePick) {
                     s.recallSystem.startRecall(s.activeGrapplePick);
                     s.activeGrapplePick = null;
@@ -139,7 +142,24 @@ class MovementSystem {
             }
             else if (onGround) {
                 // (用户) 蹲着跳: 保持蹲姿起跳, 不站起 (蹲态本体 32×48 不变 + 头实体停用, 无需头顶净空)
-                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+                s.player.setVelocityY(jumpForce); s._jumpCutArmed = true; if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+            }
+        }
+
+        // (用户) 可变跳跃高度: 满速起跳后, 提前松开 W/SPACE → 上升速度 ×√比例 → 剩余高度按比例削减.
+        //   点按≈满跳的 50%, 一直按到最高点≈100%, 中间松手平滑过渡. 到顶/抓墙/冲刺/落地后自动解除 (本帧若刚起跳, 键仍按下→不削).
+        if (s._jumpCutArmed) {
+            if (s.isHanging || s.isDashing || s.isGrappling || !s.player || !s.player.body) {
+                s._jumpCutArmed = false;
+            } else {
+                const _vy = s.player.body.velocity.y;
+                const _held = (s.keyJump && s.keyJump.isDown) || (s.keyJumpW && s.keyJumpW.isDown);
+                if (_vy >= 0) {
+                    s._jumpCutArmed = false;                                   // 已到最高点/开始下落 → 满跳, 不再削
+                } else if (!_held) {
+                    s.player.body.velocity.y = _vy * Math.sqrt(JUMP_TAP_HEIGHT_FRAC);   // 松手即削上升速度 (剩余高度 ×JUMP_TAP_HEIGHT_FRAC)
+                    s._jumpCutArmed = false;
+                }
             }
         }
 

@@ -11,16 +11,29 @@
  * 🚨 FIXED: Synchronized player position holding inside the tunnel, releasing input controls with a single unified slam shock jump.
  * 🚨 UPGRADED: Phase 2 Silk Sky Spray ("地图炮") & Phase 3 Radial Web Supernova fully configured.
  * 🚨 APEX FINALES: Added spider Vibration Tracking Sense and Phase 3 Mid-Health Camouflage Molting.
+ * 🚨 CRASH-PROOFED: Added safePlay animation wrapper to prevent missing key execution crashes.
+ * 🚨 RE-ALIGNED: Remapped UI geometry layout vectors from 533 to 800 to perfectly fit 1600-res display scenes.
  */
 class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, player, platforms, playerHitCallback, isIntro = false) {
-        super(scene, x, y, 'boss_idle'); 
+        // Fallback checks to prevent crashing if texture is missing from preload
+        const fallbackTexture = scene.textures.exists('boss_idle') ? 'boss_idle' : 'Miner_stand';
+        super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        // Safe animation player wrapper to prevent runtime asset registration crashes
+        this.safePlay = (key, startFrame = true) => {
+            if (this.scene && this.scene.anims && this.scene.anims.exists(key)) {
+                this.play(key, startFrame);
+            } else {
+                console.warn(`[Boss AI Warning] Animation key "${key}" is missing from registry. Fallback preserved.`);
+            }
+        };
+
         // Force the boss to treat walls as solid entities at all times
-this.body.onCollide = true;
-this.body.immovable = false;
+        this.body.onCollide = true;
+        this.body.immovable = false;
 
         this.scene = scene;
         this.player = player;
@@ -71,18 +84,19 @@ this.body.immovable = false;
         this.lastStuckX = x;
         this.lastStuckY = y;
         this.timeSpentStuck = 0;
-        this.unstuckCooldown = 0; // Pauses AI frame processing during jumps
+        this.unstuckCooldown = 0; 
         this.underPlatformEscaping = false; 
-        this.escapeDirX = 1; // Tracks target lunge side
+        this.escapeDirX = 1; 
         
-        this.dashChainCount = 0; // Internal tracker for Phase 3 triple charge
-        this.hasMolted = false;  // Tracks biological shell shed trigger state
+        this.dashChainCount = 0; 
+        this.hasMolted = false; 
 
-        this.healthBarBg = scene.add.rectangle(533, 50, 600, 25, 0x000000).setScrollFactor(0).setDepth(100);
-        this.healthBar = scene.add.rectangle(533, 50, 600, 25, 0x00aaff).setScrollFactor(0).setDepth(100); 
-        this.bossNameText = scene.add.text(253, 20, `THE CRYSTAL MATRIARCH [LIVES: 3]`, { fontSize: '18px', fill: '#00aaff', fontFamily: 'Courier', fontStyle: 'bold' }).setScrollFactor(0).setDepth(100);
+        // 🌟 GEOMETRY VECTOR FIX: Remapped X alignment positions from 533/253 to 800/500 to match scene canvas centers
+        this.healthBarBg = scene.add.rectangle(800, 50, 600, 25, 0x000000).setScrollFactor(0).setDepth(100);
+        this.healthBar = scene.add.rectangle(800, 50, 600, 25, 0x00aaff).setScrollFactor(0).setDepth(100); 
+        this.bossNameText = scene.add.text(500, 20, `THE CRYSTAL MATRIARCH [LIVES: 3]`, { fontSize: '18px', fill: '#00aaff', fontFamily: 'Courier', fontStyle: 'bold' }).setScrollFactor(0).setDepth(100);
         
-        this.play('anim_boss_run', true);
+        this.safePlay('anim_boss_run', true);
         
         // --- CINEMATIC INTRO SECTIONS ---
         if (isIntro) {
@@ -135,7 +149,6 @@ this.body.immovable = false;
                 }
             });
 
-            // Fire off updated manual interactive dialogue system
             this.executeCinematicDialogueTimeline();
         } else {
             this.body.setAllowGravity(true);
@@ -158,11 +171,11 @@ this.body.immovable = false;
         ];
         this.introLineIndex = 0;
 
-        this.speechBubbleBg = this.scene.add.rectangle(533, 500, 720, 130, 0x111122, 0.95).setStrokeStyle(3, 0xaa00aa).setDepth(200).setScrollFactor(0);
-        this.speechText = this.scene.add.text(533, 485, '', { fontSize: '16px', fill: '#ffffff', fontFamily: 'Courier', fontStyle: 'bold', align: 'center', wordWrap: { width: 660 } }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.clickPromptText = this.scene.add.text(533, 545, "[ CLICK LEFT MOUSE BUTTON TO CONTINUE ]", { fontSize: '12px', fill: '#00ffff', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-
-        this.skipButtonText = this.scene.add.text(870, 455, "SKIP >>", { fontSize: '14px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(1, 0).setDepth(202).setScrollFactor(0).setInteractive({ useHandCursor: true });
+        // 🌟 GEOMETRY VECTOR FIX: Re-centered dialogue bubble bounds at 800
+        this.speechBubbleBg = this.scene.add.rectangle(800, 500, 720, 130, 0x111122, 0.95).setStrokeStyle(3, 0xaa00aa).setDepth(200).setScrollFactor(0);
+        this.speechText = this.scene.add.text(800, 485, '', { fontSize: '16px', fill: '#ffffff', fontFamily: 'Courier', fontStyle: 'bold', align: 'center', wordWrap: { width: 660 } }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        this.clickPromptText = this.scene.add.text(800, 545, "[ CLICK LEFT MOUSE BUTTON TO CONTINUE ]", { fontSize: '12px', fill: '#00ffff', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        this.skipButtonText = this.scene.add.text(1130, 455, "SKIP >>", { fontSize: '14px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(1, 0).setDepth(202).setScrollFactor(0).setInteractive({ useHandCursor: true });
         
         this.skipButtonText.on('pointerdown', (pointer, localX, localY, event) => {
             if(event) event.stopPropagation(); 
@@ -223,7 +236,7 @@ this.body.immovable = false;
         if (this.introWeb) this.introWeb.clear();
         this.angle = 0; 
 
-        this.play('anim_boss_run', true);
+        this.safePlay('anim_boss_run', true);
         let dropWeb = this.scene.add.graphics().setDepth(11);
 
         this.scene.tweens.add({
@@ -247,13 +260,11 @@ this.body.immovable = false;
                 this.surface = 'floor';
                 this.angle = 0; 
                 
-                // 🚨 UNIFIED SLAM SHOCK PAYOFF: Blasts player upward into their single tactical combat jump entry
                 if (this.player && this.player.body) {
                     this.player.body.setVelocityY(-450);
-                    this.player.body.setVelocityX(450); // Direct kinetic launch into the arena footprint flat plane
+                    this.player.body.setVelocityX(450); 
                 }
 
-                // Restore keyboard input mapping control instantly inside SceneSZ5 tracking parameters
                 if (this.scene && this.scene.playerCanMove !== undefined) {
                     this.scene.playerCanMove = true;
                 }
@@ -271,7 +282,7 @@ this.body.immovable = false;
         this.surface = 'floor';
         this.angle = 0;
 
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         this.setTintFill(0xff00ff); 
         
         this.scene.cameras.main.flash(400, 255, 255, 255); 
@@ -320,7 +331,6 @@ this.body.immovable = false;
             targets: this.healthBar,
             width: 600, 
             duration: 2000,
-            ease: 'Cubic.easeOut',
             onComplete: () => {
                 this.body.setAllowGravity(true);
                 this.scene.cameras.main.startFollow(this.player, true, 0.05, 0.05);
@@ -377,12 +387,10 @@ this.body.immovable = false;
             if (attackChoice < 50) this.webBombardment(); 
             else this.bungeeDrop(); 
         } else if (this.surface === 'floor') {
-            // PHASE 3 DESPERATION INTERCEPT ROUTER
             if (this.lives === 1 && attackChoice < 40) {
                 this.desperationWebStorm();
                 return;
             }
-            // PHASE 2 INTERCEPT
             if (this.lives === 2 && attackChoice < 35) {
                 this.silkSkyBarrage();
                 return;
@@ -399,11 +407,10 @@ this.body.immovable = false;
     
     snatchPickaxe() {
         this.isCasting = true;
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
 
         let webLine = this.scene.add.graphics().setDepth(15);
         
-        // Fire a fast "hook" at the player
         this.scene.tweens.add({
             targets: { t: 0 },
             t: 1,
@@ -457,7 +464,7 @@ this.body.immovable = false;
     toxicVenomPuddles() {
         this.isCasting = true;
         this.body.setVelocity(0,0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         let dir = this.player.x < this.x ? -1 : 1; 
 
         this.track(this.scene.time.delayedCall(400, () => {
@@ -499,7 +506,7 @@ this.body.immovable = false;
     spitStickyWebs() {
         this.isCasting = true;
         this.body.setVelocity(0,0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         let dir = this.player.x < this.x ? -1 : 1; 
 
         let spawnX = this.x + (dir * 80);
@@ -588,7 +595,7 @@ this.body.immovable = false;
         this.isCasting = true;
         this.isZipping = true;
         this.zipStep = 1; 
-        this.play('anim_boss_run', true);
+        this.safePlay('anim_boss_run', true);
         
         this.zipTargetY = this.player.y - 10; 
         this.zipTargetX = this.player.x; 
@@ -626,7 +633,7 @@ this.body.immovable = false;
             if (warnBox) warnBox.destroy();
             if (!this.active || this.isDead) return;
             
-            this.play('anim_boss_attack', true);
+            this.safePlay('anim_boss_attack', true);
             this.angle = 180; 
             
             let threadGraphics = this.scene.add.graphics();
@@ -679,7 +686,7 @@ this.body.immovable = false;
     grapplePull() {
         this.isCasting = true;
         this.body.setVelocity(0,0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
 
         let dir = this.surface === 'right_wall' ? -1 : 1;
         
@@ -726,7 +733,7 @@ this.body.immovable = false;
     layEggSac() {
         this.isCasting = true;
         this.body.setVelocity(0,0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
 
         this.track(this.scene.time.delayedCall(500, () => {
             if (!this.active || this.isDead) return;
@@ -891,7 +898,7 @@ this.body.immovable = false;
     silkSkyBarrage() {
         this.isCasting = true;
         this.body.setVelocity(0, 0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         
         this.angle = this.lastFacingLeft ? 45 : -45; 
 
@@ -943,7 +950,7 @@ this.body.immovable = false;
     desperationWebStorm() {
         this.isCasting = true;
         this.body.setVelocity(0, 0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         
         this.setTintFill(0xffffff);
         this.scene.cameras.main.shake(300, 0.02);
@@ -1058,7 +1065,7 @@ this.body.immovable = false;
     webBombardment() {
         this.isCasting = true;
         this.body.setVelocity(0,0);
-        this.play('anim_boss_attack', true);
+        this.safePlay('anim_boss_attack', true);
         this.setFlipY(true); 
 
         let oldPos = this.playerHistory[0] || {x: this.player.x, y: this.player.y};
@@ -1146,7 +1153,7 @@ this.body.immovable = false;
         this.unstuckCooldown = 400; 
 
         this.spawnDebris(this.x, this.y, 0x00ffff, 15);
-        this.play('anim_boss_run', true);
+        this.safePlay('anim_boss_run', true);
     }
 
     takeDamage(amount = 1) {
@@ -1160,7 +1167,7 @@ this.body.immovable = false;
 
         if (!this.isCasting && !this.isDashing) { 
             this.animLock = true; 
-            this.play('anim_boss_hurt', true); 
+            this.safePlay('anim_boss_hurt', true); 
             this.scene.time.delayedCall(200, () => { this.animLock = false; }); 
         }
         
@@ -1183,12 +1190,11 @@ this.body.immovable = false;
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 
         // 🌟 ANTI-DROP ARMOR: Force floor snap if not flying
-    if (this.surface === 'floor' && this.body) {
-        // If boss is moving and not currently dashing/zipping, keep her grounded
-        if (!this.isDashing && !this.isZipping && !this.isCasting) {
-             this.body.setAllowGravity(true);
+        if (this.surface === 'floor' && this.body) {
+            if (!this.isDashing && !this.isZipping && !this.isCasting) {
+                 this.body.setAllowGravity(true);
+            }
         }
-    }
 
         this.detectVibrations(player);
 
@@ -1292,7 +1298,6 @@ this.body.immovable = false;
         let bLeft = this.body.blocked.left || this.body.touching.left;
         let bRight = this.body.blocked.right || this.body.touching.right;
 
-        // Classic Organics Pathfinding Target Vectors
         let targetX = player.x; let targetY = player.y;
         if ((this.surface === 'floor' || this.surface === 'ceiling') && Math.abs(player.y - this.y) > 120) { 
             targetX = this.x > 4050 ? 4650 : 3450; 
@@ -1367,7 +1372,7 @@ this.body.immovable = false;
             else if (!bUp) { this.surface = 'air'; }
         }
 
-        if ((this.body.velocity.x !== 0 || this.body.velocity.y !== 0) && this.skitterBoost > 0) {
+        if ((this.body.velocity.x !== 0 || this.body.velocity.y !== 0) && this.track && this.skitterBoost > 0) {
             let legWasp = Math.sin(time * (0.02 * this.skitterBoost)) * 0.18;
             if (this.surface === 'left_wall' || this.surface === 'right_wall') { this.scaleX = 4 + legWasp; this.scaleY = 4; } else { this.scaleX = 4; this.scaleY = 4 + legWasp; }
         } else { this.scaleX = 4; this.scaleY = 4; }
@@ -1375,13 +1380,13 @@ this.body.immovable = false;
         let distWalked = Phaser.Math.Distance.Between(this.x, this.y, this.lastWebX, this.lastWebY);
         if (distWalked >= 400 && this.surface !== 'air') { this.createDestructibleWeb(this.x, this.y + (this.surface === 'ceiling' ? -20 : 20)); this.lastWebX = this.x; this.lastWebY = this.y; }
 
-        if (!this.animLock) { if (this.skitterBoost === 0) { this.anims.pause(); } else { this.anims.resume(); this.play('anim_boss_run', true); } }
+        if (!this.animLock) { if (this.skitterBoost === 0) { this.anims.pause(); } else { this.anims.resume(); this.safePlay('anim_boss_run', true); } }
     }
 
     triggerReviveSequence() {
         this.isReviving = true; this.isCasting = true; this.isDashing = false; this.isZipping = false; this.zipStep = 0; this.animLock = false; this.lives -= 1;
         this.clearAttacks(); this.body.setVelocity(0,0); this.body.setAllowGravity(true); this.surface = 'air'; this.angle = 0; this.rotation = 0; this.setFlipY(false); if (this.zipGraphics) { this.zipGraphics.destroy(); this.zipGraphics = null; } this.clearTint();
-        this.play('anim_boss_idle', true); this.scene.cameras.main.flash(1000, 255, 255, 255); this.scene.cameras.main.shake(1500, 0.05); this.spawnDebris(this.x, this.y, 0xffffff, 50);
+        this.safePlay('anim_boss_idle', true); this.scene.cameras.main.flash(1000, 255, 255, 255); this.scene.cameras.main.shake(1500, 0.05); this.spawnDebris(this.x, this.y, 0xffffff, 50);
 
         this.hp = this.maxHealth; if (this.healthBar && this.healthBar.active) this.healthBar.width = 600;
         if (this.bossNameText && this.bossNameText.active) {
@@ -1416,9 +1421,9 @@ this.body.immovable = false;
         if (this.zipGraphics) { this.zipGraphics.destroy(); this.zipGraphics = null; }
         this.clearTint();
         
-        this.play('anim_boss_dead', true); 
+        this.safePlay('anim_boss_dead', true); 
         this.setTint(0x555555); 
-        this.alpha = 1; // 🚨 FIXED: Forces body to stay completely solid and opaque
+        this.alpha = 1; 
 
         if (this.healthBar) this.healthBar.destroy(); 
         if (this.healthBarBg) this.healthBarBg.destroy(); 
@@ -1432,7 +1437,6 @@ this.body.immovable = false;
         cam.pan(this.x, this.y, 1000, 'Sine.easeInOut'); 
         cam.zoomTo(1, 800, 'Sine.easeInOut'); 
 
-        // 🚨 EXPANDED DIALOGUE BLOCK
         this.deathLines = [
             "MATRIARCH: *Gasp... hiss*... The link... is breaking... my hold over the brood... is gone...",
             "MATRIARCH: The crystal's pulse... it slows... returning to normal dormant rock...",
@@ -1440,11 +1444,12 @@ this.body.immovable = false;
             "MATRIARCH: The abyss grows quiet... *Sigh*... The deep dark is finally... at peace... *Hssss...*"
         ];
         this.deathLineIndex = 0;
-        this.nextAllowedClickTime = this.scene.time.now + 600; // 🚨 INITIAL COOLDOWN GATE: Delays first line skip protection buffer window
+        this.nextAllowedClickTime = this.scene.time.now + 600; 
 
-        this.deathBoxBg = this.scene.add.rectangle(533, 500, 720, 130, 0x111122, 0.95).setStrokeStyle(3, 0xff0055).setDepth(200).setScrollFactor(0);
-        this.deathText = this.scene.add.text(533, 485, '', { fontSize: '16px', fill: '#ffffff', fontFamily: 'Courier', fontStyle: 'bold', align: 'center', wordWrap: { width: 660 } }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
-        this.deathPrompt = this.scene.add.text(533, 545, "[ CLICK MOUSE TO REVEAL FINAL MOMENTS ]", { fontSize: '12px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        // 🌟 GEOMETRY VECTOR FIX: Remapped death UI window boxes from 533 to 800 layout markers
+        this.deathBoxBg = this.scene.add.rectangle(800, 500, 720, 130, 0x111122, 0.95).setStrokeStyle(3, 0xff0055).setDepth(200).setScrollFactor(0);
+        this.deathText = this.scene.add.text(800, 485, '', { fontSize: '16px', fill: '#ffffff', fontFamily: 'Courier', fontStyle: 'bold', align: 'center', wordWrap: { width: 660 } }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+        this.deathPrompt = this.scene.add.text(800, 545, "[ CLICK MOUSE TO REVEAL FINAL MOMENTS ]", { fontSize: '12px', fill: '#ff0055', fontFamily: 'Courier', fontStyle: 'bold' }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
 
         this.advanceDeathDialogueLine();
         
@@ -1453,7 +1458,6 @@ this.body.immovable = false;
     }
 
     advanceDeathDialogueLine() {
-        // 🚨 ANTI-SPAM PROTECTOR: Rejects clicks if they happen faster than the safety window
         if (this.scene.time.now < this.nextAllowedClickTime) return;
         
         if (this.deathLineIndex < this.deathLines.length) {
@@ -1461,8 +1465,6 @@ this.body.immovable = false;
                 this.deathText.setText(this.deathLines[this.deathLineIndex]);
             }
             this.scene.cameras.main.shake(200, 0.008);
-            
-            // Add a 350ms lock window for every line advanced so players can't skip accidentally
             this.nextAllowedClickTime = this.scene.time.now + 350;
             this.deathLineIndex++;
         } else {
@@ -1482,7 +1484,6 @@ this.body.immovable = false;
         let originalX = this.x; 
         let originalY = this.y;
 
-        // Death throes violent body shaking countdown tween
         gameScene.tweens.add({
             targets: this,
             scaleX: 5.5,
@@ -1496,7 +1497,6 @@ this.body.immovable = false;
                 this.setPosition(originalX + Phaser.Math.Between(-15, 15), originalY + Phaser.Math.Between(-15, 15));
             },
             onComplete: () => {
-                // Massive supernova particle pop payoff
                 cam.flash(1000, 255, 255, 255); 
                 cam.shake(1200, 0.06);
 
@@ -1510,16 +1510,11 @@ this.body.immovable = false;
                     gameScene.tweens.add({ targets: shard, angle: 720, alpha: 0, duration: Phaser.Math.Between(1200, 2800), onComplete: () => shard.destroy() });
                 }
 
-                // 🚨 UNLOCKS PLAYER INPUT (Ensures the player isn't stuck after the boss vanishes)
                 if (gameScene && gameScene.playerCanMove !== undefined) {
                     gameScene.playerCanMove = true;
                 }
 
-                // 🚨 CAMERA BEHAVIOR CONFIGURATIONS
                 cam.startFollow(this.player, true, 0.05, 0.05);
-
-                // 🔍 1. ADJUST ZOOM LEVEL:
-                // Change '0.75' to adjust size. (Lower like 0.5 = Zoom OUT wide, Higher like 1.2 = Zoom IN close)
                 cam.zoomTo(0.7, 1200, 'Sine.easeInOut');
 
                 let playerHealth = (typeof health !== 'undefined') ? health : 100;
@@ -1546,20 +1541,19 @@ const BossManager = {
     entity: null,
     spawn: function(scene, x, y, player, platforms, playerHitCallback, isIntro = false) {
         this.entity = new CrystalMatriarch(scene, x, y, player, platforms, playerHitCallback, isIntro);
-        // 🌟 MANDATORY: Link to both groups
-    scene.physics.add.collider(this.entity, platforms);
-    scene.physics.add.collider(this.entity, scene.walls); 
-    
-    // Force the body to be persistent
-    this.entity.body.setCollideWorldBounds(true);
-    this.entity.body.onWorldBounds = true;
+        
+        scene.physics.add.collider(this.entity, platforms);
+        scene.physics.add.collider(this.entity, scene.walls); 
+        
+        this.entity.body.setCollideWorldBounds(true);
+        this.entity.body.onWorldBounds = true;
         
         if (typeof sz_bossBarrier !== 'undefined') { 
             scene.physics.add.collider(this.entity, sz_bossBarrier); 
         }
 
         scene.physics.add.overlap(player, this.entity, () => { 
-            if (this.entity && this.entity.active && this.entity.health > 0) {
+            if (this.entity && this.entity.active && this.entity.hp > 0) {
                 playerHitCallback(player, this.entity); 
             }
         }, null, scene);
@@ -1572,7 +1566,6 @@ const BossManager = {
     },
 
     update: function(time, delta, player) { 
-        // CRITICAL SAFETY CHECK: Prevent the "undefined" scene error
         if (this.entity && this.entity.active && this.entity.scene) { 
             this.entity.update(time, delta, player); 
         } 
