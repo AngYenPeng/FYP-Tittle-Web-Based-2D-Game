@@ -68,7 +68,7 @@ class GuideSystem {
             id: 'advanced_move',
             title: 'Grapple & Swing',
             animType: 'advanced_move',
-            captionText: 'Throw your pickaxe into a wall, then left-click to reel toward it. Press S while hanging to crouch. With both hands unlocked, press F to switch the active pickaxe and chain swings between walls.'
+            captionText: 'Throw your pickaxe into a wall, then left-click to reel toward it — you grab on crouched. Tap jump to spring off and drop, or press S to let go. With both hands unlocked, press F to switch the active pickaxe and chain swings between walls.'
         });
     }
 
@@ -1390,14 +1390,14 @@ class GuideSystem {
         const wait = (ms, fn) => { const t = s.time.delayedCall(ms, () => { if (this._animSprite) fn(); }); this._demoTimers.push(t); };
 
         // === (用户新编排) ===
-        // 1 丢右→飞到稿子上(全程站)→到达即收稿→掉下来落地
-        // 2 演示 S 蹲下
-        // 3 (保持蹲) 丢左→飞到稿子上→蹲挂
-        // 4 演示 F 换手
-        // 5 丢右 (左稿不收, 两条绳)→飞到右稿上→蹲挂
-        // 6 演示 S → 站起掉落落地 + 收回挂着的右稿 (左绳保留)
-        // 7 演示 F 换手 → RMB 右键 → 收回左稿
-        // 8 停 5 秒 → 重新循环
+        // 1  丢右→飞到稿子上→蹲挂 (新机制: 飞过去一律蹲着挂墙)
+        // 1b 点跳跃→弹开掉落到地面 (顺带收回右稿)
+        // 3  丢左→飞到稿子上→蹲挂 (不再需要演示 S 蹲下)
+        // 4  演示 F 换手
+        // 5  丢右 (左稿不收, 两条绳)→飞到右稿上→蹲挂
+        // 6  演示 S → 取消蹲下掉落落地 + 收回挂着的右稿 (左绳保留)
+        // 7  演示 F 换手 → RMB 右键 → 收回左稿
+        // 8  停 5 秒 → 重新循环
         const playAdv = () => {
             if (!this._animSprite) return;
             s.tweens.killTweensOf(sprite); s.tweens.killTweensOf(pick1); s.tweens.killTweensOf(pick2);
@@ -1408,21 +1408,37 @@ class GuideSystem {
             pick1.setVisible(false).setAngle(0);
             pick2.setVisible(false).setAngle(0);
 
-            // 1) 丢右墙 → 飞到稿子上 (全程站立) → 站着到达 = 稿子直接收回 → 掉下来落地
+            // 1) 丢右墙 → 飞到稿子上 → 蹲挂 (新机制: 飞过去一律蹲着挂墙)
             const step1 = () => throwPick(pick1, anchorR, true, () => {
                 flyTo(atR, () => {
-                    collect(pick1, anchorR, null);
-                    fallTo(atR.x - 8, floorStart.y, () => {
-                        if (s.anims.exists('idle')) sprite.play('idle');
-                        wait(2000, step2);   // (用户) 每步停 2 秒
-                    });
+                    if (s.anims.exists('crouch')) sprite.play('crouch');
+                    sprite.y = atR.y + CROUCH_DY;   // 蹲姿下沉 (蹲着挂墙)
+                    wait(2000, step1b);
                 });
             });
-            // 2) 演示 S 蹲下
-            const step2 = () => showKey('S', () => {
+            // 1b) 点跳跃 → 弹离墙壁落到地面 (顺带收回右稿).
+            //     天花板就在挂点正上方 → 不向上跳 (会穿模); 改为往外+略往下弹离墙, 全程蹲姿 (短身绝不顶天花板), 落地站起.
+            const step1b = () => showKey('SPACE', () => {
+                collect(pick1, anchorR, null);   // 跳开 → 收回右稿
                 if (s.anims.exists('crouch')) sprite.play('crouch');
-                sprite.y = floorStart.y + CROUCH_DY;   // 蹲姿贴地
-                wait(2000, step3);
+                // ① 弹离墙 (往中间 + 略往下, 绝不向上)
+                s.tweens.add({
+                    targets: sprite, x: atR.x - 34, y: atR.y + CROUCH_DY + 14, duration: 150, ease: 'Quad.easeOut',
+                    onUpdate: () => drawRopes(),
+                    onComplete: () => {
+                        if (!this._animSprite) return;
+                        // ② 掉到地面 (仍蹲姿下落, 避免高个 fall 贴图顶天花板)
+                        s.tweens.add({
+                            targets: sprite, x: floorStart.x, y: floorStart.y, duration: 360, ease: 'Quad.easeIn',
+                            onUpdate: () => drawRopes(),
+                            onComplete: () => {
+                                if (!this._animSprite) return;
+                                if (s.anims.exists('idle')) sprite.play('idle');   // 落地站起
+                                wait(2000, step3);   // 直接进 step3 (丢左)
+                            }
+                        });
+                    }
+                });
             });
             // 3) (保持蹲) 丢左墙 → 飞到稿子上 → 蹲挂
             const step3 = () => throwPick(pick1, anchorL, false, () => {

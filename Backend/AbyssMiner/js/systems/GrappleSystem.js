@@ -157,6 +157,10 @@ class GrappleSystem {
                 // 这彻底解决了之前“图片传出去了，物理碰撞盒还留在墙里”的致命脱节Bug
                 s.player.setPosition(safePos.x, safePos.y);
                 s.player.body.reset(safePos.x, safePos.y); 
+
+                // (用户) 飞到稿子的"那一刻"一律切蹲下 — 不再要求事先蹲下, 飞过去必定蹲着挂墙.
+                //   只在首次 snap 强制一次; 之后玩家按 S 取消蹲下仍可照常掉落 (见下方 else 分支).
+                s.isCrouching = true;
             }
 
             // 落地后的状态判定
@@ -165,7 +169,7 @@ class GrappleSystem {
                 s.player.body.checkCollision.none = true; 
                 s.player.body.setVelocity(0, 0);
             } else {
-                // 非蹲下 → 玩家已飞到稿子位置, 直接把稿子收进背包 (绳子立即消失, 不残留/不播回收动画)
+                // 挂墙后按 S 取消蹲下 → 收回稿子掉下 (绳子立即消失, 不残留/不播回收动画)
                 s.isHanging = false;
                 s.isGrappling = false;
                 this.hasSnapped = false;

@@ -398,13 +398,26 @@ class HealthSystem {
         if (texKey && s.anims && !s.anims.exists('lastlive_anim')) {
             try { s.anims.create({ key: 'lastlive_anim', frames: s.anims.generateFrameNumbers(texKey, { start: 0, end: 54 }), frameRate: 17, repeat: 0 }); } catch (e) {}
         }
-        // (用户) 心跳 — 最后一颗心的唯一听觉, 无论走主路还是回退都播
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(s, 'Heartbeat', { volume: AudioSystem.sfxVolume });
+        // (用户) 心跳 — 最后一颗心的唯一听觉, 无论走主路还是回退都播.
+        //   拿到声音对象 → 心跳播完后接 LastLifeBreak 碎心声 (用户要求: 心跳放完才放碎心声)
+        let _heartbeatObj = null;
+        if (typeof AudioSystem !== 'undefined') {
+            if (s.cache && s.cache.audio && s.cache.audio.exists('Heartbeat')) {
+                try { _heartbeatObj = s.sound.add('Heartbeat'); _heartbeatObj.play({ volume: AudioSystem.sfxVolume }); } catch (e) { _heartbeatObj = null; }
+            }
+            if (!_heartbeatObj) AudioSystem.sfx(s, 'Heartbeat', { volume: AudioSystem.sfxVolume });   // 拿不到对象(缺文件等) → 全局播放兜底
+        }
         if (!texKey || !s.anims || !s.anims.exists('lastlive_anim')) {
             console.warn('[LastLive] 贴图缺失: 需要 assets/images/LastLive.png 或 LastLife.png (2200×40 / 55帧) — 回退旧爱心动画');
+            // 回退: LastLifeBreak 由 _deathHeartAnim(1) 负责 (动画开始1秒后), 此处不再挂心跳→碎心声 以免重复
             if (s._deathHeartAnim) s._deathHeartAnim(1, goDeath);
             else s.time.delayedCall(1500, goDeath);
             return;
+        }
+        // (用户) 主路: 心跳播完 → 放 LastLifeBreak 碎心声 (拿不到心跳对象时直接放, 不卡)
+        if (typeof AudioSystem !== 'undefined') {
+            if (_heartbeatObj) _heartbeatObj.once('complete', () => { try { AudioSystem.sfx(s, 'LastLifeBreak', { volume: AudioSystem.sfxVolume }); } catch (e) {} try { _heartbeatObj.destroy(); } catch (e) {} });
+            else AudioSystem.sfx(s, 'LastLifeBreak', { volume: AudioSystem.sfxVolume });
         }
         const cam = s.cameras.main;
         const cw = cam.width, ch = cam.height;
