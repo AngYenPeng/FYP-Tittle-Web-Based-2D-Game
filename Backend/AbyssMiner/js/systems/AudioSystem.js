@@ -93,7 +93,7 @@ class AudioSystem {
         if (AudioSystem._jumpN >= AudioSystem._jumpTarget) {
             AudioSystem._jumpN = 0;
             AudioSystem._jumpTarget = 3 + Math.floor(Math.random() * 2);
-            AudioSystem.sfx(scene, 'JumpUp', { volume: 0.5 });
+            AudioSystem.sfx(scene, 'JumpUp', { volume: AudioSystem.sfxVolume * 0.5 });   // (修复) 乘 sfxVolume — 否则不受设置音量控制
         }
     }
 
@@ -281,6 +281,8 @@ AudioSystem.MANIFEST = {
     'WoodenDoorOpen':       'Object/WoodenDoorOpen.wav',
     // UI
     'Select':       'UI/Select.wav',
+    'Achievement':  'UI/Achievement.mp3',   // (用户) 获得成就时播 1 次
+    'BigTitle':     'UI/BigTitle.wav',       // (用户) 登录后 BigTitle 动画播放时播 1 次
     // Miner
     'CrouchWalking':    'Miner/CrouchWalking.wav',
     'JumpLanding':      'Miner/JumpLanding.wav',

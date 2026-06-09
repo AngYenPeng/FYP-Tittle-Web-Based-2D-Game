@@ -27,6 +27,11 @@ class SecretDoor {
 
     constructor(scene, x, y, opts = {}) {
         this.scene = scene;
+        // (用户修复) 清除上一次场景实例残留的传送锁: _teleportToGameScene 跨场景传送 (教程单门→SZ1 走的就是这条)
+        //   把 scene._teleporting 设 true 后直接 scene.start 切走、从不复位; Phaser 复用场景实例 →
+        //   重进该场景 (如通关后从 start 开新存档再玩教程) 时 _teleporting 仍为 true → interact() 一进就 return →
+        //   暗门按 E 永久失效、开不了门进不去. 门在 create 阶段重建, 此刻绝不可能正在传送, 故强制复位安全.
+        if (scene) scene._teleporting = false;
         this.x = x;
         this.y = y;
         this.w = opts.w ?? 96;
@@ -64,6 +69,13 @@ class SecretDoor {
             SecretDoor._registry.set(this.pairId, []);
         }
         SecretDoor._registry.get(this.pairId).push(this);
+
+        // (修复) 场景关闭时自清: _registry 是静态表, Phaser 关场景只销毁 image/eIcon 游戏对象, 不会调本包装类 destroy() →
+        //   旧实例的门赖在表里. 教程重进(场景实例复用)新建门后, 新门把旧门当配对 → _doTeleport 走场景内互传
+        //   (传到旧门同一位置, 表现为"进去又出来"循环) 而非跨场景去 SZ1. 网页刷新清静态表才正常 — 即此 bug 特征.
+        if (scene.events && scene.events.once) {
+            scene.events.once('shutdown', () => { try { this.destroy(); } catch (e) {} });
+        }
 
         // 让 uiCam ignore（只在 mainCam 渲染）
         if (scene.uiCam) {
@@ -153,7 +165,8 @@ class SecretDoor {
     _doTeleport(player) {
         if (this._onConfirm) { this._onConfirm(); return; }   // (用户) 钩子优先
         const partners = SecretDoor._registry.get(this.pairId) || [];
-        const target = partners.find(d => d !== this && !d._destroyed);
+        // (修复) 防御: 排除 image 已销毁的残留门 (静态表里旧实例门的兜底, 配合 shutdown 自清双保险) → 无有效配对才跨场景去 SZ1
+        const target = partners.find(d => d !== this && !d._destroyed && d.image && d.image.active);
         if (!target) {
             // 没配对 → 跳到下一个 scene（SafeZone1Scene）
             this._teleportToGameScene(player);
@@ -247,9 +260,10 @@ class SecretDoor {
     }
 
     destroy() {
+        if (this._destroyed) return;   // (修复) 幂等: shutdown 自清可能与 image 已被 Phaser 销毁/显式 destroy 重复调
         this._destroyed = true;
-        if (this.image) this.image.destroy();
-        if (this.eIcon) this.eIcon.destroy();
+        try { if (this.image) this.image.destroy(); } catch (e) {}
+        try { if (this.eIcon) this.eIcon.destroy(); } catch (e) {}
         // 从 registry 移除
         const list = SecretDoor._registry.get(this.pairId);
         if (list) {

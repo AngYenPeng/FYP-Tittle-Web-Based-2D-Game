@@ -152,12 +152,13 @@ class SafeZone2Scene extends MainGameScene {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
-        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._chests = [];   // (用户修复) _chests 重进图必清: Phaser 复用场景实例, 不清则上轮旧 chest(sprite 已销毁)残留, update 跑到它 → _open 对死 sprite setTexture 宕机
         this._sz2BossFightStarted = false; this._sz2BossWallsBuilt = false; this._sz2WasInZone2 = false; this._sz2MerchantRiseTriggered = false;
         this._bossIntroStarted = false; this._inBossIntro = false; this._bossIntroDialogDone = false; this._bossIntroTakeoffDone = false; this._bossIntroFinished = false;
         this._crystalNpcRewardGiven = false; this._crystalNpcDialogState = 0; this.sz2CnpcRewardPlotDone = false;
         // (用户) Boss 实体引用每次进图清掉 — 否则读档时 _bosses 残留上次已销毁的 Golem, update 迭代到它 → this.scene undefined 崩溃; 同时让 boss 可重打、剧情重播
         this._golem = null; this._bosses = []; this._golemDead = false; this._wasPlayerInBossRoom = false;
+        this._moleEmergeDone = false; this._platformGuideUnlocked = false; this._teleportingNext = false;   // (修复) 通关后开新档: 商人钻出过场/指南/传送标志没清, 复用实例残留 true → 过场跳过
     }
 
     preload() {
@@ -796,6 +797,8 @@ class SafeZone2Scene extends MainGameScene {
     }
 
     update(time, delta) {
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 
@@ -1109,24 +1112,34 @@ class SafeZone2Scene extends MainGameScene {
         }
     }
 
+    // (用户) 整个 boss 房染黄范围 (像 SZ1 — 染满房间, 不是神像周围一小块):
+    //   横向 = zone2 (隐形墙 col7-8 ~ col32-33 之间), 纵向 = 天花(row8)往上1行 ~ 地面(rows23-25)往下4行.
+    //   房间四壁/天花/地面的 cavetile 皮肤全部覆盖. 返回 {rx1,rx2,ry1,ry2} 像素边界.
+    _bossRoomDyeBox() {
+        const z2 = this._chunks.find(c => c.id === 'zone2');
+        return {
+            rx1: z2.x1 * 32,            rx2: (z2.x2 + 1) * 32,
+            ry1: z2.y1 * 32 - 1 * 32,   ry2: (z2.y2 + 1) * 32 + 4 * 32
+        };
+    }
+
     _updateYellowDirtSpread(delta) {
         const sp = this._yellowDirtSpread;
         if (!sp || !sp.active) return;
-        sp.radius += (delta / 1000) * 5 * 32;
+        sp.radius += (delta / 1000) * 12 * 32;   // ~384px/s — 整房约 1.5s 染满
         const r2 = sp.radius * sp.radius;
-        const z2 = this._chunks.find(c => c.id === 'zone2');
-        const z2x1 = z2.x1 * 32, z2x2 = (z2.x2 + 1) * 32;
-        const z2y1 = z2.y1 * 32, z2y2 = (z2.y2 + 1) * 32;
+        const G = 32;
+        const { rx1, rx2, ry1, ry2 } = this._bossRoomDyeBox();
         if (sp.maxRadius == null) {
+            // 半径自动 = 神像到房间最远角, 保证覆盖整个 boss 房
             const corners = [
-                { x: z2x1, y: z2y1 }, { x: z2x2, y: z2y1 },
-                { x: z2x1, y: z2y2 }, { x: z2x2, y: z2y2 }
+                { x: rx1, y: ry1 }, { x: rx2, y: ry1 },
+                { x: rx1, y: ry2 }, { x: rx2, y: ry2 }
             ];
             sp.maxRadius = Math.max(...corners.map(c => Math.hypot(c.x - sp.cx, c.y - sp.cy)));
         }
-        // 标记坐标（zone2 外的也要染色）
-        const markedCells = this._yellowDirtMarkedCells;
-        const G = 32;
+        // 标记坐标（房间外 zone1/zone3 交界处的黄土点缀也染）
+        const markedCells = this._yellowDirtMarkedCells || [];
         const isMarkedPos = (x, y) => {
             for (const [col, row] of markedCells) {
                 if (Math.abs(x - (col * G + G / 2)) < 1 && Math.abs(y - (row * G + G / 2)) < 1) return true;
@@ -1137,24 +1150,12 @@ class SafeZone2Scene extends MainGameScene {
             if (!obj || !obj.texture || !obj.texture.key) return;
             const key = obj.texture.key;
             if (!key.startsWith('Cavetile_wall_')) return;
-            const inZone2 = obj.x >= z2x1 && obj.x <= z2x2 && obj.y >= z2y1 && obj.y <= z2y2;
-            const isMarked = isMarkedPos(obj.x, obj.y);
-            if (!inZone2 && !isMarked) return;
+            const inRoom = obj.x >= rx1 && obj.x <= rx2 && obj.y >= ry1 && obj.y <= ry2;
+            if (!inRoom && !isMarkedPos(obj.x, obj.y)) return;
             const dx = obj.x - sp.cx, dy = obj.y - sp.cy;
             if (dx * dx + dy * dy > r2) return;
-            const suffix = key.substring('Cavetile_wall_'.length);
-            // 神像下方 6 格第一层（col 17~22, row 21）的 _T 皮肤改成 grass_T
-            const col = Math.floor(obj.x / G);
-            const row = Math.floor(obj.y / G);
-            let newKey;
-            if (suffix === 'T' && row === 21 && col >= 17 && col <= 22) {
-                newKey = 'Yellow_dirt_grass_T';
-            } else {
-                newKey = 'Yellow_dirt_' + suffix;
-            }
-            if (this.textures.exists(newKey)) {
-                obj.setTexture(newKey);
-            }
+            const newKey = 'Yellow_dirt_' + key.substring('Cavetile_wall_'.length);  // (grass_T 素材缺失, 统一用对位 yellowdirt)
+            if (this.textures.exists(newKey)) obj.setTexture(newKey);
         });
         if (sp.radius >= sp.maxRadius) {
             sp.active = false;
@@ -1162,26 +1163,26 @@ class SafeZone2Scene extends MainGameScene {
         }
     }
 
-    /** 扩散结束 — 标记坐标都改成 yellowdirt 对位皮肤（fallback，确保都被染色） */
+    /** 扩散结束 — 整个 boss 房 + 标记格强制全染 (保底: 即使径向扩散漏格也确保整房都是黄土) */
     _finalizeYellowDirtSkins() {
-        const markedCells = this._yellowDirtMarkedCells || [];
         const G = 32;
-        for (const [col, row] of markedCells) {
-            const cx = col * G + G / 2;
-            const cy = row * G + G / 2;
-            this.children.list.forEach(obj => {
-                if (!obj || !obj.texture || !obj.texture.key) return;
-                const key = obj.texture.key;
-                if (!key.startsWith('Cavetile_wall_')) return;
-                if (Math.abs(obj.x - cx) < 1 && Math.abs(obj.y - cy) < 1) {
-                    const suffix = key.substring('Cavetile_wall_'.length);
-                    const newKey = 'Yellow_dirt_' + suffix;
-                    if (this.textures.exists(newKey)) {
-                        obj.setTexture(newKey);
-                    }
-                }
-            });
-        }
+        const { rx1, rx2, ry1, ry2 } = this._bossRoomDyeBox();
+        const markedCells = this._yellowDirtMarkedCells || [];
+        const isMarkedPos = (x, y) => {
+            for (const [col, row] of markedCells) {
+                if (Math.abs(x - (col * G + G / 2)) < 1 && Math.abs(y - (row * G + G / 2)) < 1) return true;
+            }
+            return false;
+        };
+        this.children.list.forEach(obj => {
+            if (!obj || !obj.texture || !obj.texture.key) return;
+            const key = obj.texture.key;
+            if (!key.startsWith('Cavetile_wall_')) return;
+            const inRoom = obj.x >= rx1 && obj.x <= rx2 && obj.y >= ry1 && obj.y <= ry2;
+            if (!inRoom && !isMarkedPos(obj.x, obj.y)) return;
+            const newKey = 'Yellow_dirt_' + key.substring('Cavetile_wall_'.length);
+            if (this.textures.exists(newKey)) obj.setTexture(newKey);
+        });
     }
 
     _checkCheckpoint() {
@@ -1724,6 +1725,13 @@ class SafeZone2Scene extends MainGameScene {
         this._sz2Checkpoint.sprite.setVisible(true);
         this.cameras.main.shake(RISE_DURATION, 0.006);
 
+        // (用户) 神像升起的同时, 黄土从神像位置往外蔓延、染满整个 boss 房 (像 SZ1)
+        //   maxRadius:null → _updateYellowDirtSpread 按房间最远角自动算半径, 保证整房铺满; 约 1.5s 染完
+        this._yellowDirtSpread = {
+            cx: 20 * 32 + 16, cy: 20.5 * 32,
+            radius: 0, maxRadius: null,
+            active: true
+        };
         this.tweens.add({
             targets: this._sz2Checkpoint.sprite,
             y: finalY,
@@ -2092,14 +2100,7 @@ class SafeZone2Scene extends MainGameScene {
                 });
             }
 
-            // 1000ms: 神像地面周围小染黄 (3 格半径 = 96px)
-            this.time.delayedCall(1000, () => {
-                this._yellowDirtSpread = {
-                    cx: 20 * G + G / 2, cy: 21 * G + G / 2,   // (用户修复) 染色中心固定在神像地面(col20,row21), 不用 golem 死亡坐标 — golem 常死在空中(浮空 row14), 染在空中半径内没地面方块 → "神像出现后附近没变yellowdirt"
-                    radius: 0, maxRadius: 96,
-                    active: true
-                };
-            });
+            // (用户) 染黄移到神像升起时 (_bossDeathFinal) — 整个 boss 房一起染, 不再在死亡瞬间染脚下一小块
 
             // 1500ms: 6 句临终对话 (showSequence) → 完后掉水晶 + 神像升起 + 沉地
             this.time.delayedCall(1500, () => {

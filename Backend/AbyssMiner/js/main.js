@@ -32,8 +32,8 @@ window.AbyssDiff = {
     TABLE: {
         easy:    { hearts: 5, corrTick: 1, potionCd: 0    , hpMul: 1,   dmgMul: 1,   shopLife: true,  priceMul: 1, cpRegen: true  },
         normal:  { hearts: 3, corrTick: 2, potionCd: 15000, hpMul: 1.5, dmgMul: 1,   shopLife: true,  priceMul: 1, cpRegen: true  },
-        hard:    { hearts: 1, corrTick: 3, potionCd: 30000, hpMul: 2,   dmgMul: 1.5, shopLife: false, priceMul: 2, cpRegen: true  },
-        extreme: { hearts: 1, corrTick: 4, potionCd: 45000, hpMul: 3,   dmgMul: 2,   shopLife: false, priceMul: 2, cpRegen: false }
+        hard:    { hearts: 1, corrTick: 3, potionCd: 30000, hpMul: 2,   dmgMul: 1,    shopLife: false, priceMul: 1.5, cpRegen: true  },
+        extreme: { hearts: 1, corrTick: 4, potionCd: 30000, hpMul: 3,   dmgMul: 1.25, shopLife: false, priceMul: 1.5, cpRegen: false }
     },
     get() { return this.TABLE[this.mode] || this.TABLE.easy; },
     set(m) { this.mode = this.TABLE[m] ? m : 'easy'; },

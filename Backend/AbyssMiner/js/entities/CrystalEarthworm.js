@@ -38,6 +38,20 @@ class CrystalEarthworm extends Phaser.Physics.Arcade.Sprite {
         this.setVisible(false);
     }
 
+    /** (用户修复) 落地纯几何: 单向平台只挡正在下落物体, pounce 落到平台顶 blocked.down 不触发 →
+     *  pounce 永不结束 → 带横速无限滑到撞墙 + canDamagePlayer 一直为真. 底边下方 1px 贴任意 wallRect 顶(含平台)即落地. */
+    _onGroundGeo() {
+        const b = this.body;
+        if (!b) return false;
+        if (b.blocked.down || b.touching.down) return true;
+        if (!this.scene || !this.scene.wallRects) return false;
+        const cl = b.left + 1, cr = b.right - 1, edge = b.bottom + 1;
+        for (const w of this.scene.wallRects) {
+            if (cr >= w.left && cl <= w.right && edge >= w.top && edge <= w.bottom) return true;
+        }
+        return false;
+    }
+
     canDamagePlayer() { return this.state === 'pounce'; }
 
     _finishSurface() {
@@ -61,7 +75,7 @@ class CrystalEarthworm extends Phaser.Physics.Arcade.Sprite {
         let dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
         let inRange = dist < 150 || this.forceAggroTimer > 0;
         let dirP = player.x > this.x ? 1 : -1;
-        let onGround = this.body.blocked.down || this.body.touching.down;
+        let onGround = this._onGroundGeo();
 
         if (this.state === 'hidden') {
             // 隐身, 重力让 body 自然落地; 玩家靠近 → 进 surfacing 先播 popup anim

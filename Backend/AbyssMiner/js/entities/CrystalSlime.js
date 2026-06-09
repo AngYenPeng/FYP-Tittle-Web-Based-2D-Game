@@ -53,10 +53,25 @@ class CrystalSlime extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    /** (用户修复) 落地判定纯几何: 单向平台只挡"正在下落"的物体, 史莱姆落到/横滑过平台顶时 blocked.down 不触发 →
+     *  onGround 误判空中 → 不清水平速度 → 平台上无限横滑到撞墙 (canDamagePlayer 也误判空中持续伤害).
+     *  底边下方 1px 贴任意 wallRect 顶(含平台)即落地; arcade flag 优先, 几何兜底. 与 CrystalHunterSpider 同款. */
+    _onGroundGeo() {
+        const b = this.body;
+        if (!b) return false;
+        if (b.blocked.down || b.touching.down) return true;
+        if (!this.scene || !this.scene.wallRects) return false;
+        const cl = b.left + 1, cr = b.right - 1, edge = b.bottom + 1;
+        for (const w of this.scene.wallRects) {
+            if (cr >= w.left && cl <= w.right && edge >= w.top && edge <= w.bottom) return true;
+        }
+        return false;
+    }
+
     canDamagePlayer() {
         // 在空中跳跃时才能伤害玩家; 命中后的 CD 期间不再伤害 (但行动不受限)
         if (this.dmgCdTimer > 0) return false;
-        let onGround = this.body.blocked.down || this.body.touching.down;
+        const onGround = this._onGroundGeo();
         return !onGround;
     }
 
@@ -79,7 +94,7 @@ class CrystalSlime extends Phaser.Physics.Arcade.Sprite {
         if (this.knockbackTimer > 0) { this.knockbackTimer -= delta; return; }
         if (this.forceAggroTimer > 0) this.forceAggroTimer -= delta;
 
-        let onGround = this.body.blocked.down || this.body.touching.down;
+        let onGround = this._onGroundGeo();
 
         // === 动画状态 ===
         const scene = this.scene;

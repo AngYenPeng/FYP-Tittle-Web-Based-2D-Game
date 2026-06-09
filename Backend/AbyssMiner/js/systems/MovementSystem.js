@@ -1,3 +1,9 @@
+// ===== (用户) 可变跳跃高度 (平滑版 / jump-cut) =====
+// 满速起跳 (弧线 = 现在的满跳, 手感不变); 提前松开 W/SPACE → 上升速度 ×√JUMP_TAP_HEIGHT_FRAC → 剩余高度按比例削减.
+//   点按 ≈ 满跳的 JUMP_TAP_HEIGHT_FRAC(25%, 保底); 按住到最高点(~0.41s, 在 0.5s 上限内) ≈ 100%; 中间松手随长按时长平滑递增.
+//   到最高点 / 抓墙 / 冲刺 / 落地后自动解除 (本帧若刚起跳, 键仍按下 → 不削).
+const JUMP_TAP_HEIGHT_FRAC = 0.25;   // (用户) 点按 = 满跳高度的 25%; 长按到 0.5s = 100% (剩余高度 ∝ 上升速度², 故速度乘 √比例); 想点按更矮→调小
+
 class MovementSystem {
     constructor(scene) {
         this.scene = scene;
@@ -125,21 +131,40 @@ class MovementSystem {
 
         if (jumpPressed) {
             if (s.isHanging) {
-                // (用户) 蹲着挂镐起跳: 保持蹲姿, 不站起 (与蹲跳一致)
+                // (用户) 挂墙时点跳 → 弹开起跳, 并从蹲变站立 (有头顶净空才站起)
                 s.isHanging = false;
                 s.isGrappling = false;
                 s.grappleSystem.hasSnapped = false;
                 s.player.body.setAllowGravity(true);
                 s.player.body.checkCollision.none = false;
-                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+                if (s.isCrouching && this._headZoneFree(s)) { s.isCrouching = false; s.player.y -= 16; }   // (用户) 蹲着挂墙点跳 → 站起来
+                s.player.setVelocityY(jumpForce); s._jumpCutArmed = true; if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
                 if (s.activeGrapplePick) {
                     s.recallSystem.startRecall(s.activeGrapplePick);
                     s.activeGrapplePick = null;
                 }
             }
             else if (onGround) {
-                // (用户) 蹲着跳: 保持蹲姿起跳, 不站起 (蹲态本体 32×48 不变 + 头实体停用, 无需头顶净空)
-                s.player.setVelocityY(jumpForce); if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+                // (用户) 蹲着点跳 → 从蹲变站立 (有头顶净空才站起; 低矮处无净空则保持蹲姿跳, 仍可穿过)
+                if (s.isCrouching && this._headZoneFree(s)) { s.isCrouching = false; s.player.y -= 16; }
+                s.player.setVelocityY(jumpForce); s._jumpCutArmed = true; if (typeof AudioSystem !== 'undefined') AudioSystem.jumpSfx(s);
+            }
+        }
+
+        // (用户) 可变跳跃高度 (平滑版): 满速起跳后, 提前松开 W/SPACE → 上升速度 ×√比例 → 剩余高度按比例削减.
+        //   点按≈满跳的 25%, 一直按到最高点(~0.41s, 0.5s 内)≈100%, 中间松手随时长平滑递增. 到顶/抓墙/冲刺/落地后自动解除 (本帧若刚起跳, 键仍按下→不削).
+        if (s._jumpCutArmed) {
+            if (s.isHanging || s.isDashing || s.isGrappling || !s.player || !s.player.body) {
+                s._jumpCutArmed = false;
+            } else {
+                const _vy = s.player.body.velocity.y;
+                const _held = (s.keyJump && s.keyJump.isDown) || (s.keyJumpW && s.keyJumpW.isDown);
+                if (_vy >= 0) {
+                    s._jumpCutArmed = false;                                   // 已到最高点/开始下落 → 满跳, 不再削
+                } else if (!_held) {
+                    s.player.body.velocity.y = _vy * Math.sqrt(JUMP_TAP_HEIGHT_FRAC);   // 松手即削上升速度 (剩余高度 ×JUMP_TAP_HEIGHT_FRAC)
+                    s._jumpCutArmed = false;
+                }
             }
         }
 

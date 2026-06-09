@@ -79,7 +79,7 @@ class CrystalBlock {
         if (this.destroyed) return;
         this.hp -= damage;
         // (用户) 每一下敲击都有声 (含剧情强制敲击 — SZ4 剧情走的就是 takeHit); 碎掉那下由 _destroy 播 CrystalBreak
-        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: 0.6 });
+        if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'PickaxeHitThings', { volume: AudioSystem.sfxVolume * 0.6 });   // (修复) 乘 sfxVolume
         this.sprite.setTint(0xff0000);
         this.scene.time.delayedCall(120, () => {
             if (!this.destroyed) this.sprite.clearTint();

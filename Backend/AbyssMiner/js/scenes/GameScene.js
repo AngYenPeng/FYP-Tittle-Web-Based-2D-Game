@@ -33,6 +33,7 @@ class MainGameScene extends Phaser.Scene {
             .forEach(ev => { try { this.events.off(ev); } catch (e) {} });
         this._uiPaused = false; this._uiPauseLite = false;
         this.isDead = false; this.isPlayerStunned = false;
+        this.isPlayerInvincible = false;   // (用户修复) 重进图必清: 彻底死亡(HealthSystem 209)/通关(_freezeForEnding 1314)设了 true 却直接切 TitleScene 不复位; 且 0.5s 无敌计时器在场景 stop 时被销毁 → Phaser 复用实例 → 残留 true → 重开存档对怪物【直接伤害】免疫, 而腐蚀/毒(ignoreIframe:true)绕过它照常 = 用户报告现象
         this._cinematicLock = false;
         try {
             if (this.physics && this.physics.world) this.physics.world.resume();
@@ -1371,6 +1372,8 @@ class MainGameScene extends Phaser.Scene {
     update(time, delta) {
         if (this._endingActive) return;   // (用户) 结局总闸: 世界已熄火, 一切局内逻辑停摆
         this._mobFootAudio(delta);
+        // (用户) 设定开着时按 ESC 关闭它 (设定开着时 update 会被下面 _uiPaused 早退, 故此段必须放在它之前; toggle 关不掉就是因为它在早退之后)
+        if (this.settingsSystem?.isOpen && this.keyESC && Phaser.Input.Keyboard.JustDown(this.keyESC)) { this.settingsSystem.close(); return; }
         if (this._uiPaused) return;   // (用户) 设置/guide 打开 → 全场景暂停
         if (!this.player.body) return;
 

@@ -397,8 +397,18 @@ class OpeningCinematicSystem {
                 // dig 帧是 64×64，缩小到 48×48 显示
                 s.moleTrader.setDisplaySize(48, 48);
                 s.moleTrader.play('trader_dig');
+                // (修复) 钻地音效 — Tutorial 商人钻地之前漏了 MoleDig (SZ2/SZ3 都有, 全局缓存已加载). 循环播, 2s 后 teleport 时停
+                if (typeof AudioSystem !== 'undefined' && s.cache && s.cache.audio && s.cache.audio.exists('MoleDig')) {
+                    try {
+                        if (s._tutMoleDigSnd) { try { s._tutMoleDigSnd.stop(); s._tutMoleDigSnd.destroy(); } catch (e2) {} s._tutMoleDigSnd = null; }
+                        s._tutMoleDigSnd = s.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                        s._tutMoleDigSnd.play();
+                    } catch (e) { s._tutMoleDigSnd = null; }
+                }
             }
             s.time.delayedCall(2000, () => {
+                // (修复) 停钻地音效
+                if (s._tutMoleDigSnd) { try { s._tutMoleDigSnd.stop(); s._tutMoleDigSnd.destroy(); } catch (e) {} s._tutMoleDigSnd = null; }
                 // 商人 teleport 到二楼 (56, 11)
                 const newX = (56 + 0.5) * 32;
                 const newY = (11 + 0.5) * 32;

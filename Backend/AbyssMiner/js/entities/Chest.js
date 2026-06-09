@@ -103,6 +103,7 @@ class Chest {
 
     update() {
         if (this.opened) return;
+        if (!this.sprite || !this.sprite.scene) return;   // (用户修复) sprite 已销毁 (重进图残留的旧 chest, Phaser 复用场景实例后 _chests 没清) → 不再 update, 否则 _open 对死 sprite 调 setTexture 直接宕机
         if (!this.scene.player || !this.scene.player.body) return;
         const dx = this.scene.player.x - this.x;
         const dy = this.scene.player.y - this.y;
@@ -120,6 +121,7 @@ class Chest {
 
     _open() {
         if (this.opened) return;
+        if (!this.sprite || !this.sprite.scene) { this.opened = true; return; }   // (用户修复) sprite 已销毁 → 标记 opened 防重入, 不再 setTexture
         this.opened = true;
         this._hideHint();
         // 永久销毁 E icon
@@ -132,6 +134,7 @@ class Chest {
             if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, 'ChestOpen');
             this.sprite.play('chest_open');
             this.sprite.once('animationcomplete', () => {
+                if (!this.sprite || !this.sprite.scene) return;   // (用户修复) 开箱动画期间场景已关 / sprite 已销毁 → 不再操作
                 // 停在最后一帧
                 this.sprite.setFrame(7);
                 this._startDropping();
