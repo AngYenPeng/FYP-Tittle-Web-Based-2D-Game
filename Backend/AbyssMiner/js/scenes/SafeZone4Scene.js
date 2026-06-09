@@ -803,7 +803,7 @@ class SafeZone4Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (data.hasHealthDetector && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -1090,10 +1090,12 @@ class SafeZone4Scene extends MainGameScene {
                 if (this.isDashing && this.dashSystem && this.dashSystem.cancelDash) this.dashSystem.cancelDash();
                 if (this.isMeleeAttacking && this.meleeSystem && this.meleeSystem.cancelMelee) this.meleeSystem.cancelMelee();
                 if ((this.isGrappling || this.isHanging) && this.grappleSystem && this.grappleSystem.stopGrapple) this.grappleSystem.stopGrapple();
-                if (this._sz4CutPhase !== 'walk') {
-                    this.player.body.setVelocity(0, 0);   // 非走路阶段: 完全静止 (走路阶段由 _updateSz4Cutscene 独家给速)
-                } else {
+                if (this._sz4CutPhase === 'walk') {
                     this.player.body.setVelocityX(0);     // 走路阶段: 先清外来 X, 下一行剧情走位重新给 ±150
+                } else if (this._sz4CutPhase === 'land') {
+                    this.player.body.setVelocityX(0);     // (用户) 落地阶段: 只清横向(防惯性冲过头), 纵向留给重力让玩家掉回地面
+                } else {
+                    this.player.body.setVelocity(0, 0);   // 其他阶段(strike等): 完全静止
                 }
             }
             if (this._sz4CutsceneActive) this._updateSz4Cutscene(time, delta);
@@ -1342,7 +1344,8 @@ class SafeZone4Scene extends MainGameScene {
     _startSz4Cutscene() {
         this._sz4CutsceneActive = true;
         this._cinematicLock = true;
-        this._sz4CutPhase = 'walk';
+        this._sz4CutPhase = 'land';   // (用户) 先落地阶段: 进区2若在空中, 先停横向只靠重力掉回地面, 落地后才走位 — 防空中走/空中打完攻击动画
+        this._sz4LandStartMs = this.time.now;
         this._sz4PanGuard = false;
 
         // (用户) 入场硬停三连: 高速冲刺撞进触发器时, 在飞冲刺会继续灌速度把玩家带出强制走位范围
@@ -1379,6 +1382,14 @@ class SafeZone4Scene extends MainGameScene {
             _cam.zoomTo(1, 400, 'Cubic.easeInOut');
             _cam.setFollowOffset(0, 0);
             if (this.hudSystem && this.hudSystem.setHUDVisible) this.hudSystem.setHUDVisible(true);
+            return;
+        }
+        // (用户) 落地阶段: 横向已被清零, 重力让玩家掉回地面; 落地且≥1秒后才进走路 (防空中走位/空中打完攻击); 5s 保底防卡住
+        if (this._sz4CutPhase === 'land') {
+            const onGround = this.player.body && (this.player.body.blocked.down || this.player.body.touching.down);
+            if (this.anims.exists('idle')) this.player.play('idle', true);   // 强制 idle, 覆盖入场残留的攻击动画
+            const elapsed = this.time.now - (this._sz4LandStartMs || this.time.now);
+            if ((onGround && elapsed >= 1000) || elapsed >= 5000) this._sz4CutPhase = 'walk';
             return;
         }
         if (this._sz4CutPhase !== 'walk') return;

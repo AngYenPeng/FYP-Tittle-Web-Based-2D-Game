@@ -806,6 +806,7 @@ class TitleScene extends Phaser.Scene {
         try { this.registry.set('pickaxeUpgraded', false); } catch (e) {}   // (用户修复) 新游戏清跨场景旗标 — 防上一局残留免对话解锁
         try { this.registry.set('hasPetSpider', false); } catch (e) {}   // (用户) 宠物旗标同清
         try { this.registry.set('runDeaths', 0); } catch (e) {}   // (用户成就) 一命通关计数清零
+        try { this.registry.set('hasHealthDetector', false); } catch (e) {}   // (用户) detector 旗标同清 — 新游戏不继承上一局购买
         SaveSystem.deleteSlot(n);          // 清空旧数据 (新游戏)
         SaveSystem.setCurrentSlot(n);      // deleteSlot 可能清 current, 重设
         this._fadeAndStart('StartIntroScene', null, true);   // 新游戏 → 重置 guide 已读
@@ -926,6 +927,7 @@ class TitleScene extends Phaser.Scene {
         try { this.registry.set('pickaxeUpgraded', !!data.pickaxeUpgraded); } catch (e) {}
         try { this.registry.set('hasPetSpider', !!data.hasPetSpider); } catch (e) {}   // (用户) 宠物随档恢复
         try { this.registry.set('runDeaths', data.runDeaths || 0); } catch (e) {}   // (用户成就) 死亡计数随档
+        try { this.registry.set('hasHealthDetector', false); } catch (e) {}   // (用户) detector 仅当前 run — 读档清 registry, 否则刚加的 registry 兜底会让它读档后前进一图又"复活"; 前进传送时由 registry 保留, 商店重买重新置 true
         // (用户) Tutorial 阶段的档 → 从开局图文故事 (StartIntro) 重新开始, 不直接跳进剧情半途
         const _tut = (data.scene === 'TutorialScene');
         // (用户) 标记"读档载入" → 场景里 detector 等"仅当前 run"道具读档时重置, 前进传送(SecretDoor)时保留. 浅拷贝避免污染存档本体

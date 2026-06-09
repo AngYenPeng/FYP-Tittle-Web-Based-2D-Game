@@ -214,6 +214,7 @@ class ShopSystem {
             }
             s.hudSystem.spendCrystal(item.price);
             s._hasHealthDetector = true;
+            if (s.registry) s.registry.set('hasHealthDetector', true);   // (用户) detector 存进 registry — 前进经过任意场景(含Hub/矿洞/无恢复块的场景)都不丢; 读档时由 TitleScene 清掉
             this._refreshCrystalDisplay();
             this._flashMessage('Health Detector acquired!', 0x44ff44);
             // 按钮永久灰化

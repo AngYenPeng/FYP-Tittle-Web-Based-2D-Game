@@ -160,6 +160,8 @@ class CrystalNpc {
 
     update() {
         if (!this.scene.player || !this.scene.player.body) return;
+        // (用户) sprite 已被销毁 (读档/退场后包装对象残留引用) → 立即跳过, 防 this.sprite.play() 在死精灵上崩溃
+        if (!this.sprite || !this.sprite.scene) return;
         const s = this.scene;
         // sprite 被重力移动, 同步 this.x/y 给距离检测用
         if (this.sprite && this.sprite.body) {

@@ -17,6 +17,8 @@ class SafeZone3Scene extends MainGameScene {
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
         this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
         this._sistersIntroRun = false; this._sisterTeaseRunning = false; this._sz3IntroStarted = false; this._sz3IntroPhase = 0; this._citrinePhase = 'fresh';
+        // (用户) 实体数组每次进图清空 — CrystalNpc/Chest 是包装对象, 退场时 sprite 被销毁但包装残留在数组里, 读档时 update 迭代到死精灵 → 崩溃
+        this._crystalNpcs = []; this._chests = [];
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -2197,7 +2199,7 @@ class SafeZone3Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if (data.hasHealthDetector && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);

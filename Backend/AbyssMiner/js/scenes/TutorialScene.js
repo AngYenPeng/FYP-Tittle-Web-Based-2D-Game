@@ -12,6 +12,10 @@ class TutorialScene extends MainGameScene {
 
     init(data) {
         this.tutorialId = (data && data.tutorialId) || 1;
+        // (用户) 每次进图=全新第一次: 清掉残留瞬态 (实例复用会串场)
+        this._cinematicLock = false;
+        // (用户) 一次性剧情/引导触发标志每次进图清掉 — 否则读档时残留 true → "穿水晶门讲外面水晶"等剧情被跳过 (与 SZ1 同类 bug); 网站刷新清内存才恢复
+        this._crystalDoorPlotTriggered = false; this._stoneGuideUnlocked = false; this._platformGuideUnlocked = false; this._signpostSpawned = false; this._currentChunkId = null;
     }
 
     preload() {
