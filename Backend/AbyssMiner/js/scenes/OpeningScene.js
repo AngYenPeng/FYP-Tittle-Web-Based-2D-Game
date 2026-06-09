@@ -14,6 +14,11 @@ class OpeningScene extends Phaser.Scene {
         // (用户) 大标题拆两张, 每帧 800×400
         this.load.spritesheet('Big_title1', 'assets/images/Big_title1.png', { frameWidth: 800, frameHeight: 400 });
         this.load.spritesheet('Big_title2', 'assets/images/Big_title2.png', { frameWidth: 800, frameHeight: 400 });
+        // (用户) BigTitle 音效要在 create() 一进场就播 → 这里在首批 preload 直接加载好;
+        //        AudioSystem.loadAll 是延迟二次加载, 到 create() 时还没解码完, 之前就是因此被静默丢弃 (key 已存在则 loadAll 自动跳过, 不重复)
+        if (typeof AudioSystem !== 'undefined' && AudioSystem.MANIFEST && AudioSystem.MANIFEST['BigTitle']) {
+            try { this.load.audio('BigTitle', 'assets/audio/' + AudioSystem.MANIFEST['BigTitle']); } catch (e) {}
+        }
         // 诊断: 加载失败 → 控制台明确提示
         this.load.on('loaderror', (file) => {
             if (file && (file.key === 'Big_title1' || file.key === 'Big_title2'))
