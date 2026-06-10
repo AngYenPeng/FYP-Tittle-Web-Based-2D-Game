@@ -108,6 +108,7 @@ class TutorialScene extends MainGameScene {
         this.load.spritesheet('Small_spider_run',     'assets/images/Small_spider_run.png',     { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('Pet_spider_run',  'assets/images/Pet_spider_run.png',  { frameWidth: 64, frameHeight: 64 });   // (用户) 宠物专用
         this.load.spritesheet('Pet_spider_idle', 'assets/images/Pet_spider_idle.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('Pet_spider_idle_love', 'assets/images/Pet_spider_idle_love.png', { frameWidth: 64, frameHeight: 64 });   // (用户) 骑头满30s爱心待机
         this.load.spritesheet('Small_spider_attack',  'assets/images/Small_spider_attack.png',  { frameWidth: 64, frameHeight: 64 });
         // (用户) 素材缺失暂停加载, 文件补进 assets 后解开: this.load.spritesheet('Small_spider_injured', 'assets/images/Small_spider_injured.png', { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('Small_spider_dead',    'assets/images/Small_spider_dead.png',    { frameWidth: 64, frameHeight: 64 });

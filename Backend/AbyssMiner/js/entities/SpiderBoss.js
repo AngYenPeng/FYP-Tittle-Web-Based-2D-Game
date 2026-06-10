@@ -22,9 +22,13 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
+<<<<<<< HEAD:Backend/AbyssMiner/js/systems/boss.js
+        // (已移除强制物理调试绘制 — 尊重全局 debug:false, 不再产生残影)
+=======
         //scene.physics.world.createDebugGraphic();
 //this.debugGraphics = scene.add.graphics();
 //this.debugGraphics.setDepth(9999);
+>>>>>>> d125d30913f6f4a6de6ed7bd79aeefb9ac8f8741:Backend/AbyssMiner/js/entities/SpiderBoss.js
 // 强制开启 ARCADE 物理引擎的碰撞边界处理，防止冲刺过快直接穿墙
 this.body.setCollideWorldBounds(true);
 this.body.onWorldBounds = true;
@@ -1238,6 +1242,10 @@ if (this.body) {
     this.scene.physics.collide(this, this.scene.walls);
 }
 
+<<<<<<< HEAD:Backend/AbyssMiner/js/systems/boss.js
+
+=======
+>>>>>>> d125d30913f6f4a6de6ed7bd79aeefb9ac8f8741:Backend/AbyssMiner/js/entities/SpiderBoss.js
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 
         // 🌟 ANTI-DROP ARMOR: Force floor snap if not flying

@@ -1,28 +1,28 @@
-var sz6_bossBarrier, sz6_merchant, sz6_arenaLocked = false;
-var sz6_dialogueBox, sz6_dialogueText, sz6_dialogueHint, sz6_skipHint;
-var sz6_dialogueState = 0;
-var sz6_currentLine = 0;
-var sz6_hazards;
-var sz6_bullets;
-var sz6_spawnDoor, sz6_bossDoor;
-var sz6_exitWall, sz6_exitStairs, sz6_victoryTrigger;
-var sz6_bossBeatenSequence = false;
-var sz6_roarAlertTriggered = false; // 🌟 新增：防止半路咆哮对话每帧重复触发
-var sz6_dialogueLines = [
+var sz5_bossBarrier, sz5_merchant, sz5_arenaLocked = false;
+// (合并) 自建对话框元素已移除, 统一用项目 DialogSystem 渲染
+var sz5_dialogueState = 0;
+var sz5_currentLine = 0;
+var sz5_hazards;
+var sz5_bullets;
+var sz5_spawnDoor, sz5_bossDoor;
+var sz5_exitWall, sz5_exitStairs, sz5_victoryTrigger;
+var sz5_bossBeatenSequence = false;
+var sz5_roarAlertTriggered = false; // 🌟 新增：防止半路咆哮对话每帧重复触发
+var sz5_dialogueLines = [
 "Merchant: Oi, dirt-scratcher. Didn't peg ya to survive this deep... gotta hand it to ya, you got grit.",
 "Merchant: 'Fore you go kickin' the hornet's nest, listen up. Them shiny blue rocks you been hoarding? They sprout by suckin' the juice outta the dead down here.",
 "Merchant: I ain't buyin' 'em to get filthy rich. I'm baggin' the infection. Every rock I pocket is one less nasty bug crawlin' its way to the topside.",
 "Merchant: The Big Bad is right through there. The Mother of all this mess. Go on, give 'er hell and finish this."
 ];
 // File: SafeZone5Scene.js at the top, along with existing globals
-var sz6_reliefDialogueLines = [ // New lines reflecting relief
+var sz5_reliefDialogueLines = [ // New lines reflecting relief
     "Merchant: It's... over. Finally, some quiet down here.",
     "Merchant: This old place is looking better by the minute. You really cleaned house.",
     "Merchant: No more bug counting for me, for a while at least.",
     "Merchant: Well, don't just stand there with your pickaxes. There's a proper quiet surface waiting for you."
 ];
-var sz6_currentReliefLine = 0; // Tracks the current line of the relief dialogue
-var sz6_terrain = [
+var sz5_currentReliefLine = 0; // Tracks the current line of the relief dialogue
+var sz5_terrain = [
 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
 [1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
 [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
@@ -55,46 +55,37 @@ var sz6_terrain = [
 class SafeZone5Scene extends MainGameScene {
 
     // 🌟 UNIQUE FIX: Defined dialogue closing helper to turn movement controls back on safely
-    finishDialogue() {
-        sz6_dialogueState = 2; 
-        this.playerCanMove = true;
-        if (sz6_dialogueBox) sz6_dialogueBox.setVisible(false);
-        if (sz6_dialogueText) sz6_dialogueText.setVisible(false);
-        if (sz6_dialogueHint) sz6_dialogueHint.setVisible(false);
-        if (sz6_skipHint) sz6_skipHint.setVisible(false);
+    // (合并) 把 "Speaker: text" 台词转成 DialogSystem 的 entry 格式
+    _sz5DialogEntry(line) {
+        const i = line.indexOf(': ');
+        return (i > 0) ? { speaker: line.slice(0, i), text: line.slice(i + 2) } : { speaker: '', text: line };
     }
 
-    // New function to turn movement controls back on safely after relief dialogue
-finishReliefDialogue() {
-        sz6_dialogueState = 8; // 商人释怀白播放完毕
-        this.playerCanMove = true; // 解锁控制权，允许玩家自己手动走过商人去爬楼梯
-
-        if (sz6_dialogueBox) sz6_dialogueBox.setVisible(false);
-        if (sz6_dialogueText) sz6_dialogueText.setVisible(false);
-        if (sz6_dialogueHint) sz6_dialogueHint.setVisible(false);
-        if (sz6_skipHint) sz6_skipHint.setVisible(false);
-
-        // 🌟 镜头恢复：谈话结束，镜头在 1.2 秒内平滑拉远，恢复至最舒服的探索缩放倍率（2.5），并重新死死跟随主角！
+    // 释怀对白播完: 置 state 8 + 镜头拉回探索缩放 2.5 并跟随 (出口判定依赖 state===8)
+    finishReliefDialogue() {
+        sz5_dialogueState = 8;
+        this.playerCanMove = true;
         this.cameras.main.zoomTo(2.5, 1200, 'Sine.easeInOut');
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
     }
 
-setupMerchantFinalDialogue() {
-        this._readyForReliefDialogue = true; 
-        sz6_dialogueState = 1;               
-        this.playerCanMove = false;          
+    // 通关后商人释怀对白: 镜头特写 3.4 → DialogSystem 播台词 → 播完回调 finishReliefDialogue
+    setupMerchantFinalDialogue() {
+        this._readyForReliefDialogue = true;   // 出口判定 (update 内 x>2920) 依赖此标记
+        sz5_dialogueState = 1;
+        this.playerCanMove = false;
         if (this.player.body) this.player.body.setVelocity(0, 0);
 
-        // 🌟 运镜聚焦：镜头在 0.8 秒内滑移聚焦到老鼠商人的面部，并放大到 3.4 倍切特写！
         this.cameras.main.stopFollow();
-        this.cameras.main.pan(sz6_merchant.x, sz6_merchant.y - 15, 800, 'Cubic.easeInOut');
+        this.cameras.main.pan(sz5_merchant.x, sz5_merchant.y - 15, 800, 'Cubic.easeInOut');
         this.cameras.main.zoomTo(3.4, 800, 'Cubic.easeInOut');
-        
-        sz6_dialogueBox.setVisible(true);
-        sz6_dialogueText.setVisible(true);
-        sz6_dialogueHint.setVisible(true);
-        sz6_skipHint.setVisible(true);
-        sz6_dialogueText.setText(sz6_reliefDialogueLines[0]); 
+
+        if (this.dialogSystem) {
+            this.dialogSystem.showSequence(
+                sz5_reliefDialogueLines.map(l => this._sz5DialogEntry(l)),
+                () => this.finishReliefDialogue()
+            );
+        } else { this.finishReliefDialogue(); }
     }
 
 revealEndgamePassage() {
@@ -105,12 +96,12 @@ revealEndgamePassage() {
         cam.stopFollow(); 
 
         cam.setBounds(1440, 120, 1760, 580); 
-        cam.pan(sz6_exitWall.x, sz6_exitWall.y, 1000, 'Cubic.easeInOut');
+        cam.pan(sz5_exitWall.x, sz5_exitWall.y, 1000, 'Cubic.easeInOut');
         cam.zoomTo(3.2, 1000, 'Cubic.easeInOut');
 
         this.time.delayedCall(1100, () => {
             this.tweens.add({
-                targets: sz6_exitWall,
+                targets: sz5_exitWall,
                 x: '+=6',
                 duration: 50,
                 yoyo: true,
@@ -120,13 +111,13 @@ revealEndgamePassage() {
                     cam.flash(600, 255, 255, 255); 
                     cam.shake(500, 0.04);          
 
-                    let originX = sz6_exitWall.x;
-                    let originY = sz6_exitWall.y;
+                    let originX = sz5_exitWall.x;
+                    let originY = sz5_exitWall.y;
 
-                    if (sz6_exitWall) sz6_exitWall.destroy(); 
+                    if (sz5_exitWall) sz5_exitWall.destroy(); 
 
-                    if (sz6_exitStairs) {
-                        sz6_exitStairs.getChildren().forEach(step => {
+                    if (sz5_exitStairs) {
+                        sz5_exitStairs.getChildren().forEach(step => {
                             step.setVisible(true);
                             if (step.body) step.body.enable = true;
                         });
@@ -205,6 +196,17 @@ revealEndgamePassage() {
                         onComplete: () => {
                             flashWave.destroy();
 
+<<<<<<< HEAD
+                            // 商人钻出：高度和位置经过了像素重构，完美贴合你调好的新台阶孔位
+                            if (sz5_merchant) {
+                                let startY = originY + 160;  // 藏在更深的地下
+                                let endY = originY - 60;    // 最终完美双脚踩在 Row 14 梯口的地表平线上！
+
+                                sz5_merchant.setPosition(originX - 120, startY); 
+                                sz5_merchant.setVisible(true);
+                                sz5_merchant.setAlpha(0);
+                                sz5_merchant.setFlipX(true); // 脸朝左迎接走过来的玩家
+=======
                             // 老鼠商人破土而出效果
                             if (sz6_merchant) {
                                 let startY = originY + 160; 
@@ -214,17 +216,18 @@ revealEndgamePassage() {
                                 sz6_merchant.setVisible(true);
                                 sz6_merchant.setAlpha(0);
                                 sz6_merchant.setFlipX(true); 
+>>>>>>> d125d30913f6f4a6de6ed7bd79aeefb9ac8f8741
 
                                 this.tweens.add({
-                                    targets: sz6_merchant,
+                                    targets: sz5_merchant,
                                     y: endY,        
                                     alpha: 1,
                                     duration: 1000,
                                     ease: 'Back.easeOut',
                                     onComplete: () => {
-                                        this.physics.add.existing(sz6_merchant, true);
-                                        if (sz6_merchant.body && sz6_merchant.body.updateFromGameObject) {
-                                            sz6_merchant.body.updateFromGameObject();
+                                        this.physics.add.existing(sz5_merchant, true);
+                                        if (sz5_merchant.body && sz5_merchant.body.updateFromGameObject) {
+                                            sz5_merchant.body.updateFromGameObject();
                                         }
                                         this.setupMerchantFinalDialogue(); 
                                     }
@@ -488,25 +491,13 @@ revealEndgamePassage() {
 
 create() {
 
-    console.log("Texture 'boss_idle' exists:", this.textures.exists('boss_idle'));
-    
-    // 如果返回 false，打印已加载的所有纹理名称，看看你到底把 Boss 注册成了什么名字
-    if (!this.textures.exists('boss_idle')) {
-        console.log("All loaded textures:", this.textures.getTextureKeys());
-    }
+    // (清理) 移除开发期调试 console.log (boss_idle 贴图检查)
 
     // 1. Set the physics world to match your terrain height (Rows * TileSize)
-// Assuming G = 60 and your terrain has 20 rows (20 * 60 = 1200)
-this.physics.world.setBounds(0, 0, 5000, 960); 
+    // (修复) 删除死代码: 世界/相机边界在下方按地形实际尺寸重设 (world=mapWidth×mapHeight, camera=0~1578), 此处 5000×960 与 1440-3200 会被立即覆盖, 注释也错(G 实为 32)
 
-// 2. Tell the Camera to STOP scrolling past the floor
-// This prevents the user from seeing the "big space" down there
-this.cameras.main.setBounds(1440, 0, 1760, 500);
-
-    if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_SafeZone5');  
-    // 启动关卡探索背景音乐（循环播放，音量 0.5）
-this.currentBGM = this.sound.add('bgm_safezone5', { loop: true, volume: 0.5 });
-this.currentBGM.play();
+    // (修复) 探索 BGM 改走 AudioSystem 统一管理: 离场被下个场景 stopBGM 停掉(不漏音)+跟随音量设置; 原 'bgm_SafeZone5' 大小写错(实际 key 小写)
+    if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_safezone5');
     // (合并) 物理 debug draw 关闭 (队友开发期临时开的, 上线不显示碰撞框)
     try {
         const w = this.physics.world;
@@ -525,10 +516,12 @@ this.currentBGM.play();
     const W = 3200;
     const H = 800;
 
-    sz6_arenaLocked = false;
-    sz6_dialogueState = 0;
-    sz6_currentLine = 0;
-    sz6_bossBeatenSequence = false;
+    sz5_arenaLocked = false;
+    sz5_dialogueState = 0;
+    sz5_currentLine = 0;
+    sz5_bossBeatenSequence = false;
+    sz5_roarAlertTriggered = false;   // (修复) 漏重置 → 二周目/死亡重进时半路咆哮警告不再触发
+    sz5_currentReliefLine = 0;        // (修复) 漏重置 → 重进时释怀对话从残留行号开始(可能越界)
     this.playerCanMove = true;
 
     if (typeof BossManager !== 'undefined') {
@@ -536,8 +529,8 @@ this.currentBGM.play();
 }
 
     this.cameras.main.setBackgroundColor('#050510');
-    const mapWidth = sz6_terrain[0].length * 32;
-const mapHeight = sz6_terrain.length * 32;
+    const mapWidth = sz5_terrain[0].length * 32;
+const mapHeight = sz5_terrain.length * 32;
 this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
 this.cameras.main.setBounds(0, 0, 1578, mapHeight);
 
@@ -597,38 +590,38 @@ if (this.textures.exists('bg_block')) {
     this.mimicOres = this.physics.add.group();
     this.volatileCrystals = this.physics.add.group();
 
-    sz6_hazards = this.physics.add.staticGroup(); 
-    sz6_bullets = this.physics.add.group();
-    sz6_exitStairs = this.physics.add.staticGroup(); 
+    sz5_hazards = this.physics.add.staticGroup(); 
+    sz5_bullets = this.physics.add.group();
+    sz5_exitStairs = this.physics.add.staticGroup(); 
 
     this.buildCaveDecorations();
 
     // 🌟 REPLACED: Positions the spawn door exactly on the new 32px starting floor
-sz6_spawnDoor = this.add.sprite(20, 350, 'door_skin', 0).setDepth(5);
-sz6_spawnDoor.setDisplaySize(32, 96);
+sz5_spawnDoor = this.add.sprite(20, 350, 'door_skin', 0).setDepth(5);
+sz5_spawnDoor.setDisplaySize(32, 96);
 
 // 🌟 REPLACED: Shrinks and moves the arena entry door to Column 54 (X: 1728)
-sz6_bossDoor = this.add.sprite(1588, 320, 'door_skin', i => i.setFrame(0)).setDepth(5);
-sz6_bossDoor.setDisplaySize(128, 128);
+sz5_bossDoor = this.add.sprite(1588, 320, 'door_skin', 0).setDepth(5);   // (修复) 第4参原是函数 i=>i.setFrame(0) 被当帧名 → 报 no frame; 改帧索引 0
+sz5_bossDoor.setDisplaySize(128, 128);
 
 // 🌟 REPLACED: 修正物理隔离墙的坐标，使其严丝合缝地挡在右侧隐藏楼梯的入口前方 (X: 2832)
-        sz6_exitWall = this.add.image(2550, 600, 'tile_wall').setDepth(11);
-        sz6_exitWall.setDisplaySize(48, 250); // 强行拉高加厚，确保形成一道不可逾越的高墙
+        sz5_exitWall = this.add.image(2550, 600, 'tile_wall').setDepth(11);
+        sz5_exitWall.setDisplaySize(48, 250); // 强行拉高加厚，确保形成一道不可逾越的高墙
         
-        this.physics.add.existing(sz6_exitWall, true);
-        if (sz6_exitWall.body && sz6_exitWall.body.updateFromGameObject) {
-            sz6_exitWall.body.updateFromGameObject(); // 强行刷新物理包围盒，防止玩家穿模
+        this.physics.add.existing(sz5_exitWall, true);
+        if (sz5_exitWall.body && sz5_exitWall.body.updateFromGameObject) {
+            sz5_exitWall.body.updateFromGameObject(); // 强行刷新物理包围盒，防止玩家穿模
         }
-        this.walls.add(sz6_exitWall);
+        this.walls.add(sz5_exitWall);
 
-    for (let r = 0; r < sz6_terrain.length; r++) {
-        for (let c = 0; c < sz6_terrain[r].length; c++) {
+    for (let r = 0; r < sz5_terrain.length; r++) {
+        for (let c = 0; c < sz5_terrain[r].length; c++) {
             let xPos = c * G + (G / 2);
             let yPos = r * G + (G / 2);
 
-            if (sz6_terrain[r][c] === 1) { 
+            if (sz5_terrain[r][c] === 1) { 
     // 🌟 SMART SKINNING: If row above is empty air (0), it's a floor top! Otherwise it's a solid inner wall block.
-    let isFloorSurface = (r === 0 || sz6_terrain[r - 1][c] === 0);
+    let isFloorSurface = (r === 0 || sz5_terrain[r - 1][c] === 0);
     let skinKey = isFloorSurface ? 'tile_floor' : 'tile_wall';
 
     // Create the block as an image texture rather than a solid primitive rectangle
@@ -648,7 +641,7 @@ sz6_bossDoor.setDisplaySize(128, 128);
         left: xPos - G/2, right: xPos + G/2,
         top: yPos - G/2, bottom: yPos + G/2
     });
-} else if (sz6_terrain[r][c] === 2) {
+} else if (sz5_terrain[r][c] === 2) {
     // 🌟 用加载好的真实尖刺图片替换原有的彩色三角形
     let spike = this.add.image(xPos, yPos, 'thorns_skin');
     spike.setDisplaySize(G, G); // 强制缩放到 32px 大小完美契合网格
@@ -660,12 +653,12 @@ sz6_bossDoor.setDisplaySize(128, 128);
         spike.body.setSize(24, 16);
         spike.body.setOffset(4, 16);
     }
-    sz6_hazards.add(spike);
-}else if (sz6_terrain[r][c] === 3) {
+    sz5_hazards.add(spike);
+}else if (sz5_terrain[r][c] === 3) {
                 let step = this.add.rectangle(xPos, yPos, G, G, 0x1a0f2e);
                 step.setStrokeStyle(2, 0x3b2d59);
                 this.physics.add.existing(step, true);
-                sz6_exitStairs.add(step);
+                sz5_exitStairs.add(step);
                 step.setVisible(false);
                 step.body.enable = false;
             }
@@ -677,60 +670,24 @@ sz6_bossDoor.setDisplaySize(128, 128);
 this.finalHint = this.add.text(2600, 400, ">> WARNING: MATRIARCH LAIR >>", { fontSize: '28px', fill: '#ff0000', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6 }).setDepth(10);
 
     // 🌟 REPLACED: Aligns the physics force field barrier to match the entry gate location
-sz6_bossBarrier = this.add.rectangle(1538, 300, 24, 250, 0x8888ff, 0.5);
-    this.physics.add.existing(sz6_bossBarrier, true);
-    sz6_bossBarrier.setVisible(false);
-    sz6_bossBarrier.body.enable = false; // 🌟 FIXED
+sz5_bossBarrier = this.add.rectangle(1538, 300, 24, 250, 0x8888ff, 0.5);
+    this.physics.add.existing(sz5_bossBarrier, true);
+    sz5_bossBarrier.setVisible(false);
+    sz5_bossBarrier.body.enable = false; // 🌟 FIXED
 
-    sz6_merchant = this.add.sprite(225, 342, 'trader_stand').setDepth(6);
-    this.sz6_merchantOriginX = 225; // Define new class property
-    this.sz6_merchantOriginY = 342; // Define new class property
-    sz6_merchant.setDisplaySize(48, 48);  
-    sz6_merchant.setFlipX(true);
+    sz5_merchant = this.add.sprite(225, 342, 'trader_stand').setDepth(6);
+    this.sz5_merchantOriginX = 225; // Define new class property
+    this.sz5_merchantOriginY = 342; // Define new class property
+    sz5_merchant.setDisplaySize(48, 48);  
+    sz5_merchant.setFlipX(true);
     if (this.anims.exists('trader_stand')) {
-    sz6_merchant.play('trader_stand');
+    sz5_merchant.play('trader_stand');
 }  
 
-    // 🌟 视觉升级：放大对白框尺寸（1200x220）并显著提升字号，使其极具剧场感
-        sz6_dialogueBox = this.add.rectangle(800, 720, 1200, 220, 0x000000, 0.9).setScrollFactor(0).setDepth(9999);
-        sz6_dialogueBox.setStrokeStyle(4, 0xffd86a); // 换成高贵发光金框
-        
-        sz6_dialogueText = this.add.text(240, 640, "", { 
-            fontSize: '30px', // 👈 字号由 24px 放大到 30px
-            fill: '#ffffff', 
-            fontFamily: 'monospace', 
-            fontStyle: 'bold',
-            wordWrap: { width: 1120 }, 
-            lineSpacing: 10 
-        }).setScrollFactor(0).setDepth(10000);
-    sz6_dialogueHint = this.add.text(1120, 800, "[ Click to Progress ]", { fontSize: '16px', fill: '#ffff00', fontStyle: 'bold' }).setScrollFactor(0).setDepth(10000);
-    sz6_skipHint = this.add.text(1240, 680, "SKIP >>", { fontSize: '16px', fill: '#ff5555', fontStyle: 'bold' }).setScrollFactor(0).setInteractive({ useHandCursor: true }).setDepth(10000);
-    // 🌟 修复注入：为 SKIP 按钮绑定跨场景智能跳过功能
-        sz6_skipHint.on('pointerdown', (pointer) => {
-            pointer.downX = pointer.x; // 阻止事件穿透引发近战挥砍
-            if (this._readyForReliefDialogue) {
-                this.finishReliefDialogue(); // 跳过通关对话
-            } else if (this._readyForRoarAlert) {
-                // 跳过半路咆哮提示
-                sz6_dialogueBox.setVisible(false);
-                sz6_dialogueText.setVisible(false);
-                sz6_dialogueHint.setVisible(false);
-                sz6_skipHint.setVisible(false);
-                this.playerCanMove = true;
-                sz6_dialogueState = 2;
-                this._readyForRoarAlert = false;
-            } else {
-                this.finishDialogue(); // 跳过开场白对话
-            }
-        });
-
-    sz6_dialogueBox.setVisible(false);
-    sz6_dialogueText.setVisible(false);
-    sz6_dialogueHint.setVisible(false);
-    sz6_skipHint.setVisible(false);
+    // (合并) 自建对话框/SKIP 按钮的创建与点击跳过逻辑已移除 — 改用项目 DialogSystem
 
     // (合并) 删掉 this._applyLevelData() 调用 — 你保留的那版按旧 SZ5 (G=32) 关卡数据重建地形,
-    //   会把要删的旧 BackgroundBlock/wall 盖在 boss 竞技场上. 本关卡全靠 sz6_terrain (G=60) 建.
+    //   会把要删的旧 BackgroundBlock/wall 盖在 boss 竞技场上. 本关卡全靠 sz5_terrain (G=60) 建.
 
     this._gridGraphics = this.add.graphics().setDepth(0);
     this._gridGraphics.lineStyle(1, 0xffffff, 0.15);
@@ -788,7 +745,7 @@ sz6_bossBarrier = this.add.rectangle(1538, 300, 24, 250, 0x8888ff, 0.5);
     this._setupRealPickaxes();
 
     this.physics.add.collider(this.player, this.walls);
-    this.physics.add.collider(this.player, sz6_bossBarrier);
+    this.physics.add.collider(this.player, sz5_bossBarrier);
     this.physics.add.collider(this.droppedCrystals, this.walls);
     this.physics.add.collider(this.spiders, this.walls);
     this.physics.add.collider(this.bats, this.walls);
@@ -831,7 +788,7 @@ this.time.addEvent({
     this.physics.add.overlap(this.player, this.bungeeSpiders, dmgCheck);
     this.physics.add.overlap(this.player, this.volatileCrystals, dmgCheck);
 // Thorns (ID: 2) damage overlap tracking handle
-this.physics.add.overlap(this.player, sz6_hazards, () => {
+this.physics.add.overlap(this.player, sz5_hazards, () => {
     if (this.healthSystem && this.healthSystem.damage) {
         this.healthSystem.damage(2); // Deals 2 damage on spike contact
     }
@@ -970,36 +927,7 @@ this._cfgBossY   = 80;    // Boss hanging overhead center point Y (Ceiling mount
     this.game.canvas.style.cursor = 'none';
 
     this.input.on('pointerdown', (pointer) => {
-            if (sz6_dialogueState === 1) {
-                // 🌟 新增判定：如果是半路惊悚咆哮，点击任意地方直接恢复行动关闭对话
-                if (this._readyForRoarAlert) {
-                    sz6_dialogueBox.setVisible(false);
-                    sz6_dialogueText.setVisible(false);
-                    sz6_dialogueHint.setVisible(false);
-                    sz6_skipHint.setVisible(false);
-                    this.playerCanMove = true;
-                    sz6_dialogueState = 2;
-                    this._readyForRoarAlert = false;
-                    return;
-                }
-
-                if (this._readyForReliefDialogue) {
-                    sz6_currentReliefLine++;
-                    if (sz6_currentReliefLine >= sz6_reliefDialogueLines.length) {
-                        this.finishReliefDialogue(); 
-                    } else {
-                        sz6_dialogueText.setText(sz6_reliefDialogueLines[sz6_currentReliefLine]);
-                    }
-                } else {
-                    sz6_currentLine++;
-                    if (sz6_currentLine >= sz6_dialogueLines.length) {
-                        this.finishDialogue();
-                    } else {
-                        sz6_dialogueText.setText(sz6_dialogueLines[sz6_currentLine]);
-                    }
-                }
-                return;
-            }
+            // (合并) 自建对话推进逻辑已移除: DialogSystem 自带点击推进; 对话期间下方 dialogSystem.isOpen 守卫会拦截投镐
 
             if (!this.player.body || this.isPlayerStunned || this.isDead) return;
             if (this._cinematicLock) return;
@@ -1106,21 +1034,27 @@ this.physics.add.overlap(this.player, BossManager.entity, (player, boss) => {
 
     _registerAnims() {
 
-        // 🌟 ADD THIS to build the animation loops the boss AI expects:
+        // 🌟 build the animation loops the boss AI expects:
+        // (修复) end 改为按贴图实际帧数自适应 (frameTotal-2, 已含 __BASE); 原写死 3/5/4/4/2 超界, 控制台刷 "Frame N not found"
 if (this.textures.exists('boss_idle') && !this.anims.exists('anim_boss_idle')) {
-    this.anims.create({ key: 'anim_boss_idle', frames: this.anims.generateFrameNumbers('boss_idle', { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
+    const ft = this.textures.get('boss_idle').frameTotal;
+    this.anims.create({ key: 'anim_boss_idle', frames: this.anims.generateFrameNumbers('boss_idle', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 8, repeat: -1 });
 }
 if (this.textures.exists('boss_run') && !this.anims.exists('anim_boss_run')) {
-    this.anims.create({ key: 'anim_boss_run', frames: this.anims.generateFrameNumbers('boss_run', { start: 0, end: 5 }), frameRate: 12, repeat: -1 });
+    const ft = this.textures.get('boss_run').frameTotal;
+    this.anims.create({ key: 'anim_boss_run', frames: this.anims.generateFrameNumbers('boss_run', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 12, repeat: -1 });
 }
 if (this.textures.exists('boss_attack') && !this.anims.exists('anim_boss_attack')) {
-    this.anims.create({ key: 'anim_boss_attack', frames: this.anims.generateFrameNumbers('boss_attack', { start: 0, end: 4 }), frameRate: 14, repeat: 0 });
+    const ft = this.textures.get('boss_attack').frameTotal;
+    this.anims.create({ key: 'anim_boss_attack', frames: this.anims.generateFrameNumbers('boss_attack', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 14, repeat: 0 });
 }
 if (this.textures.exists('boss_dead') && !this.anims.exists('anim_boss_dead')) {
-    this.anims.create({ key: 'anim_boss_dead', frames: this.anims.generateFrameNumbers('boss_dead', { start: 0, end: 4 }), frameRate: 10, repeat: 0 });
+    const ft = this.textures.get('boss_dead').frameTotal;
+    this.anims.create({ key: 'anim_boss_dead', frames: this.anims.generateFrameNumbers('boss_dead', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 10, repeat: 0 });
 }
 if (this.textures.exists('boss_hurt') && !this.anims.exists('anim_boss_hurt')) {
-    this.anims.create({ key: 'anim_boss_hurt', frames: this.anims.generateFrameNumbers('boss_hurt', { start: 0, end: 2 }), frameRate: 12, repeat: 0 });
+    const ft = this.textures.get('boss_hurt').frameTotal;
+    this.anims.create({ key: 'anim_boss_hurt', frames: this.anims.generateFrameNumbers('boss_hurt', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 12, repeat: 0 });
 }
 
         // 安全注册 — 检查 texture 存在 + 有效 frames
@@ -1263,23 +1197,21 @@ update(time, delta) {
         }
 
     // 🌟 新增功能：半路惊悚咆哮动态触发器
-        if (!sz6_roarAlertTriggered && this.player.x > 900 && this.player.x < 1200) {
-            sz6_roarAlertTriggered = true; // 锁死防止多帧重复触发
-            this._readyForRoarAlert = true; // 标记当前对白属于预警白
-            
-            this.sound.play('snd_boss_roar', { volume: 0.7 }); // 播发深渊爬行吼叫
-            this.cameras.main.shake(400, 0.012);              // 摄像机产生地震剧烈摇晃
+        if (!sz5_roarAlertTriggered && this.player.x > 900 && this.player.x < 1200) {
+            sz5_roarAlertTriggered = true;
 
-            sz6_dialogueState = 1;                             // 截断操作，强入对话
+            this.sound.play('snd_boss_roar', { volume: 0.7 });
+            this.cameras.main.shake(400, 0.012);
+
+            sz5_dialogueState = 1;
             this.playerCanMove = false;
             if (this.player.x && this.player.body) this.player.body.setVelocity(0, 0);
 
-            // 呼出大对白框显示内心独白
-            sz6_dialogueBox.setVisible(true);
-            sz6_dialogueText.setVisible(true);
-            sz6_dialogueHint.setVisible(true);
-            sz6_skipHint.setVisible(true);
-            sz6_dialogueText.setText("Miner: ...What on earth was that?! The cavern walls are violently trembling. The Matriarch Mother must be nesting right ahead...");
+            // (合并) 半路咆哮独白改用 DialogSystem; 播完解锁 + 置 state 2
+            const _roarLine = "Miner: ...What on earth was that?! The cavern walls are violently trembling. The Matriarch Mother must be nesting right ahead...";
+            if (this.dialogSystem) {
+                this.dialogSystem.showSequence([this._sz5DialogEntry(_roarLine)], () => { sz5_dialogueState = 2; this.playerCanMove = true; });
+            } else { sz5_dialogueState = 2; this.playerCanMove = true; }
         }
     if (!this.player.body) return;
 
@@ -1346,29 +1278,28 @@ update(time, delta) {
         this._gridCoordVisible = false;
     }
 
-    if (sz6_dialogueState === 0 && this.player.x > this._cfgConvMin && this.player.x < this._cfgConvMax && this.player.y > 200) {
-        sz6_dialogueState = 1;
+    if (sz5_dialogueState === 0 && this.player.x > this._cfgConvMin && this.player.x < this._cfgConvMax && this.player.y > 200) {
+        sz5_dialogueState = 1;
         this.playerCanMove = false;
         this.player.body.setVelocity(0, 0);
-        sz6_dialogueBox.setVisible(true);
-        sz6_dialogueText.setVisible(true);
-        sz6_dialogueHint.setVisible(true);
-        sz6_skipHint.setVisible(true);
-        sz6_dialogueText.setText(sz6_dialogueLines[0]);
+        // (合并) 开场商人对白改用 DialogSystem; 播完解锁 + 置 state 2
+        if (this.dialogSystem) {
+            this.dialogSystem.showSequence(
+                sz5_dialogueLines.map(l => this._sz5DialogEntry(l)),
+                () => { sz5_dialogueState = 2; this.playerCanMove = true; }
+            );
+        } else { sz5_dialogueState = 2; this.playerCanMove = true; }
     }
 
     // REPLACE your entire arena lock block inside update() with this clean handler:
-if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
-    sz6_arenaLocked = true;
-    sz6_dialogueState = 6;
+if (!sz5_arenaLocked && this.player.x > this._cfgArenaX) {
+    sz5_arenaLocked = true;
+    sz5_dialogueState = 6;
     this.playerCanMove = false;
-    if (sz6_merchant) sz6_merchant.setVisible(false);
+    if (sz5_merchant) sz5_merchant.setVisible(false);
 
-    if (this.currentBGM) {
-        this.currentBGM.stop();
-    }
-    this.currentBGM = this.sound.add('bgm_spider_boss', { loop: true, volume: 0.6 });
-    this.currentBGM.play();
+    // (修复) Boss BGM 也走 AudioSystem — 自动停掉探索曲, 离场也能被统一停掉
+    if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_spider_boss');
 
     // 播放开场震撼咆哮音效
     this.sound.play('snd_boss_roar', { volume: 0.8 });
@@ -1388,8 +1319,8 @@ if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
     // 这样镜头底部在 y=520 处就会死死卡住，绝对不会向下滚动去跟镜头显示第 15 行的坑底！
     this.cameras.main.setBounds(1520, 0, 1025, 700);
     
-    sz6_bossBarrier.setVisible(true);
-    this.physics.world.enable(sz6_bossBarrier);
+    sz5_bossBarrier.setVisible(true);
+    this.physics.world.enable(sz5_bossBarrier);
     
     // 🌟 伤害修复：把原来的空函数 () => {} 替换为调用你现有的 healthSystem 扣血包
         if (typeof BossManager !== 'undefined') {
@@ -1417,7 +1348,7 @@ if (!sz6_arenaLocked && this.player.x > this._cfgArenaX) {
 }
 
 // 🚨 EMERGENCY FLOOR-ANCHOR PATCH
-if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity) {
+if (sz5_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity) {
     let boss = BossManager.entity;
     
     // 1. If Boss goes below the floor (Y > 950), force her back to the arena surface
@@ -1435,7 +1366,7 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
     }
 }
 
-    if (sz6_arenaLocked && typeof BossManager !== 'undefined') {
+    if (sz5_arenaLocked && typeof BossManager !== 'undefined') {
     BossManager.update(time, delta, this.player);
 
     // 🌟 修复注入：只有 Boss 在场且存活时，飞镐才动态扫描物理重叠
@@ -1450,9 +1381,9 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
     }
     
     // 🌟 FIXED: Added 'BossManager.entity &&' so it doesn't trick itself on frame 1
-    if (BossManager.entity && !sz6_bossBeatenSequence && !BossManager.entity.active) {
+    if (BossManager.entity && !sz5_bossBeatenSequence && !BossManager.entity.active) {
         this._bossDeathHandled = true;
-        sz6_bossBeatenSequence = true;
+        sz5_bossBeatenSequence = true;
         this.revealEndgamePassage();
     }
 }
@@ -1553,9 +1484,9 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
     // 检查 Boss 被击败，且主角真正爬上了最右侧的通关楼梯 (x > 2900)
     // 引入 this._endingStarted 判定锁，确保整套逻辑在通关时有且仅执行一次
     // ================= 🌟 史诗电影级终章谢幕触发器 (主更新循环) =================
-    // 修改判定：只有当 Boss 死了、玩家和商人聊完了天 (sz6_dialogueState === 8)、并且走到了最顶端的最终边界
-    if (this._readyForReliefDialogue && sz6_dialogueState === 8 && this.player.x > 2920) {
-        sz6_dialogueState = 9; // 锁死，防止逻辑重复执行引发文字重叠
+    // 修改判定：只有当 Boss 死了、玩家和商人聊完了天 (sz5_dialogueState === 8)、并且走到了最顶端的最终边界
+    if (this._readyForReliefDialogue && sz5_dialogueState === 8 && this.player.x > 2920) {
+        sz5_dialogueState = 9; // 锁死，防止逻辑重复执行引发文字重叠
         this.playerCanMove = false;
         if (this.player.body) this.player.body.setVelocity(0, 0);
 

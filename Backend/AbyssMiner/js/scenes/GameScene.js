@@ -103,6 +103,7 @@ class MainGameScene extends Phaser.Scene {
         // (用户) 宠物专用贴图 (与 mob 小蜘蛛分开): 移动 + 待机
         this.load.spritesheet('Pet_spider_run',  'assets/images/Pet_spider_run.png',  { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet('Pet_spider_idle', 'assets/images/Pet_spider_idle.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('Pet_spider_idle_love', 'assets/images/Pet_spider_idle_love.png', { frameWidth: 64, frameHeight: 64 });   // (用户) 骑头满30s爱心待机 (512×64, 8帧)
 
         // 史莱姆动画
         this.load.spritesheet('Slime_dead',     'assets/images/Slime_dead.png',     { frameWidth: 32, frameHeight: 32 });  // 96x32 / 3 frames
