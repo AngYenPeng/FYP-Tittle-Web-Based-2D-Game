@@ -1216,7 +1216,7 @@ update(time, delta) {
                 
                 // 2. 智能计算复活坐标：如果激活了 Checkpoint 就去 Checkpoint，否则去初始出生点
                 let respawnX = this.spawnX || 70;
-                let respawnY = this.spawnY || 100;
+                let respawnY = this.spawnY || 400;
                 if (this._checkpoint && this._checkpoint.activated) {
                     respawnX = this._checkpoint.x;
                     respawnY = this._checkpoint.y;
@@ -1713,46 +1713,51 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
                 if (cp) cp.setTexture('Checkpoint_activated');
             });
 
-            // ========================================================
-            // 🌟 史诗级连锁净化：超大范围地质置换（包含实体墙 + 背景墙）
-            // ========================================================
-            // 调整此数值可以控制净化的方圆范围（320 像素 = 边缘向外延伸 10 格巨幅区域！）
+            // 🌟 净化微型冲击波半径（320 像素 = 方圆 10 格大区域）
             let purificationRadius = 320; 
 
-            // 深度扫描当前场景渲染树中的所有游戏对象（同时解决 foreground 和 background）
+            // 深度扫描当前场景里的所有渲染对象
             this.children.list.forEach(obj => {
                 if (!obj || !obj.texture || !obj.texture.key) return;
 
                 let blockDist = Phaser.Math.Distance.Between(obj.x, obj.y, cp.x, cp.y);
                 
-                // 命中圣光净化半径内的瓦片
                 if (blockDist <= purificationRadius) {
                     let key = obj.texture.key;
 
-                    // 🪨 A. 如果是【前景变异墙壁或实心地表】
-                    if (key.startsWith('Cavetile_wall_') || key === 'tile_wall' || key === 'tile_floor') {
-                        // 随机铺满带有发光黄水晶的 5L 奢华系列矿脉
-                        let crystalVariations = ['Yellow_dirt_5LC1', 'Yellow_dirt_5LC2', 'Yellow_dirt_5LC3'];
-                        let choice = crystalVariations[Phaser.Math.Between(0, crystalVariations.length - 1)];
-                        obj.setTexture(choice);
+                    // 🟢 1. 优先判定：如果是地表层地板线 (tile_floor) -> 100% 换成带草皮的 T 系列边缘
+                    if (key === 'tile_floor' || key.endsWith('_T')) {
+                        obj.setTexture('Yellow_dirt_T');
                     } 
-                    
-                    // 🧱 B. 如果是【背景层石块】(检查你的系统内置属性或者普通背景块)
-                    else if (obj._isBackgroundBlock || (obj.physicsGroup && obj.physicsGroup === this.bgBlocks)) {
-                        // 将背景替换为纯净的黄色背景岩石，并给予稍暗的遮罩 Tint（0x888888），凸显前后视差层级！
+                    // 🪨 2. 如果是前景实心变异内墙
+                    else if (key.startsWith('Cavetile_wall_') || key === 'tile_wall') {
+                        let suffix = key.split('Cavetile_wall_')[1];
+                        
+                        if (suffix === '2L') {
+                            obj.setTexture('Yellow_dirt_L');
+                        } else if (suffix && suffix.startsWith('T')) {
+                            obj.setTexture('Yellow_dirt_T'); // 包含顶部的也换成草皮
+                        } else {
+                            // 其余普通的实心墙面，随机爆发亮闪闪的黄水晶矿
+                            let crystalVariations = ['Yellow_dirt_5LC1', 'Yellow_dirt_5LC2', 'Yellow_dirt_5LC3'];
+                            let choice = crystalVariations[Phaser.Math.Between(0, crystalVariations.length - 1)];
+                            obj.setTexture(choice);
+                        }
+                    } 
+                    // 🧱 3. 核心修复：如果是任何背景层方块 (通过检查贴图名字是否包含 bg 或 bg_block 强制抓取)
+                    else if (key === 'bg_block' || key.toLowerCase().includes('bg') || obj._isBackgroundBlock) {
                         if (this.textures.exists('Yellow_bg')) {
                             obj.setTexture('Yellow_bg');
-                            obj.setTint(0x777777); // 👈 略微暗淡，让背景墙极其具有地底深渊的视差空间感
+                            obj.setTint(0x777777); // 给予稍微暗淡的弱光 Tint，完美保留前后视差空间层级
                         }
                     }
                 }
             });
-            // ========================================================
 
-            // 圣光 UI 文本提示飘出
+            // 圣光文本提示飘出
             let activeText = this.add.text(cp.x, cp.y - cp.displayHeight/2 - 20, "SAFE ZONE BOUNDARY ESTABLISHED", {
                 fontSize: '15px',
-                fill: '#ffd86a', // 配合你的发光金框色
+                fill: '#ffd86a',
                 fontStyle: 'bold',
                 fontFamily: 'monospace',
                 stroke: '#000000',
@@ -1769,7 +1774,7 @@ if (sz6_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
             });
         }
 
-        // 圣光温泉：靠近时每秒回血疗伤机制保持不变
+        // 圣光温泉持续回血机制
         const inHealRange = dist <= 160; 
         if (cp.activated && inHealRange) {
             const now = this.time.now;
