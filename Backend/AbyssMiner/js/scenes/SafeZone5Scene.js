@@ -196,7 +196,7 @@ revealEndgamePassage() {
                         onComplete: () => {
                             flashWave.destroy();
 
-<<<<<<< HEAD
+
                             // 商人钻出：高度和位置经过了像素重构，完美贴合你调好的新台阶孔位
                             if (sz5_merchant) {
                                 let startY = originY + 160;  // 藏在更深的地下
@@ -206,17 +206,7 @@ revealEndgamePassage() {
                                 sz5_merchant.setVisible(true);
                                 sz5_merchant.setAlpha(0);
                                 sz5_merchant.setFlipX(true); // 脸朝左迎接走过来的玩家
-=======
-                            // 老鼠商人破土而出效果
-                            if (sz6_merchant) {
-                                let startY = originY + 160; 
-                                let endY = originY - 30;   
-
-                                sz6_merchant.setPosition(originX - 120, startY); 
-                                sz6_merchant.setVisible(true);
-                                sz6_merchant.setAlpha(0);
-                                sz6_merchant.setFlipX(true); 
->>>>>>> d125d30913f6f4a6de6ed7bd79aeefb9ac8f8741
+ d125d30913f6f4a6de6ed7bd79aeefb9ac8f8741
 
                                 this.tweens.add({
                                     targets: sz5_merchant,
