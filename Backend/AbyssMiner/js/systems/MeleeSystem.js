@@ -89,6 +89,7 @@ class MeleeSystem {
     execute() {
         const s = this.scene;
         if (!s.player.body || s.isDead) return false;
+        if (s.isHanging) return false;   // (用户) 挂在钉墙的镐子上时禁用近战 — 否则攻击会站起取消蹲伏, 人就掉下去
         if (s.meleeCooldown > 0) return false;
         if (s.isCrouching) {
             // (用户) 蹲下时攻击 = 先站起来再打; 头顶被挡 (矮道) 则取消本次动作
