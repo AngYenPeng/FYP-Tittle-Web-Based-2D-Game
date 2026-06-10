@@ -270,6 +270,7 @@ AudioSystem.MANIFEST = {
     'SpiderHurt':   'Mobs/SpiderHurt.wav',
     // NPC
     'MoleDig':      'NPC/MoleDig.wav',
+    'DialogSound':  'NPC/DialogSound.mp3',   // (用户) 对话逐字生成时循环播 — 文件为 .mp3
     // Object
     'CheckpointActivation': 'Object/CheckpointActivation.wav',
     'ChestOpen':            'Object/ChestOpen.wav',

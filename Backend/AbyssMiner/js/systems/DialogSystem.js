@@ -152,6 +152,7 @@ class DialogSystem {
             this._typeTimer = null;
         }
         if (this._fullText.length > 0) {
+            this._startDialogSound();   // (用户) 开始逐字生成 → 循环播对话音效
             this._typeTimer = this.scene.time.addEvent({
                 delay: 35,
                 repeat: this._fullText.length - 1,
@@ -163,6 +164,7 @@ class DialogSystem {
                     if (this._typedIdx >= this._fullText.length) {
                         this._typing = false;
                         this._typeTimer = null;
+                        this._stopDialogSound();   // (用户) 字全打完 (不再生成字体) → 停
                     }
                 }
             });
@@ -266,6 +268,7 @@ class DialogSystem {
                 this._typeTimer = null;
             }
             this._typing = false;
+            this._stopDialogSound();   // (用户) 点击跳过 → 字直接显示完, 停音效
             this._typedIdx = this._fullText.length;
             if (this._bodyText) this._bodyText.setText(this._fullText);
             // 显示选项（如果当前 entry 有 choices）
@@ -290,6 +293,23 @@ class DialogSystem {
         }
     }
 
+    /** (用户) 对话打字音效: 字正在逐个生成时无限循环, 打完/跳过/关闭即停 */
+    _startDialogSound() {
+        try {
+            const sc = this.scene;
+            if (!sc || !sc.sound || !sc.cache.audio.exists('DialogSound')) return;   // 文件缺失 → 静默
+            this._stopDialogSound();   // 防叠加
+            const vol = (typeof AudioSystem !== 'undefined') ? AudioSystem.sfxVolume : 0.6;
+            this._dialogSnd = sc.sound.add('DialogSound', { loop: true, volume: vol });
+            this._dialogSnd.play();
+        } catch (e) {}
+    }
+    _stopDialogSound() {
+        try {
+            if (this._dialogSnd) { this._dialogSnd.stop(); this._dialogSnd.destroy(); this._dialogSnd = null; }
+        } catch (e) {}
+    }
+
     close() {
         this.isOpen = false;
         this.panel.setVisible(false);
@@ -302,6 +322,7 @@ class DialogSystem {
             this._typeTimer.remove(false);
             this._typeTimer = null;
         }
+        this._stopDialogSound();   // (用户) 关闭对话 → 停音效 (含打字中途关闭)
         if (this._clickListener) {
             this.scene.input.off('pointerdown', this._clickListener);
             this._clickListener = null;

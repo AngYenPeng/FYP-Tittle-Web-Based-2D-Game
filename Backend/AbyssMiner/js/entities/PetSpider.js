@@ -28,6 +28,7 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         this.CLIMB = 600;                   // (用户) 5× 普蛛爬墙速 120
         this.state = 'follow';              // follow / idle / mounted
         this._stillMs = 0;                  // 玩家静止累计 (上头计时)
+        this._mountedMs = 0;                // (用户) 骑头累计时长 — 满 30s 换 Pet_spider_idle_love
         this._climbSide = null;
 
         this._ensurePetAnims();
@@ -71,6 +72,10 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         if (!s.anims.exists('Pet_spider_idle') && s.textures.exists('Pet_spider_idle')) {
             try { const ft = s.textures.get('Pet_spider_idle').frameTotal; s.anims.create({ key: 'Pet_spider_idle', frames: s.anims.generateFrameNumbers('Pet_spider_idle', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 8, repeat: -1 }); } catch (e) {}
         }
+        // (用户) 骑头满 30s 的爱心待机 (512×64, 8 帧)
+        if (!s.anims.exists('Pet_spider_idle_love') && s.textures.exists('Pet_spider_idle_love')) {
+            try { const ft = s.textures.get('Pet_spider_idle_love').frameTotal; s.anims.create({ key: 'Pet_spider_idle_love', frames: s.anims.generateFrameNumbers('Pet_spider_idle_love', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 8, repeat: -1 }); } catch (e) {}
+        }
     }
 
     /** (用户) 静止姿态: 有 Pet_spider_idle 动画就播, 没有就停在站立帧 */
@@ -85,6 +90,17 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    /** (用户) 骑头满 30s 的爱心待机; 没有该动画就退回普通待机 */
+    _lovePose() {
+        if (!this.anims) return;
+        this._ensurePetAnims();
+        if (this.scene && this.scene.anims.exists('Pet_spider_idle_love')) {
+            if (!this.anims.currentAnim || this.anims.currentAnim.key !== 'Pet_spider_idle_love') this.play('Pet_spider_idle_love');
+        } else {
+            this._idlePose();
+        }
+    }
+
     /** 从头顶掉下来 (仅 MovementSystem 在玩家落地高度 >3 格时调用) */
     dismount() {
         if (this.state !== 'mounted') return;
@@ -93,6 +109,7 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(true);
         this.body.setVelocity(0, 0);
         this._stillMs = 0;
+        this._mountedMs = 0;   // (用户) 下头 → 断掉爱心动画计时, 回普通 (follow→run)
     }
 
     update(time, delta) {
@@ -109,7 +126,9 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
 
         // ── mounted: 锁在头顶 ──
         if (this.state === 'mounted') {
-            this._idlePose();    // (用户) 骑头也用 small_spider_idle 待机动画
+            this._mountedMs += delta;                       // (用户) 骑头计时
+            if (this._mountedMs >= 30000) this._lovePose();  // (用户) 满 30s → 爱心待机
+            else this._idlePose();                           // 30s 内: 普通待机
             this._snapMounted(); // (用户) 位置吸附 (POST_UPDATE 还会再贴一次, 消延迟)
             return;
         }
@@ -145,6 +164,7 @@ class PetSpider extends Phaser.Physics.Arcade.Sprite {
             if (this._stillMs >= 5000) {
                 this.state = 'mounted';
                 this._stillMs = 0;
+                this._mountedMs = 0;   // (用户) 新一次骑头 → 30s 爱心计时重新开始
                 this._climbSide = null;
                 b.enable = false;   // 头顶期间不参与物理
                 this._idlePose();   // (用户) 上头后不再动, 只跟随朝向, 掉下来才恢复

@@ -123,6 +123,7 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE3',   action: () => this._devJump('SafeZone3Scene') },
             { label: 'SAFEZONE4',   action: () => this._devJump('SafeZone4Scene') },
             { label: 'SAFEZONE5',   action: () => this._devJump('SafeZone5Scene') },
+            { label: 'SAFEZONE6',   action: () => this._devJump('SafeZone6Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
             { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
             { label: 'RECORDS',     action: () => this._openRecords() },   // (用户) 通关记录

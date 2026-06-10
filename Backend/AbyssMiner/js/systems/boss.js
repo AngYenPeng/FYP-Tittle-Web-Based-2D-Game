@@ -22,9 +22,7 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
-        scene.physics.world.createDebugGraphic();
-this.debugGraphics = scene.add.graphics();
-this.debugGraphics.setDepth(9999);
+        // (已移除强制物理调试绘制 — 尊重全局 debug:false, 不再产生残影)
 // 强制开启 ARCADE 物理引擎的碰撞边界处理，防止冲刺过快直接穿墙
 this.body.setCollideWorldBounds(true);
 this.body.onWorldBounds = true;
@@ -1236,17 +1234,8 @@ if (this.body) {
     // 强制每帧检查她是否与地板相交，如果因为技能进入了半空，立刻强制锁定到平台
     this.scene.physics.collide(this, this.platforms);
     this.scene.physics.collide(this, this.scene.walls);
-    this.debugGraphics.clear();
-this.debugGraphics.lineStyle(2, 0xff0000);
-this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
-this.scene.physics.world.drawDebug = true;
 }
 
-        // 在 update 方法的末尾
-this.debugGraphics.clear();
-this.debugGraphics.lineStyle(2, 0xff0000);
-this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
-this.scene.physics.world.drawDebug = true; // 强制开启调试绘制
 
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 
