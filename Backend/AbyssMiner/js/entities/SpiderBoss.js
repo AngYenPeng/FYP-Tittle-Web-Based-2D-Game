@@ -22,9 +22,9 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
-        scene.physics.world.createDebugGraphic();
-this.debugGraphics = scene.add.graphics();
-this.debugGraphics.setDepth(9999);
+        //scene.physics.world.createDebugGraphic();
+//this.debugGraphics = scene.add.graphics();
+//this.debugGraphics.setDepth(9999);
 // 强制开启 ARCADE 物理引擎的碰撞边界处理，防止冲刺过快直接穿墙
 this.body.setCollideWorldBounds(true);
 this.body.onWorldBounds = true;
@@ -50,9 +50,9 @@ this.body.enable = true;
         this.platforms = platforms;
         this.playerHitCallback = playerHitCallback;
 
-        this.baseScale = 4.75; 
+        this.baseScale = 4.5; 
         this.setScale(this.baseScale);
-        this.body.setSize(42, 42, true);   // Slims and flattens the collision matrix box properties
+        this.body.setSize(35, 35, true);   // Slims and flattens the collision matrix box properties
         this.body.setOffset(10, 5);
         this.body.setAllowGravity(true); 
         this.setDepth(12); 
@@ -1200,7 +1200,7 @@ this.body.enable = true;
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
         this.hp -= amount; 
 
-        this.scene.sound.play('snd_boss_hurt', { volume: 0.6 });
+        this.scene.sound.play('snd_boss_hurt', { volume: 0.1 });
 
         if (this.healthBar && this.healthBar.active) { this.healthBar.width = (this.hp / this.maxHealth) * 600; }
 
@@ -1236,17 +1236,7 @@ if (this.body) {
     // 强制每帧检查她是否与地板相交，如果因为技能进入了半空，立刻强制锁定到平台
     this.scene.physics.collide(this, this.platforms);
     this.scene.physics.collide(this, this.scene.walls);
-    this.debugGraphics.clear();
-this.debugGraphics.lineStyle(2, 0xff0000);
-this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
-this.scene.physics.world.drawDebug = true;
 }
-
-        // 在 update 方法的末尾
-this.debugGraphics.clear();
-this.debugGraphics.lineStyle(2, 0xff0000);
-this.debugGraphics.strokeRect(this.body.x, this.body.y, this.body.width, this.body.height);
-this.scene.physics.world.drawDebug = true; // 强制开启调试绘制
 
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 
