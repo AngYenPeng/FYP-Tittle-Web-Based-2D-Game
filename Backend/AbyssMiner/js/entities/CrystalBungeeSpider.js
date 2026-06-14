@@ -67,6 +67,12 @@ class CrystalBungeeSpider extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
+    preDestroy() {
+        this._uncount();   // (用户) 任何销毁路径都松手, 防 cling 计数永久卡住 → 永久扣血/减速
+        if (this._bungeeLine) { this._bungeeLine.destroy(); this._bungeeLine = null; }
+        super.preDestroy();
+    }
+
     update(time, delta, player) {
         if (this.hp <= 0) return;
         if (this.forceAggroTimer > 0) this.forceAggroTimer -= delta;

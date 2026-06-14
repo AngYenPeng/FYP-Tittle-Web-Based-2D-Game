@@ -22,7 +22,6 @@ class CrystalMatriarch extends Phaser.Physics.Arcade.Sprite {
         super(scene, x, y, fallbackTexture); 
         scene.add.existing(this);
         scene.physics.add.existing(this);
-        // (已移除强制物理调试绘制 — 尊重全局 debug:false, 不再产生残影)
 // 强制开启 ARCADE 物理引擎的碰撞边界处理，防止冲刺过快直接穿墙
 this.body.setCollideWorldBounds(true);
 this.body.onWorldBounds = true;
@@ -48,9 +47,9 @@ this.body.enable = true;
         this.platforms = platforms;
         this.playerHitCallback = playerHitCallback;
 
-        this.baseScale = 4.75; 
+        this.baseScale = 4.5; 
         this.setScale(this.baseScale);
-        this.body.setSize(42, 42, true);   // Slims and flattens the collision matrix box properties
+        this.body.setSize(35, 35, true);   // Slims and flattens the collision matrix box properties
         this.body.setOffset(10, 5);
         this.body.setAllowGravity(true); 
         this.setDepth(12); 
@@ -1198,7 +1197,7 @@ this.body.enable = true;
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
         this.hp -= amount; 
 
-        this.scene.sound.play('snd_boss_hurt', { volume: 0.6 });
+        this.scene.sound.play('snd_boss_hurt', { volume: 0.1 });
 
         if (this.healthBar && this.healthBar.active) { this.healthBar.width = (this.hp / this.maxHealth) * 600; }
 
@@ -1235,7 +1234,6 @@ if (this.body) {
     this.scene.physics.collide(this, this.platforms);
     this.scene.physics.collide(this, this.scene.walls);
 }
-
 
         if (!this.active || this.hp <= 0 || this.isReviving || this.isDead) return;
 

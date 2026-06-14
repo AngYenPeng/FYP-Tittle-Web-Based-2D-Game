@@ -73,6 +73,8 @@ class Thorns {
         }
         this._animDir = null;
         this._animOK = !!(this._baseTexKey && scene.anims && scene.anims.exists('thorns_move') && this.sprites.length && this.sprites[0].play);
+        this._purified = false;            // (用户) 被扩散净化后 = true: 皮肤 Ythorns + 不再加辐射度
+        this._moveAnimKey = 'thorns_move'; // 净化后切 'ythorns_move'
 
         // 自动注册到场景数组 (场景 update 里 forEach 调 update)
         scene._thorns = scene._thorns || [];
@@ -100,7 +102,7 @@ class Thorns {
                 s._thornsGlobalTickAt = now;
                 const _dm = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);
                 s.healthSystem.takeDamage(Math.floor(this.contactDamage * _dm), { ignoreIframe: true, triggerIframe: false });
-                if (s.diseaseSystem && s.diseaseSystem.addCorrosion) s.diseaseSystem.addCorrosion(1);   // 荆棘每秒 +1 腐蚀度
+                if (!this._purified && s.diseaseSystem && s.diseaseSystem.addCorrosion) s.diseaseSystem.addCorrosion(1);   // 荆棘每秒 +1 腐蚀度 (Ythorns 净化后不再加, 扣血照旧)
             }
             this._wasOverlapping = true;
         } else {
@@ -130,15 +132,31 @@ class Thorns {
         const lead = this.sprites[0];
         if (lead.anims && lead.anims.isPlaying) return;   // 一整套没播完不打断
         if (desired === 'fwd') {
-            this.sprites.forEach(sp => { if (sp.play) sp.play('thorns_move'); });
+            this.sprites.forEach(sp => { if (sp.play) sp.play(this._moveAnimKey); });
             this._animDir = 'fwd';
         } else if (desired === 'rev') {
-            this.sprites.forEach(sp => { if (sp.playReverse) sp.playReverse('thorns_move'); });
+            this.sprites.forEach(sp => { if (sp.playReverse) sp.playReverse(this._moveAnimKey); });
             this._animDir = 'rev';
         } else if (this._animDir) {
             this.sprites.forEach(sp => { if (sp.setTexture) sp.setTexture(this._baseTexKey); });
             this._animDir = null;
         }
+    }
+
+    // (用户) 净化: Thorns → Ythorns 皮肤+动画, 且不再加辐射度 (扣血照旧). 缺图则只改功能不换肤. 场景重建即还原
+    purify() {
+        if (this._purified) return;
+        this._purified = true;
+        const sc = this.scene;
+        if (sc.textures.exists('Ythorns')) {
+            this._baseTexKey = 'Ythorns';
+            this.sprites.forEach(sp => { if (sp.setTexture && (!sp.anims || !sp.anims.isPlaying)) sp.setTexture('Ythorns'); });
+        }
+        if (sc.textures.exists('Ythorns_move') && sc.anims && !sc.anims.exists('ythorns_move')) {
+            const ft = sc.textures.get('Ythorns_move').frameTotal;
+            sc.anims.create({ key: 'ythorns_move', frames: sc.anims.generateFrameNumbers('Ythorns_move', { start: 0, end: Math.max(0, ft - 2) }), frameRate: 20, repeat: 0 });
+        }
+        if (sc.anims && sc.anims.exists('ythorns_move')) this._moveAnimKey = 'ythorns_move';
     }
 
     destroy() {

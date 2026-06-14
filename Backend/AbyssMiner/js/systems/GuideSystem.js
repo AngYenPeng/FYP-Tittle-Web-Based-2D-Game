@@ -572,7 +572,7 @@ class GuideSystem {
             .setOrigin(0, 0.5).setStrokeStyle(2, 0xaa6688).setScrollFactor(0).setDepth(975);
         this._demoCorFill = s.add.rectangle(barX + 2, corY, (barW - 4) * 0.6, barH - 4, 0xcc4477, 1)
             .setOrigin(0, 0.5).setScrollFactor(0).setDepth(976);
-        this._demoCorLabel = s.add.text(barX, corY - 18, 'Corrosion', {
+        this._demoCorLabel = s.add.text(barX, corY - 18, 'Radiation', {
             fontSize: '14px', color: '#ff88aa', fontFamily: '"VT323", monospace'
         }).setScrollFactor(0).setDepth(976);
 
@@ -662,7 +662,7 @@ class GuideSystem {
             .setOrigin(0, 0.5).setStrokeStyle(2, 0xaa6688).setScrollFactor(0).setDepth(975);
         this._demoCorFill = s.add.rectangle(barX + 2, corY, 0, barH - 4, 0xcc4477, 1)
             .setOrigin(0, 0.5).setScrollFactor(0).setDepth(976);
-        this._demoCorLabel = s.add.text(barX, corY - 18, 'Corrosion', {
+        this._demoCorLabel = s.add.text(barX, corY - 18, 'Radiation', {
             fontSize: '14px', color: '#ff88aa', fontFamily: '"VT323", monospace'
         }).setScrollFactor(0).setDepth(976);
         [this._demoHpBg, this._demoHpFill, this._demoHpLabel,
@@ -696,7 +696,7 @@ class GuideSystem {
             const tc = s.time.delayedCall(130, () => { if (sprite.scene) sprite.clearTint(); });
             this._demoTimers.push(tc);
             floatText('-5', '#ff5555', -16);
-            floatText('+1% Corrosion', '#dd66aa', 34);
+            floatText('+1% Radiation', '#dd66aa', 34);
         };
 
         const startX = cx - 160, endX = cx + 160;
@@ -776,7 +776,7 @@ class GuideSystem {
             .setOrigin(0, 0.5).setStrokeStyle(2, 0xaa6688).setScrollFactor(0).setDepth(975);
         this._demoCorFill = s.add.rectangle(barX + 2, corY, 0, barH - 4, 0x884466, 1)
             .setOrigin(0, 0.5).setScrollFactor(0).setDepth(976);
-        this._demoCorLabel = s.add.text(barX, corY - 20, 'Corrosion', {
+        this._demoCorLabel = s.add.text(barX, corY - 20, 'Radiation', {
             fontSize: '14px', color: '#ff88aa', fontFamily: '"VT323", monospace'
         }).setScrollFactor(0).setDepth(976);
 

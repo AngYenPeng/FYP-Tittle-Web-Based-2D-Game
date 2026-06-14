@@ -4,10 +4,10 @@
 class HUDSystem {
     constructor(scene) {
         this.scene = scene;
-        this.crystalCount = 1000; // (用户) 开局水晶归零 (测试期曾给 1000)
+        this.crystalCount = 0; // (用户) 开局水晶归零 (测试期曾给 1000)
         this.crystalIcon = null;
         this.crystalText = null;
-        this.yellowCrystalCount = 100;  // (用户) 黄水晶归零 (测试期曾给 100)
+        this.yellowCrystalCount = 0;  // (用户) 黄水晶归零 (测试期曾给 100)
         this.yellowCrystalIcon = null;
         this.yellowCrystalText = null;
         this.yellowCrystalShown = false;  // 首次获得后才显示
@@ -209,6 +209,10 @@ class HUDSystem {
     }
 
     addCrystal(n = 1) {
+        // (用户) 拾取掉落水晶播放音效 (n<0 为商店花费, 不播); Pickup1/Pickup2 随机
+        if (n > 0 && typeof AudioSystem !== 'undefined') AudioSystem.sfx(this.scene, Math.random() < 0.5 ? 'Pickup1' : 'Pickup2');
+        // (用户) 蝙蝠净化后: 蓝水晶货币当黄水晶货币计入 (_blueAsYellow 不入档 → 死亡/重进/通关自动还原)
+        if (this._blueAsYellow) { this.addYellowCrystal(n); return; }
         this.crystalCount += n;
         this.crystalText.setText('x ' + this.crystalCount);
     }
@@ -250,6 +254,16 @@ class HUDSystem {
         if (blue > 0) this.addYellowCrystal(blue);   // 触发首显逻辑 + 计数更新
         this._restackHUD();
         return this.yellowCrystalCount;
+    }
+
+    /** (用户) 还原"蓝当黄"功能 — 死亡复活/重进/通关重置: 蓝水晶货币恢复正常计入 + 重新显示蓝水晶 UI */
+    resetBlueAsYellow() {
+        if (!this._blueAsYellow && !this._blueHidden) return;
+        this._blueAsYellow = false;
+        this._blueHidden = false;
+        if (this.crystalIcon) this.crystalIcon.setVisible(true);
+        if (this.crystalText) { this.crystalText.setVisible(true); this.crystalText.setText('x ' + this.crystalCount); }
+        if (this._restackHUD) this._restackHUD();
     }
 
     /** 重新排 HUD 元素 y 位置 — 根据当前显示状态 (心 / 蓝 / 黄? / guide) */

@@ -43,6 +43,12 @@ class BatNest {
                 .setStrokeStyle(3, 0x1f140a).setDepth(9);
         }
         if (scene.uiCam) { try { scene.uiCam.ignore(this.sprite); } catch (e) {} }
+        // (用户) 图片单独下移 spriteYOffset px — 只动贴图, 不动 this.y
+        //   (命中判定 MeleeSystem 用 n.x/n.y, 召唤点用 this.y — 都保持不变, hitbox 不受影响)
+        if (options.spriteYOffset) this.sprite.y += options.spriteYOffset;
+        if (options.spriteXOffset) this.sprite.x += options.spriteXOffset;   // (用户) 图片横向偏移 (贴墙微调: 左墙 -4, 右墙 +4); 同样只动贴图
+        // (用户) 图片整体旋转 angle° (贴墙: 左墙 +90, 右墙 -90); 只转贴图, this.x/this.y 命中点不变
+        if (options.angle) this.sprite.setAngle(options.angle);
 
         // 血条 (巢穴可被破坏 — 显示血量); 巢是静态的, 位置固定一次即可
         const HB_W = 44;

@@ -663,7 +663,7 @@ class SafeZone1Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 — flag 跟着场景跨过来, 同时强制激活腐蚀度条 + 重排 layout
-        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector')))) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入也恢复 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);

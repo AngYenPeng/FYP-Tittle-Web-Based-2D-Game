@@ -22,9 +22,11 @@ class CrystalBlock {
         this.hp = opts.hp ?? 10;
         this.dropCount = opts.dropCount ?? 1;
         this.destroyed = false;
+        this._purified = false;   // (用户) 被扩散净化后=true: 黄水晶外观 + 破坏掉黄水晶
 
-        // 随机选择 1 种外观
-        const tex = CrystalBlock.TEXTURES[Math.floor(Math.random() * CrystalBlock.TEXTURES.length)];
+        // 随机选择 1 种外观 (opts.textures 可覆盖, 如 boss 净化后的黄水晶块外观)
+        const TEX_SET = (opts.textures && opts.textures.length) ? opts.textures : CrystalBlock.TEXTURES;
+        const tex = TEX_SET[Math.floor(Math.random() * TEX_SET.length)];
         const fallbackTex = scene.textures.exists(tex) ? tex : 'mimic_ore_img';
         this.sprite = scene.add.image(x, y, fallbackTex).setScale(1.4);
         // 旋转判定 — 优先 opts.rotation, 否则按 gridSystem 周围墙自动检测
@@ -87,6 +89,16 @@ class CrystalBlock {
         if (this.hp <= 0) this._destroy();
     }
 
+    // (用户) 净化: 蓝水晶块 → 黄水晶块外观 + 破坏改掉黄水晶. 场景重建即还原
+    purifyToYellow() {
+        if (this._purified || this.destroyed) return;
+        this._purified = true;
+        if (this.sprite && this.scene.textures.exists('YCrystal_block_1')) {
+            const yt = ['YCrystal_block_1', 'YCrystal_block_2', 'YCrystal_block_3'];
+            this.sprite.setTexture(yt[Math.floor(Math.random() * yt.length)]);
+        }
+    }
+
     _destroy() {
         this.destroyed = true;
         // (用户成就) 富贵险中求: SZ2.5 本局未死 + 全部蓝水晶挖光
@@ -104,7 +116,8 @@ class CrystalBlock {
             this.scene.gridSystem.unmarkRect(this.x, this.y, 32, 32);
             // (用户) 灰罩通知已按要求撤销 — 碎裂格沿用雾的原始规则
         }
-        // 掉落水晶
-        this.scene.events.emit('monster_killed', this.x, this.y, this.dropCount);
+        // 掉落水晶 (净化后掉黄水晶, 否则蓝水晶)
+        if (this._purified) this.scene.events.emit('yellow_crystal_dropped', this.x, this.y, this.dropCount);
+        else this.scene.events.emit('monster_killed', this.x, this.y, this.dropCount);
     }
 }

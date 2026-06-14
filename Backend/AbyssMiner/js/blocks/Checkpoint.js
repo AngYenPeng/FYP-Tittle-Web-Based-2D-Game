@@ -86,7 +86,7 @@ class Checkpoint {
                 id: 'checkpoint',
                 title: 'Shrine',
                 animType: 'checkpoint',
-                captionText: 'Walk near a shrine to activate it. Stand within 5 cells to heal +1 HP and reduce corrosion -1% every second. (Except in Extreme mode.)'
+                captionText: 'Walk near a shrine to activate it. Stand within 5 cells to heal +1 HP and reduce radiation -1% every second. (Except in Extreme mode.)'
             });
         }
         if (scene.anims.exists('checkpoint_activating')) {

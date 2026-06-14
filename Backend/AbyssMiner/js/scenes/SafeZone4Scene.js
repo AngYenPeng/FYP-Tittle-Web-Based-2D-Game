@@ -202,6 +202,8 @@ class SafeZone4Scene extends MainGameScene {
         this._batBossDeathStarted = false; this._batBossCrashing = false; this._batBossLanded = false;
         // (修复) 通关后开新档剧情全跳过: boss 状态/指南/镜头守卫标志没在 init 清, 复用实例残留 true → boss 当成已死, intro/战斗全跳过
         this._batBossAwake = false; this._batBossDead = false; this._finalBossDead = false; this._platformGuideUnlocked = false; this._sz4PanGuard = false;
+        // (用户) SZ4 商人剧情 — session级旗标, 每次 init(进图/读档/死亡复活/通关重开)重置 → 再走到 x=-17 重新触发 (不随档持久, 不一次性)
+        this._sz4TraderStarted = false; this._sz4TraderActive = false; this._sz4TraderDone = false; this.moleTrader = null;
     }
 
     preload() {
@@ -303,6 +305,11 @@ class SafeZone4Scene extends MainGameScene {
         this.crystalBlocks = this.physics.add.staticGroup();
         this.wallRects = [];
         this.droppedCrystals = this.physics.add.group();
+        // (用户) 黄水晶掉落事件 (YCrystalBlock / 被净化的 CrystalBlock 破坏时触发) → 散落黄水晶 pickup (磁吸 → addYellowCrystal)
+        this.events.on('yellow_crystal_dropped', (x, y, count) => {
+            const n = (count | 0) || 1;
+            for (let i = 0; i < n; i++) this._sz4DropYellowCrystal(x, y);
+        });
         // 怪物组（creative 模式放置怪物用）
         this.spiders = this.physics.add.group();
         this.bungeeSpiders = this.physics.add.group();
@@ -398,7 +405,10 @@ class SafeZone4Scene extends MainGameScene {
         this._batZoneCap = 20;   // (用户) 区2 最多 20 只小蝙蝠
         this._sz4BatNests = [];
         if (typeof BatNest !== 'undefined') {
-            [[11,9],[4,4],[-2,4],[-9,9],[1,13]].forEach(([c, r]) => this._sz4BatNests.push(new BatNest(this, c, r)));
+            [[11,9],[4,4],[-2,4],[-9,9],[1,13]].forEach(([c, r]) => this._sz4BatNests.push(new BatNest(this, c, r, { spriteYOffset: 4 })));
+            // (用户) 墙上巢: 旋转贴墙 — (-10,1) 粘左墙转 +90°, (12,1) 粘右墙转 -90° (若朝向反了就互换符号)
+            this._sz4BatNests.push(new BatNest(this, -10, 1, { angle: 90, spriteXOffset: -4 }));
+            this._sz4BatNests.push(new BatNest(this, 12, 1, { angle: -90, spriteXOffset: 4 }));
         }
         // secret_door — 往右 0.5 格 (11.5→12) + 往下 0.5 格 (18.5→19)
         if (typeof SecretDoor !== 'undefined') {
@@ -776,11 +786,11 @@ class SafeZone4Scene extends MainGameScene {
         this._cinematicLock = true;
         this.cameras.main.fadeIn(800);
         this.time.delayedCall(900, () => {
-            if (!this._sz4CutsceneActive) this._cinematicLock = false;   // (用户) 区2剧情已接管 → 不解锁, 交给剧情自己释放
+            if (!this._sz4CutsceneActive && !this._sz4TraderActive) this._cinematicLock = false;   // (用户) 区2剧情/商人剧情已接管 → 不解锁, 交给剧情自己释放
         });
         // (用户) 兜底: 解锁用的是场景时钟, 进场窗口期时钟若被暂停 (guide 弹窗等) 回调会冻住 → 键盘永久失灵.
         //   DOM 计时器不受场景时钟影响, 2 秒后强制解锁; 但若此刻已冲进区2触发剧情(_sz4CutsceneActive), 不可解锁, 否则会打断剧情镜头
-        setTimeout(() => { try { if (this._cinematicLock && !this._sz4CutsceneActive) this._cinematicLock = false; } catch (e) {} }, 2000);
+        setTimeout(() => { try { if (this._cinematicLock && !this._sz4CutsceneActive && !this._sz4TraderActive) this._cinematicLock = false; } catch (e) {} }, 2000);
     }
 
     _applyInheritedState() {
@@ -805,7 +815,7 @@ class SafeZone4Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector')))) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入也恢复 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -930,6 +940,18 @@ class SafeZone4Scene extends MainGameScene {
                 ? !(_pr4.x < -10 * _Gt || _pr4.x > 13 * _Gt || _pr4.y < -3 * _Gt || _pr4.y > 24 * _Gt)
                 : false;
         }
+        // === SZ4 商人剧情: 玩家向右走到 x=-17 → 强制停 + 商人 (-14,18) 钻出; 中途死亡则中止重置 ===
+        if (this._sz4TraderActive && this.healthSystem && this.healthSystem.hp <= 0) {
+            this._abortSz4TraderScene();
+        }
+        if (this.player && this.player.body && !this._sz4TraderStarted && !this._sz4TraderActive
+            && !this._sz4CutsceneActive && !this.isDead && !this._cinematicLock
+            && !(this.dialogSystem && this.dialogSystem.isOpen)
+            && !(this.shopSystem && this.shopSystem.isOpen)
+            && this.player.x >= -17 * 32) {
+            this._startSz4TraderScene();
+        }
+
         // === SZ4 boss 房封门 (玩家越过 x=-10 = col -10 触发, 镜像 SZ2 boss 房) ===
         // 怪物墙: 首次触发即建并永久保留 (挡 BatBoss + 所有怪物群); 玩家墙: 死亡移除, 复活重新经过 x=-10 重建
         if (this.player && this.player.body && this.player.x >= -10 * 32 && !this._batBossDead) {
@@ -963,7 +985,7 @@ class SafeZone4Scene extends MainGameScene {
                     id: 'thorn',
                     title: 'Thorns',
                     animType: 'thorn',
-                    captionText: 'Thorns hurt! Walking through them drains HP every second and adds Corrosion. Watch your step.'
+                    captionText: 'Thorns hurt! Walking through them drains HP every second and adds Radiation. Watch your step.'
                 });
             }
             // 首次进 boss 房 → 播放区2进场剧情 (剧情结束才激活 boss)
@@ -1161,7 +1183,7 @@ class SafeZone4Scene extends MainGameScene {
                         onUpdate: () => { if (c.scale > 0.5) c.scale -= 0.02; },
                         onComplete: () => {
                             c.destroy();
-                            if (this.hudSystem) this.hudSystem.addCrystal(1);
+                            if (this.hudSystem) { if (c._isYellow) this.hudSystem.addYellowCrystal(1); else this.hudSystem.addCrystal(1); }
                         }
                     });
                 }
@@ -1179,14 +1201,22 @@ class SafeZone4Scene extends MainGameScene {
         const z2x1 = z2.x1 * 32, z2x2 = (z2.x2 + 1) * 32;
         const z2y1 = z2.y1 * 32, z2y2 = (z2.y2 + 1) * 32;
         if (sp.maxRadius == null) {
-            const corners = [
-                { x: z2x1, y: z2y1 }, { x: z2x2, y: z2y1 },
-                { x: z2x1, y: z2y2 }, { x: z2x2, y: z2y2 }
-            ];
+            let corners;
+            if (sp.allMap && this._chunks && this._chunks.length) {
+                corners = [];   // (用户) 整图: 取所有 chunk 的最远角, 保证全图铺满
+                this._chunks.forEach(ch => corners.push(
+                    { x: ch.x1 * 32, y: ch.y1 * 32 }, { x: (ch.x2 + 1) * 32, y: (ch.y2 + 1) * 32 },
+                    { x: ch.x1 * 32, y: (ch.y2 + 1) * 32 }, { x: (ch.x2 + 1) * 32, y: ch.y1 * 32 }));
+            } else {
+                corners = [
+                    { x: z2x1, y: z2y1 }, { x: z2x2, y: z2y1 },
+                    { x: z2x1, y: z2y2 }, { x: z2x2, y: z2y2 }
+                ];
+            }
             sp.maxRadius = Math.max(...corners.map(c => Math.hypot(c.x - sp.cx, c.y - sp.cy)));
         }
         // 标记坐标（zone2 外的也要染色）
-        const markedCells = this._yellowDirtMarkedCells;
+        const markedCells = this._yellowDirtMarkedCells || [];   // (用户修复) 蝙蝠扩散先于神像触发, 标记格还没设 → 兜 []
         const G = 32;
         const isMarkedPos = (x, y) => {
             for (const [col, row] of markedCells) {
@@ -1197,10 +1227,11 @@ class SafeZone4Scene extends MainGameScene {
         this.children.list.forEach(obj => {
             if (!obj || !obj.texture || !obj.texture.key) return;
             const key = obj.texture.key;
+            // (用户) CrystalBlock 净化(黄外观 + 黄掉落) 已移到下方 _crystalOres 实例遍历
             if (!key.startsWith('Cavetile_wall_')) return;
             const inZone2 = obj.x >= z2x1 && obj.x <= z2x2 && obj.y >= z2y1 && obj.y <= z2y2;
             const isMarked = isMarkedPos(obj.x, obj.y);
-            if (!inZone2 && !isMarked) return;
+            if (!sp.allMap && !inZone2 && !isMarked) return;   // (用户) allMap=整图染色, 不限 zone2
             const dx = obj.x - sp.cx, dy = obj.y - sp.cy;
             if (dx * dx + dy * dy > r2) return;
             const suffix = key.substring('Cavetile_wall_'.length);
@@ -1217,6 +1248,25 @@ class SafeZone4Scene extends MainGameScene {
                 obj.setTexture(newKey);
             }
         });
+        // (用户) allMap: 扩散半径内的 Thorns → Ythorns (皮肤+功能)
+        if (sp.allMap && this._thorns) {
+            this._thorns.forEach(t => {
+                if (!t || t._purified || !t.purify || !t.sprites || !t.sprites[0]) return;
+                const tdx = t.sprites[0].x - sp.cx, tdy = t.sprites[0].y - sp.cy;
+                if (tdx * tdx + tdy * tdy <= r2) t.purify();
+            });
+        }
+        // (用户) 扩散半径内的 CrystalBlock 实例 → purifyToYellow: 黄外观 + 破坏掉黄水晶 (死亡生成的 YCrystalBlock 无此方法, 自动跳过)
+        if (this._crystalOres) {
+            this._crystalOres.forEach(o => {
+                if (!o || o.destroyed || o._purified || !o.purifyToYellow) return;
+                const ox2 = (o.x != null) ? o.x : (o.sprite ? o.sprite.x : null);
+                const oy2 = (o.y != null) ? o.y : (o.sprite ? o.sprite.y : null);
+                if (ox2 == null) return;
+                const odx = ox2 - sp.cx, ody = oy2 - sp.cy;
+                if (odx * odx + ody * ody <= r2) o.purifyToYellow();
+            });
+        }
         if (sp.radius >= sp.maxRadius) {
             sp.active = false;
             this._finalizeYellowDirtSkins();
@@ -1353,6 +1403,129 @@ class SafeZone4Scene extends MainGameScene {
     }
 
     // ============ 区2 (boss 房) 进场剧情 ============
+    // === SZ4 商人剧情: 走到 x=-17 强制停 → 商人在 (-14,18) 从地底钻出 → 沉稳长辈式赠言 → 解锁, 商人留下供购物 (参照 SZ3 _sz3SpawnMerchantRise) ===
+    _startSz4TraderScene() {
+        const s = this;
+        if (s.dialogSystem && s.dialogSystem.isOpen) { s.time.delayedCall(400, () => s._startSz4TraderScene()); return; }
+        if (s._sz4TraderActive && s.moleTrader) return;
+        s._sz4TraderStarted = true;
+        s._sz4TraderActive = true;
+        s._sz4TraderEmergeDone = false;
+        s._cinematicLock = true;
+        const G = 32;
+        const finalX = -14 * G + G / 2;
+        const finalY = 18 * G + G / 2 + 11;   // +11 px 下移 (跟 SZ2/SZ3 商人一致, 稳稳站地面)
+
+        // 入场硬停: 撤冲刺/近战/抓钩 + 清速度 + idle (防高速冲进触发器把玩家带出范围)
+        if (s.dashSystem && s.dashSystem.cancelDash) s.dashSystem.cancelDash();
+        if (s.meleeSystem && s.meleeSystem.cancelMelee) s.meleeSystem.cancelMelee();
+        if (s.grappleSystem && s.grappleSystem.stopGrapple && (s.isGrappling || s.isHanging)) s.grappleSystem.stopGrapple();
+        if (s.player && s.player.body) s.player.body.setVelocity(0, 0);
+        if (s.player) s.player.setFlipX(false);   // 面向右侧的商人 (商人 -14, 玩家 -17)
+        if (s.player && s.anims.exists('idle') && s.player.play) s.player.play('idle', true);
+
+        if (typeof MoleTrader === 'undefined') { s._endSz4TraderScene(); return; }
+        s.moleTrader = new MoleTrader(s, finalX, finalY);
+        s.moleTrader._emergeStarted = true;   // 禁实体 preUpdate 靠近自动钻地 (场景自管 emerge)
+        if (s.walls) s.physics.add.collider(s.moleTrader, s.walls);
+        if (s.uiCam) {
+            try { s.uiCam.ignore(s.moleTrader); } catch (e) {}
+            try { s.uiCam.ignore(s.moleTrader.interactionIcon); } catch (e) {}
+        }
+        if (s.textures.exists('Trader_dig') && !s.anims.exists('trader_dig')) {
+            s.anims.create({ key: 'trader_dig', frames: s.anims.generateFrameNumbers('Trader_dig', { start: 0, end: 21 }), frameRate: 11, repeat: 0 });
+        }
+
+        // 镜头 zoom 2x + 对焦商人
+        s._sz4TraderSavedZoom = s.cameras.main.zoom;
+        const cam = s.cameras.main;
+        cam.stopFollow();
+        s.tweens.add({ targets: cam, zoom: 2.0, duration: 600, ease: 'Quad.easeOut' });
+        cam.pan(finalX, finalY, 600, 'Quad.easeOut');
+
+        // dig 动画反向播 (从地底升起), 偏移跟 SZ2/SZ3: dig 位 (finalX, finalY+8), displaySize 57.6
+        s.moleTrader.setTexture('Trader_dig', 0);
+        s.moleTrader.setDisplaySize(48 * 1.2, 48 * 1.2);
+        s.moleTrader.setPosition(finalX, finalY + 8);
+        if (s.moleTrader.body) { s.moleTrader.body.setAllowGravity(false); s.moleTrader.body.enable = false; }
+
+        // trader_dig 期间 MoleDig 循环 (声播完重头), 动画完成即停; 文件须在 assets/audio/NPC/MoleDig.wav
+        if (s.moleTrader && !s.moleTrader._digSndHooked) {
+            s.moleTrader._digSndHooked = true;
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_START, (anim) => {
+                if (!anim || anim.key !== 'trader_dig') return;
+                if (typeof AudioSystem === 'undefined' || !s.cache.audio.exists('MoleDig')) return;
+                try {
+                    if (s.moleTrader._digLoopSnd) { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); }
+                    const _ds = s.sound.add('MoleDig', { volume: AudioSystem.sfxVolume, loop: true });
+                    s.moleTrader._digLoopSnd = _ds; _ds.play();
+                    s.time.delayedCall(4000, () => { try { if (_ds && _ds.isPlaying) _ds.stop(); if (_ds) _ds.destroy(); } catch (e2) {} if (s.moleTrader && s.moleTrader._digLoopSnd === _ds) s.moleTrader._digLoopSnd = null; });
+                } catch (e) { s.moleTrader._digLoopSnd = null; }
+            });
+            s.moleTrader.on(Phaser.Animations.Events.ANIMATION_COMPLETE, (anim) => {
+                if (anim && anim.key === 'trader_dig' && s.moleTrader._digLoopSnd) {
+                    try { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); } catch (e) {}
+                    s.moleTrader._digLoopSnd = null;
+                }
+            });
+        }
+        if (s.anims.exists('trader_dig')) {
+            if (typeof s.moleTrader.playReverse === 'function') s.moleTrader.playReverse('trader_dig');
+            else if (typeof s.moleTrader.play === 'function') s.moleTrader.play('trader_dig');
+        }
+
+        // 钻出完成 → 切 stand + 开对话 (缺声/缺文件兜底 2200ms)
+        const _toStand = () => {
+            if (s._sz4TraderEmergeDone) return; s._sz4TraderEmergeDone = true;
+            if (!s.moleTrader) { s._endSz4TraderScene(); return; }
+            s.moleTrader.setTexture('Trader_stand');
+            s.moleTrader.setScale(1);
+            s.moleTrader.setPosition(finalX, finalY + 10);
+            if (s.moleTrader.body) { s.moleTrader.body.enable = true; s.moleTrader.body.setAllowGravity(true); s.moleTrader.body.reset(finalX, finalY + 10); }
+            if (s.anims.exists('trader_stand') && s.moleTrader.play) s.moleTrader.play('trader_stand');
+            s._sz4TraderDialog();
+        };
+        s.time.delayedCall(2200, _toStand);
+    }
+
+    _sz4TraderDialog() {
+        const s = this;
+        if (!s.dialogSystem) { s._endSz4TraderScene(); return; }
+        s.dialogSystem.showSequence([
+            { speaker: 'Whisker', text: "You've come a long way, friend. The end of this road is just ahead." },
+            { speaker: 'Whisker', text: "Beyond here waits the thing that poisoned this mine: its last and greatest threat. Bring it down, and these caverns will heal. The crystals, the creatures, all of it set right." },
+            { speaker: 'Whisker', text: "I'll keep my stall right here. Stock up, steady yourself, then go and end this. I'm rooting for you, friend." }
+        ], () => s._endSz4TraderScene());
+    }
+
+    _endSz4TraderScene() {
+        const s = this;
+        s._sz4TraderActive = false;
+        s._sz4TraderDone = true;
+        const cam = s.cameras.main;
+        const z0 = s._sz4TraderSavedZoom || 1;
+        s.tweens.add({ targets: cam, zoom: z0, duration: 500, ease: 'Quad.easeInOut' });
+        if (s.player) cam.startFollow(s.player, true, 0.1, 0.1);
+        s.time.delayedCall(550, () => { s._cinematicLock = false; });
+    }
+
+    // 商人剧情中途死亡 → 中止 + 复位旗标 (复活后再走到 x=-17 重新触发, 不卡死)
+    _abortSz4TraderScene() {
+        const s = this;
+        s._sz4TraderActive = false;
+        s._sz4TraderStarted = false;
+        s._cinematicLock = false;
+        const cam = s.cameras.main;
+        if (cam.zoomTo) cam.zoomTo(s._sz4TraderSavedZoom || 1, 300, 'Cubic.easeInOut');
+        if (s.player) cam.startFollow(s.player, true, 0.1, 0.1);
+        if (s.moleTrader) {
+            try { if (s.moleTrader._digLoopSnd) { s.moleTrader._digLoopSnd.stop(); s.moleTrader._digLoopSnd.destroy(); } } catch (e) {}
+            try { if (s.moleTrader.interactionIcon) s.moleTrader.interactionIcon.destroy(); } catch (e) {}
+            try { s.moleTrader.destroy(); } catch (e) {}
+            s.moleTrader = null;
+        }
+    }
+
     _startSz4Cutscene() {
         this._sz4CutsceneActive = true;
         this._cinematicLock = true;
@@ -1680,9 +1853,14 @@ class SafeZone4Scene extends MainGameScene {
         if (this._batBossLanded) return;
         this._batBossLanded = true;
         const boss = this._batBoss;
-        // Golem 同款掉落: 15 颗水晶 (复用 monster_killed 自动落地散开逻辑)
-        for (let i = 0; i < 15; i++) {
-            try { this.events.emit('monster_killed', lx, ly, 1.0); } catch (e) {}
+        // (用户) 净化掉落: 15 颗黄水晶货币 (不再蓝水晶); 散落 + 磁吸 → addYellowCrystal
+        for (let i = 0; i < 15; i++) this._sz4DropYellowCrystal(lx, ly);
+        // (用户) 辐射度清零 (净化)
+        if (this.diseaseSystem && this.diseaseSystem.reset) this.diseaseSystem.reset();
+        // (用户) 蝙蝠净化: 全部蓝水晶货币 → 黄水晶货币 + 之后获得的蓝水晶也当黄水晶计入 (原母蜘蛛机制移到此); 死亡/重进/通关自动还原
+        if (this.hudSystem) {
+            if (this.hudSystem.convertBlueToYellow) this.hudSystem.convertBlueToYellow();
+            this.hudSystem._blueAsYellow = true;
         }
         // (用户) 落地瞬间播 Bat_boss_dead (31帧), 播完即消失; 缺动画回退渐隐
         if (boss && boss.sprite) {
@@ -1700,6 +1878,43 @@ class SafeZone4Scene extends MainGameScene {
         }
         // 落地点 3 格半径 cavetilewall 边 (上/左/右, 不含下) 从中心扩散生成 crystalblock
         this._sz4SpreadDeathCrystals(lx, ly);
+        // (用户) 落地点为中心扩散黄土皮肤, 染满【整张地图】(allMap, 含区1镜头) — 不存盘, 重进/死亡/通关场景重建自动还原
+        this._yellowDirtSpread = { cx: lx, cy: ly, radius: 0, maxRadius: null, active: true, allMap: true };
+    }
+
+    // (用户) 掉 1 颗黄水晶货币 pickup — 完全照搬 SZ3 凋落物: 横移 + 360°旋转 + 上抛后按重力公式时长下落 (慢); 复用磁吸 → addYellowCrystal
+    _sz4DropYellowCrystal(lx, ly) {
+        const useYTex = this.textures.exists('YCrystal');
+        const tex = useYTex ? 'YCrystal' : (this.textures.exists('Crystal') ? 'Crystal' : 'drop_crystal_img');
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 5 + Math.random() * 10;
+        let targetX = lx + Math.cos(angle) * radius;
+        let targetY = ly + Math.sin(angle) * radius;
+        if (this.wallRects) {
+            for (const w of this.wallRects) {
+                if (targetX >= w.left && targetX <= w.right && targetY >= w.top && targetY <= w.bottom) { targetY = w.top - 1; break; }
+            }
+        }
+        const c = this.add.image(lx, ly, tex);
+        if (tex === 'YCrystal' || tex === 'Crystal') c.setDisplaySize(20, 20);
+        if (!useYTex) c.setTint(0xffcc33);
+        c.setDepth(8);
+        if (this.uiCam) this.uiCam.ignore(c);
+        c._isDroppedCrystal = true; c._isYellow = true;
+        c._pickupReadyAt = this.time.now + 500; c.active = true;
+        if (this.droppedCrystals) this.droppedCrystals.add(c);
+        this.tweens.add({ targets: c, x: targetX, duration: 350, ease: 'Linear' });
+        this.tweens.add({ targets: c, angle: 360, duration: 350, ease: 'Linear' });
+        const peakY = Math.min(ly, targetY) - 30;
+        this.tweens.add({
+            targets: c, y: peakY, duration: 175, ease: 'Quad.easeOut',
+            onComplete: () => this.tweens.add({
+                targets: c, y: targetY,
+                duration: Math.max(175, Math.sqrt(2 * Math.max(1, targetY - peakY) / ((this.physics && this.physics.world && this.physics.world.gravity.y) || 1200)) * 1000),
+                ease: 'Quad.easeIn',
+                onComplete: () => { c.angle = 0; }
+            })
+        });
     }
 
     // 落地点附近 cavetilewall 的 上/左/右 空气格生成 crystalblock, 从中心向外错开生成, 跳过有障碍(墙/荆棘/已有方块)的格
@@ -1741,7 +1956,9 @@ class SafeZone4Scene extends MainGameScene {
         list.forEach((c, i) => {
             this.time.delayedCall(i * 90, () => {
                 if (typeAt(c.col, c.row) !== GridSystem.AIR) return;   // 期间被占则跳过
-                const cb = new CrystalBlock(this, c.col * G + G / 2, c.row * G + G / 2, { hp: 10, dropCount: 1 });
+                const cb = (typeof YCrystalBlock !== 'undefined')
+                    ? new YCrystalBlock(this, c.col * G + G / 2, c.row * G + G / 2, { hp: 10, dropCount: 1 })
+                    : new CrystalBlock(this, c.col * G + G / 2, c.row * G + G / 2, { hp: 10, dropCount: 1 });   // (用户) boss净化 → 真·黄水晶块 (破坏掉黄水晶)
                 if (cb.redetectRotation) cb.redetectRotation();
                 // (用户) 登记进近战可破坏列表 — 之前漏了这步, 导致死亡水晶打不到(看着像纯贴图)
                 if (!this._crystalOres) this._crystalOres = [];

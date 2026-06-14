@@ -157,6 +157,8 @@ class DashSystem {
             if (this._dashGuard && s.physics && s.physics.world) { s.physics.world.off('worldstep', this._dashGuard); this._dashGuard = null; }
             if (s.player && s.player.body) {
                 s.isDashing = false;
+                // (用户) 冲刺自然结束 → 再续 0.1s 无敌, 无缝衔接 (走 takeDamage 的 isPlayerInvincible 检查)
+                if (!s.isPlayerInvincible && s.healthSystem && s.healthSystem._triggerInvincibility) s.healthSystem._triggerInvincibility(100);
                 if (!s.isGrappling && !s.isHanging) s.player.body.setAllowGravity(true);
                 if (hasValidDash && !this._visualEnded) {   // (用户) 画面已被近战接管 → 不切 idle 不动 offset, 防打断攻击动画
                     // 切回 idle

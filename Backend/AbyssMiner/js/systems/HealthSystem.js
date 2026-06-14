@@ -108,7 +108,7 @@ class HealthSystem {
      * @param {number} amount HP 伤害量
      * @param {object} opts
      *   - ignoreIframe: bool   绕过无敌检查 (DoT / 蜘蛛 cling / 满侵蚀度扣血 用)
-     *   - triggerIframe: bool  这次扣血是否触发新的 0.5s 无敌 (默认 true)
+     *   - triggerIframe: bool  这次扣血是否触发新的 0.75s 无敌 (默认 true)
      */
     takeDamage(amount = 10, opts = {}) {
         if (this.isDead) return false;
@@ -137,7 +137,7 @@ class HealthSystem {
         this._flashRed(200);
 
         if (triggerIframe) {
-            this._triggerInvincibility(500);
+            this._triggerInvincibility(750);
         }
 
         if (this.hp <= 0) {
@@ -309,6 +309,10 @@ class HealthSystem {
         //   - 剧情 stopFollow+zoom 残留 → 要跨 chunk 让镜头逻辑重设才恢复 (用户报告的"自愈"现象)
         if (s.dialogSystem && s.dialogSystem.isOpen && s.dialogSystem.close) { try { s.dialogSystem.close(); } catch (e) {} }
         s._cinematicLock = false;
+        // (用户审计) 一次性传送闩 — 死亡原地复活(场景不重建)必须复位, 否则跨场景传送被怪打断后门/区间交互永久失效
+        s._teleporting = false;
+        s._teleportingToSafeZone2 = false;
+        s._teleportingToSafeZone4 = false;
         s._sz1MerchantPending = false;
         if (!s._sz1MerchantCutsceneDone) s._sz1MerchantCutsceneStarted = false;   // 死亡打断 → 允许剧情重播
         if (s._savedCameraZoom != null && s.cameras && s.cameras.main) {
@@ -546,7 +550,7 @@ class HealthSystem {
         }
         // (用户) Shrine 区: 激活的 checkpoint 5 格 (160px) 内
         //   1) 快照: 每个 checkpoint 第一次进圈记录一次当前状态 (Save&Exit 后恢复到这份快照; 离开再回来不重记)
-        //   2) 回血: 每秒 +1 HP / -1% 腐蚀 (Extreme 关闭回血, 快照不受影响)
+        //   2) 回血: 每秒 +5 HP / -1% 腐蚀 (Extreme 关闭回血, 快照不受影响)
         if (!this.isDead) {
             const _s = this.scene, _cp = _s._activeCheckpoint;
             if (_cp && _s.player && _s.player.body) {
@@ -560,8 +564,8 @@ class HealthSystem {
                     if (this._cpRegenAcc >= 1000) {
                         this._cpRegenAcc -= 1000;
                         if (this.hp < this.maxHp) {
-                            // (用户修复) 每秒 +1 滴血 — 不能用 heal(): 那是药水语义, heal(1) = 50% maxHp (≈50滴/秒)
-                            this.hp = Math.min(this.maxHp, this.hp + 1);
+                            // (用户) 神像每秒 +5 滴血 — 不能用 heal(): 那是药水语义, heal(1) = 50% maxHp (≈50滴/秒)
+                            this.hp = Math.min(this.maxHp, this.hp + 5);
                             this.playerHp = this.hp;
                             this.updateUI();
                             this.showHealFx();   // (用户) 神像持续回血 → 特效持续刷新

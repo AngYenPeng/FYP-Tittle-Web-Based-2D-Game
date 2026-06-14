@@ -16,12 +16,14 @@ class SafeZone3Scene extends MainGameScene {
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
         this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
-        this._sistersIntroRun = false; this._sisterTeaseRunning = false; this._sz3IntroStarted = false; this._sz3IntroPhase = 0; this._citrinePhase = 'fresh';
+        this._sistersIntroRun = false; this._sisterTeaseRunning = false; this._sz3IntroStarted = false; this._sz3IntroPhase = 0; this._citrinePhase = 'fresh'; this._citrineWalkStarted = false;   // (用户修复) Citrine 任务分阶段会重走(_citrinePhase 重置了), 但跑路过场守卫漏重置 → 重进图走到 cutscene 阶段时过场被挡不播; 跟着一起重置 (幂等守卫在 _sz3CitrineWalkPhase 内仍防同次双触发)
         // (用户) 实体数组每次进图清空 — CrystalNpc/Chest 是包装对象, 退场时 sprite 被销毁但包装残留在数组里, 读档时 update 迭代到死精灵 → 崩溃
         this._crystalNpcs = []; this._chests = [];
         // (修复) 通关后开新档剧情全跳过: 这些剧情/对话/任务/传送标志没在 init 清, 复用实例残留 true
-        this._sz3ElderTalked = false; this._sz3ElfTalked = false; this._sz3HasToy = false;
+        this._sz3ElderTalked = false; this._sz3ElfTalked = false; this._sz3HasToy = false; this._amberTalkedOnce = false; this._sz3EncouragedOnce = false;   // (用户修复) Amber 升级任务的初次对白(自我介绍+要10颗)漏重置 → 存档退出重进残留 true → 跳过开场直接问'有没有10颗'; 跟着重置. 已升级时 _pickaxeUpgraded 早分支先拦截不会重播开场
         this._sisterTweensPaused = false; this._sz3BgmCleanHooked = false; this._teleportingToSafeZone4 = false; this._platformGuideUnlocked = false;
+        // (用户修复) 漏重置的剧情旗标: 重进图(读档/死亡/通关)要恢复原状, 否则商人不再钻出 + 水晶NPC对话不刷新
+        this._sz3MerchantSpawned = false; this._moleEmergeDone = false; this._sz3CrystTalkedOnce = false;
     }
 
     // ════════════════════════════════════════════════════════════════
@@ -529,6 +531,8 @@ class SafeZone3Scene extends MainGameScene {
         }
 
         // 怪物掉落监听
+        // (用户修复) Phaser 复用场景实例时 events 监听器不会自动移除 → 重进图累积 → 一次 emit 触发多个监听器 (黄水晶/掉落/分裂翻倍越叠越多). 注册前先清旧的.
+        this.events.off('monster_killed').off('yellow_crystal_dropped').off('slime_split');
         this.events.on('monster_killed', (mx, my, dropRate) => {
             if (Math.random() <= dropRate) {
                 const angle = Math.random() * Math.PI * 2;
@@ -2202,7 +2206,7 @@ class SafeZone3Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector')))) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入也恢复 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);
@@ -2412,7 +2416,7 @@ class SafeZone3Scene extends MainGameScene {
                     this.dialogSystem.show([
                         { speaker: 'Elven Elder', text: "A human, here? You followed the blue, didn't you? We all did." },
                         { speaker: 'Elven Elder', text: 'This statue pushes back the corruption. It cannot cure you, but it slows the spread.' },
-                        { speaker: 'Elven Elder', text: "Beyond this hall lies the spider's den. She is the mother of the blue." },
+                        { speaker: 'Elven Elder', text: "Beyond this hall lies the bat's den. She is the mother of the blue." },
                         { speaker: 'Elven Elder', text: 'Slay her, and the cave heals. Fail, and you join us in glass and silence.' }
                     ]);
                 }

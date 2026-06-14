@@ -128,7 +128,6 @@ class SpiderQueenBoss extends Phaser.Physics.Arcade.Sprite {
         // (用户成就) 绝缝求生 (本区未死) + 珍惜生命 (全程零死亡)
         try {
             if (typeof AchievementSystem !== 'undefined') {
-                if (!this.scene._achDiedHere) AchievementSystem.unlock(this.scene, 'sz5_clutch');
                 const rd = (this.scene.registry && this.scene.registry.get('runDeaths')) || 0;
                 if (rd === 0) AchievementSystem.unlock(this.scene, 'one_life');
             }

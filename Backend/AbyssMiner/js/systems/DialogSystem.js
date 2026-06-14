@@ -40,6 +40,8 @@ class DialogSystem {
         this.panel = null;
         this._currentSequence = null;
         this._sequenceIdx = 0;
+        // (用户) 场景关闭 (含存档退出) → 停 DialogSound, 否则循环音效跟到主菜单永久播放
+        this.scene.events.once('shutdown', () => { this._stopDialogSound(); });
     }
 
     init() {

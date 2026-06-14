@@ -61,6 +61,7 @@ class SafeZone5Scene extends MainGameScene {
         return (i > 0) ? { speaker: line.slice(0, i), text: line.slice(i + 2) } : { speaker: '', text: line };
     }
 
+
     // 释怀对白播完: 置 state 8 + 镜头拉回探索缩放 2.5 并跟随 (出口判定依赖 state===8)
     finishReliefDialogue() {
         sz5_dialogueState = 8;
@@ -89,7 +90,7 @@ class SafeZone5Scene extends MainGameScene {
     }
 
 revealEndgamePassage() {
-        console.log("Boss beaten! Activating specialized split-skin purification sequence.");
+        console.log("Boss beaten! Activating total tileset mapping purification sequence.");
         if (this.finalHint) this.finalHint.destroy();
 
         const cam = this.cameras.main;
@@ -123,7 +124,7 @@ revealEndgamePassage() {
                         });
                     }
 
-                    // 释放全图黄色纯净矿脉转化波
+                    // 🌟 开启全图集高级映射纯净转化
                     let flashWave = this.add.circle(originX, originY, 10, 0xffcc44, 0.4).setDepth(20);
                     this.tweens.add({
                         targets: flashWave,
@@ -133,30 +134,60 @@ revealEndgamePassage() {
                         onUpdate: () => {
                             let currentRadius = flashWave.radius;
 
-                            // A. 强制巨幕背景换皮为黄金图层
+                            // A. 无缝更换背景图层
                             if (this.bg && this.bg.setTexture) {
                                 this.bg.setTexture('Yellow_bg');
                                 this.bg.clearTint(); 
                             }
 
-                            // B. 🌟 三层深度晶体分层置换逻辑
+                            // B. 智能分层结构算法
                             if (this.walls && this.walls.getChildren) {
                                 this.walls.getChildren().forEach(w => {
                                     if (Phaser.Math.Distance.Between(w.x, w.y, originX, originY) < currentRadius && w.texture) {
-                                        // 🟢 第 1 层：天花板/玩家脚下的地表地板 -> 换成带绿草皮的边缘块
-                                        if (w.texture.key === 'tile_floor') {
-                                            w.setTexture('Yellow_dirt_T'); 
+                                        
+                                        let currentKey = w.texture.key;
+                                        // 🌟 核心修复：在这里优先将 blockRow 声明计算出来！使其在所有后续的 else if 判断里都完全可用！
+                                        let blockRow = Math.floor(w.y / 32); 
+
+                                        // 1. 如果原本是地表层地板 (tile_floor) -> 更换为带有绿草皮的草地边缘
+                                        if (currentKey === 'tile_floor') {
+                                            w.setTexture('Yellow_dirt_T');
                                         } 
-                                        // 🟤 第 2/3 层：根据方块所在的垂直深度（Row 轴位置）进行地底资源细分
-                                        else if (w.texture.key === 'tile_wall') {
-                                            let blockRow = Math.floor(w.y / 32); // 计算这个方块在地图里的真实行号
+                                        // 2. 如果本来是带地形边缘特征的复杂复合皮肤 (比如 Cavetile_wall_2L, Cavetile_wall_TRB 等)
+                                        else if (currentKey.includes('Cavetile_wall_')) {
+                                            let suffix = currentKey.split('Cavetile_wall_')[1];
                                             
-                                            if (blockRow >= 14) {
-                                                // 🌟 满足你的核心要求：如果是深处的地底下腹（Row 14 及以下），物理替换成第三种黄金深泥土块（Yellow_dirt_5LC3.png）
-                                                w.setTexture('Yellow_dirt_block_skin_3'); // 👈 如果你未注册，保底可直接写入资源缓存名 'Yellow_dirt_3L2'
+                                            if (suffix === '2L') {
+                                                w.setTexture('Yellow_dirt_L');
+                                            } else if (suffix.startsWith('T')) {
+                                                w.setTexture('Yellow_dirt_T');
                                             } else {
-                                                // 如果是地表之下的浅层内壁，使用第二种泥土块（Yellow_dirt_5LC2.png）
-                                                w.setTexture('Yellow_dirt_3L2'); 
+                                                let mappedKey = 'Yellow_dirt_' + suffix;
+                                                // 🌟 缓存卫士保护：检查图片是否存在，防止缺失某些图（如 B.png 404）导致游戏闪退
+                                                if (this.textures.exists(mappedKey)) {
+                                                    w.setTexture(mappedKey);
+                                                } else {
+                                                    w.setTexture('Yellow_dirt_3L2'); // 找不到特定图时以此图安全兜底
+                                                }
+                                            }
+                                        }
+                                        // 3. 如果是普通的内部实心方块 (tile_wall) -> 进行三层宏观生态分层
+                                        else if (currentKey === 'tile_wall') {
+                                            if (blockRow <= 4) {
+                                                // 靠近顶部的层：使用左边缘普通泥土混合
+                                                w.setTexture('Yellow_dirt_L');
+                                            }
+                                            else if (blockRow >= 5 && blockRow <= 13) {
+                                                // 中层普通黄泥土内壁：混合错开使用 3L1, 3L2, 3L3 和 3LC 等带有杂草、砂石碎屑点缀的高细节块
+                                                let variations = ['Yellow_dirt_3L1', 'Yellow_dirt_3L2', 'Yellow_dirt_3L3', 'Yellow_dirt_3LC1', 'Yellow_dirt_3LC2', 'Yellow_dirt_3LC3'];
+                                                let choice = variations[(blockRow + Math.floor(w.x / 32)) % variations.length];
+                                                w.setTexture(choice);
+                                            }
+                                            else if (blockRow >= 14) {
+                                                // 🌟 最深处地底（Row 14 及以下）：全部爆发替换为长满金黄色璀璨晶体的发光矿脉图（5LC1, 5LC2, 5LC3）！
+                                                let crystalVariations = ['Yellow_dirt_5LC1', 'Yellow_dirt_5LC2', 'Yellow_dirt_5LC3'];
+                                                let crystalChoice = crystalVariations[(blockRow + Math.floor(w.x / 32)) % crystalVariations.length];
+                                                w.setTexture(crystalChoice);
                                             }
                                         }
                                     }
@@ -165,6 +196,7 @@ revealEndgamePassage() {
                         },
                         onComplete: () => {
                             flashWave.destroy();
+
 
                             // 商人钻出：高度和位置经过了像素重构，完美贴合你调好的新台阶孔位
                             if (sz5_merchant) {
@@ -187,8 +219,7 @@ revealEndgamePassage() {
                                         if (sz5_merchant.body && sz5_merchant.body.updateFromGameObject) {
                                             sz5_merchant.body.updateFromGameObject();
                                         }
-                                        // 唤醒镜头移过去聚焦说话
-                                        this.setupMerchantFinalDialogue();
+                                        this.setupMerchantFinalDialogue(); 
                                     }
                                 });
                             }
@@ -235,25 +266,21 @@ revealEndgamePassage() {
         this.pick2.setCollideWorldBounds(true);
         this.physics.add.collider(this.pick1, this.walls, () => this.handlePickCollide(this.pick1, 1));
         this.physics.add.collider(this.pick2, this.walls, () => this.handlePickCollide(this.pick2, 2));
+
         // 🌟 核心修复：建立飞镐对 Boss 伤害的实时重叠监听器
-    // 获取当前被砸中的真实 Boss 实例
-    let boss = BossManager.entity;
-    if (!boss || !boss.active || boss.isDead || boss.isReviving) return;
+        let boss = BossManager.entity;
+        // Safely check if boss exists during setup, and bind an overlap callback instead of flat code
+        if (boss && boss.active) {
+            this.physics.add.overlap([this.pick1, this.pick2], boss, (pickObject, bossObject) => {
+                if (pickObject.state === 'flying_max' || pickObject.state === 'flying_gravity' || pickObject.state === 'dropping') {
+                    bossObject.takeDamage(1); 
+                    this.cameras.main.shake(200, 0.015);
+                    this.recallSystem.startRecall(pickObject); 
+                }
+            });
+        }
 
-    // 只有当稿子正处于被丢出去的攻击飞行、掉落状态时，才计算伤害
-    if (pick.state === 'flying_max' || pick.state === 'flying_gravity' || pick.state === 'dropping') {
-        
-        // 1. 让 Boss 受到 1 点近战稿击伤害
-        boss.takeDamage(1); 
-        
-        // 2. 触发关卡摄像机轻微受击震动，增强打击感
-        this.cameras.main.shake(200, 0.015);
-        
-        // 3. 强制把被弹飞的稿子收回（Recall），防止它穿透 Boss 身体
-        this.recallSystem.startRecall(pick); 
-    }
-
-        // (用户) 已登记的空气墙 → 稿子碰撞器 (空气墙对稿子 = 真墙; 处理"墙先建/稿子后建"的顺序)
+        // 👍 This initialization code now safely executes every single time!
         if (this._pickExtraWalls) this._pickExtraWalls.forEach(w => this._addPickWallCollider(w));
         this.ropeNodes1 = []; this.ropeNodes2 = [];
         for (let i = 0; i < 15; i++) {
@@ -368,11 +395,37 @@ revealEndgamePassage() {
     preload() {
     if (typeof super.preload === 'function') super.preload();
 
-        // 🌟 修复追加：将你 assets/images 目录下的黄色净化贴图注册进 Phaser 缓存
-    this.load.image('Yellow_dirt_T', 'assets/images/Yellow_dirt_T.png');
+        // 🌟 存档点资产载入：将图片资源注册进 Phaser 缓存注册表
+        this.load.image('Checkpoint_unactivated', 'assets/images/Checkpoint_unactivated.png');
+        this.load.image('Checkpoint_activating', 'assets/images/Checkpoint_activating.png');
+        this.load.image('Checkpoint_activated', 'assets/images/Checkpoint_activated.png');
+
+        // --- 1. 核心黄色净化瓦片集 (Tileset) 完整注册引入 ---
+        // 基础地层结构（直线边缘）
+        this.load.image('Yellow_dirt_T', 'assets/images/Yellow_dirt_T.png');     // 顶部地表草皮   // 底部边缘
+        this.load.image('Yellow_dirt_L', 'assets/images/Yellow_dirt_2L.png');    // 左侧墙面（对应你的 2L）
+        this.load.image('Yellow_dirt_R', 'assets/images/Yellow_dirt_3L1.png');   // 右侧墙面（对应你的 3L1）
+        
+        // 复杂双面、三面、全包围边缘（从你的项目截图目录精准提取）
+        this.load.image('Yellow_dirt_TB', 'assets/images/Yellow_dirt_TB.png');
+        this.load.image('Yellow_dirt_TR', 'assets/images/Yellow_dirt_TR.png');
+        this.load.image('Yellow_dirt_TRB', 'assets/images/Yellow_dirt_TRB.png');
+        this.load.image('Yellow_dirt_TRBL', 'assets/images/Yellow_dirt_TRBL.png');
+        
+        // 各种深度和细节差异的中心实心内瓦片
+        this.load.image('Yellow_dirt_3L1', 'assets/images/Yellow_dirt_3L1.png');
         this.load.image('Yellow_dirt_3L2', 'assets/images/Yellow_dirt_3L2.png');
-        this.load.image('Yellow_dirt_block_skin_3', 'assets/images/Yellow_dirt_5LC3.png'); // 对应 Row 14 以下的深层块
-        this.load.image('Yellow_bg', 'assets/images/Yellow_dirt_5LC2.png');
+        this.load.image('Yellow_dirt_3L3', 'assets/images/Yellow_dirt_3L3.png');
+        this.load.image('Yellow_dirt_3LC1', 'assets/images/Yellow_dirt_3LC1.png');
+        this.load.image('Yellow_dirt_3LC2', 'assets/images/Yellow_dirt_3LC2.png');
+        this.load.image('Yellow_dirt_3LC3', 'assets/images/Yellow_dirt_3LC3.png');
+        
+        // 🌟 晶体深层（带黄色水晶颗粒的 5L 系列）
+        this.load.image('Yellow_dirt_5LC1', 'assets/images/Yellow_dirt_5LC1.png');
+        this.load.image('Yellow_dirt_5LC2', 'assets/images/Yellow_dirt_5LC2.png');
+        this.load.image('Yellow_dirt_5LC3', 'assets/images/Yellow_dirt_5LC3.png');
+
+        this.load.image('Yellow_bg', 'assets/images/Yellow_dirt_3L2.png')
 
     // 1. 背景音乐 (BGM)
     this.load.audio('bgm_safezone5', 'assets/audio/BGM/SafeZone5_Ambient.mp3'); // 关卡探索BGM
@@ -422,6 +475,8 @@ revealEndgamePassage() {
 }
 
 create() {
+
+    if (typeof Backend === 'undefined') window.Backend = { save: () => {}, load: () => {} };
 
     // (清理) 移除开发期调试 console.log (boss_idle 贴图检查)
 
@@ -532,9 +587,11 @@ if (this.textures.exists('bg_block')) {
 sz5_spawnDoor = this.add.sprite(20, 350, 'door_skin', 0).setDepth(5);
 sz5_spawnDoor.setDisplaySize(32, 96);
 
+
 // 🌟 REPLACED: Shrinks and moves the arena entry door to Column 54 (X: 1728)
 sz5_bossDoor = this.add.sprite(1588, 320, 'door_skin', 0).setDepth(5);   // (修复) 第4参原是函数 i=>i.setFrame(0) 被当帧名 → 报 no frame; 改帧索引 0
 sz5_bossDoor.setDisplaySize(128, 128);
+
 
 // 🌟 REPLACED: 修正物理隔离墙的坐标，使其严丝合缝地挡在右侧隐藏楼梯的入口前方 (X: 2832)
         sz5_exitWall = this.add.image(2550, 600, 'tile_wall').setDepth(11);
@@ -657,6 +714,21 @@ sz5_bossBarrier = this.add.rectangle(1538, 300, 24, 250, 0x8888ff, 0.5);
     this.spawnX = spawnX; this.spawnY = spawnY;
 
     this.player = new Player(this, 70, 200);
+
+   // 🌟 存档点实体初始化：将存档点放置在通往 Boss 房间的过道平地上（X: 1320, Y: 335）
+        this._checkpoint = this.add.sprite(350, 320, 'Checkpoint_unactivated').setDepth(6);
+        this._checkpoint.setDisplaySize(64, 128); 
+        this._checkpoint.activated = false;  
+        
+
+        // 将其注册为静态物理刚体，以便小人走过去时能发生完美的物理重叠交互
+        this.physics.add.existing(this._checkpoint, true);
+
+        // 🌟 核心修复：为原生精灵强行绑定一个空的 setHintVisible 方法存根！
+        // 这样当底层的 InteractSystem 无论何时来调用它时，都能安全返回，百分之百防止引发空指针崩溃闪退！
+        this._checkpoint.setHintVisible = function(isVisible) {
+            // 这里留空即可，完美满足底层框架的接口调用要求
+        };
 
 
 
@@ -883,6 +955,22 @@ this._cfgBossY   = 80;    // Boss hanging overhead center point Y (Ceiling mount
     this.time.delayedCall(900, () => {
         this._cinematicLock = false;
     });
+
+    // 让 Boss 的实体能够伤害玩家
+this.physics.add.overlap(this.player, BossManager.entity, (player, boss) => {
+    // 检查玩家是否有 takeDamage 方法且当前不在无敌帧
+    if (player.takeDamage) {
+        player.takeDamage(10); // 10 是伤害数值
+        
+        // 增加一个简单的视觉反馈：玩家被撞击抖动
+        this.cameras.main.shake(100, 0.01);
+    } else {
+        // 如果你的玩家伤害逻辑在 HealthSystem 里：
+        if (this.healthSystem) {
+            this.healthSystem.damage(10);
+        }
+    }
+}, null, this);
     setTimeout(() => { try { if (this._cinematicLock) this._cinematicLock = false; } catch (e) {} }, 2000);
 }
 
@@ -933,6 +1021,8 @@ this._cfgBossY   = 80;    // Boss hanging overhead center point Y (Ceiling mount
             if (this.diseaseSystem._updateUI) this.diseaseSystem._updateUI();
         }
     }
+
+    // 放入类中，作为 SafeZone5Scene 的一个成员
 
     _registerAnims() {
 
@@ -1036,6 +1126,69 @@ if (this.textures.exists('boss_hurt') && !this.anims.exists('anim_boss_hurt')) {
 update(time, delta) {
 
     if (this._uiPaused) return;   
+
+    // 🌟 核心新增：玩家死亡自动回溯检查点 + 场景镜头重置全套引擎
+        if (this.healthSystem && this.healthSystem.hp <= 0 && !this._playerRespawning) {
+            this._playerRespawning = true; // 开启复活锁，防止多帧重复触发
+            this.playerCanMove = false;     // 锁定玩家按键
+            if (this.player.body) this.player.body.setVelocity(0, 0);
+            this.player.setTint(0xff0000);  // 变红代表阵亡
+
+            console.log("Player died. Initiating safe checkpoint roll-back sequence.");
+
+            // 1. 屏幕在1秒内平滑变黑
+            this.cameras.main.fadeOut(1000, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                
+                // 2. 智能计算复活坐标：如果激活了 Checkpoint 就去 Checkpoint，否则去初始出生点
+                let respawnX = this.spawnX || 70;
+                let respawnY = this.spawnY || 400;
+                if (this._checkpoint && this._checkpoint.activated) {
+                    respawnX = this._checkpoint.x;
+                    respawnY = this._checkpoint.y;
+                }
+
+                // 3. 将小人瞬移过去并解除受伤红色
+                this.player.setPosition(respawnX, respawnY);
+                this.player.clearTint();
+
+                // 4. 重置血量系统到满血状态 (保底恢复满血)
+                if (this.healthSystem.healAmount) {
+                    this.healthSystem.healAmount(this.healthSystem.maxHp || 3);
+                } else {
+                    this.healthSystem.hp = this.healthSystem.maxHp || 3;
+                }
+                if (this.healthSystem.refresh) this.healthSystem.refresh();
+
+                // 5. 🚨 重点：如果是在 Boss 战中阵亡，彻底重置竞技场和 BGM，防止关卡卡死
+                if (sz5_arenaLocked && !sz5_bossBeatenSequence) {
+                    if (BossManager.entity) {
+                        BossManager.entity.destroy(); // 销毁当前恶魔分身
+                    }
+                    var sz5_bossBarrier, sz5_merchant, sz5_arenaLocked = false;
+                    sz5_arenaLocked = false;
+                    sz5_dialogueState = 0; // 允许重新走进竞技场触发 Boss 战
+
+                    // 将激昂的 Boss 战 BGM 切回原本平静的第五安全区环境音乐
+                    if (this.currentBGM) this.currentBGM.stop();
+                    this.currentBGM = this.sound.add('bgm_safezone5', { loop: true, volume: 0.5 });
+                    this.currentBGM.play();
+                }
+
+                // 6. 🌟 镜头安全重置：解除 Boss 战视角裁剪束缚，恢复全图视野并重新聚焦锁定小人！
+                const mapHeight = sz5_terrain.length * 32;
+                this.cameras.main.setBounds(0, 0, 1578, mapHeight);
+                this.cameras.main.setZoom(2.5);
+                this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
+
+                // 7. 重新允许小人移动，拉开帷幕恢复光明
+                this.cameras.main.fadeIn(800);
+                this.playerCanMove = true;
+                this._playerRespawning = false;
+            });
+            return; // 截断当前帧，直接进入下一渲染循环
+        }
+
     // 🌟 新增功能：半路惊悚咆哮动态触发器
         if (!sz5_roarAlertTriggered && this.player.x > 900 && this.player.x < 1200) {
             sz5_roarAlertTriggered = true;
@@ -1162,20 +1315,29 @@ if (!sz5_arenaLocked && this.player.x > this._cfgArenaX) {
     sz5_bossBarrier.setVisible(true);
     this.physics.world.enable(sz5_bossBarrier);
     
-    if (typeof BossManager !== 'undefined') {
-        BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, () => {}, true);
-        
-        this.time.delayedCall(50, () => {
-            if (BossManager.entity && BossManager.entity.body) {
-                BossManager.entity.body.setCollideWorldBounds(true);
-                this.physics.add.collider(BossManager.entity, this.walls);
-                this.physics.add.collider(BossManager.entity, this.platforms);
-                
-                // 3. 🌟 强制将 Boss AI 的初始表面状态纠正为 air 浮空突袭状态，防止其第 1 帧就去找底层
-                BossManager.entity.surface = 'air';
-            }
-        });
-    }
+    // 🌟 伤害修复：把原来的空函数 () => {} 替换为调用你现有的 healthSystem 扣血包
+        if (typeof BossManager !== 'undefined') {
+            BossManager.spawn(this, this._cfgBossX, this._cfgBossY, this.player, this.platforms, (p, b) => {
+                // 确保游戏没有进入暂停，且健康系统完好
+                if (this.healthSystem && this.healthSystem.damage) {
+                    this.healthSystem.damage(20); // 👈 每次被 Boss 撞击，强制扣除 1 点血量/爱心
+                    this.cameras.main.shake(150, 0.02); // 额外增加一个受击屏幕剧烈抖动反馈，提升打击感
+                    
+                    // 让小人变成红色闪烁一瞬间代表受伤
+                    this.player.setTint(0xff0000);
+                    this.time.delayedCall(200, () => { if (this.player) this.player.clearTint(); });
+                }
+            }, true);
+            
+            this.time.delayedCall(50, () => {
+                if (BossManager.entity && BossManager.entity.body) {
+                    BossManager.entity.body.setCollideWorldBounds(true);
+                    this.physics.add.collider(BossManager.entity, this.walls);
+                    this.physics.add.collider(BossManager.entity, this.platforms);
+                    BossManager.entity.surface = 'air';
+                }
+            });
+        }
 }
 
 // 🚨 EMERGENCY FLOOR-ANCHOR PATCH
@@ -1460,13 +1622,84 @@ if (sz5_arenaLocked && typeof BossManager !== 'undefined' && BossManager.entity)
 
     _checkCheckpoint() {
         if (!this._checkpoint || !this.player) return;
+        
         const cp = this._checkpoint;
         const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, cp.x, cp.y);
-        const inRange = dist <= 100;
-        const inDialog = this.dialogSystem && this.dialogSystem.isOpen;
-        cp.setHintVisible(inRange && !inDialog);
-        // 玩家靠近已激活 checkpoint (5 格 = 160 px) → 每秒 -1 侵蚀度 + +1 HP
-        const inHealRange = dist <= 160;
+        
+        // 自动感应激活（玩家走近到 50 像素以内时触发）
+        if (!cp.activated && dist <= 50) {
+            cp.activated = true; 
+            
+            cp.setTexture('Checkpoint_activating');
+            this.sound.play('snd_egg_lay', { volume: 0.5, pitch: 1.6 });
+
+            this.time.delayedCall(400, () => {
+                if (cp) cp.setTexture('Checkpoint_activated');
+            });
+
+            // 🌟 净化微型冲击波半径（320 像素 = 方圆 10 格大区域）
+            let purificationRadius = 320; 
+
+            // 深度扫描当前场景里的所有渲染对象
+            this.children.list.forEach(obj => {
+                if (!obj || !obj.texture || !obj.texture.key) return;
+
+                let blockDist = Phaser.Math.Distance.Between(obj.x, obj.y, cp.x, cp.y);
+                
+                if (blockDist <= purificationRadius) {
+                    let key = obj.texture.key;
+
+                    // 🟢 1. 优先判定：如果是地表层地板线 (tile_floor) -> 100% 换成带草皮的 T 系列边缘
+                    if (key === 'tile_floor' || key.endsWith('_T')) {
+                        obj.setTexture('Yellow_dirt_T');
+                    } 
+                    // 🪨 2. 如果是前景实心变异内墙
+                    else if (key.startsWith('Cavetile_wall_') || key === 'tile_wall') {
+                        let suffix = key.split('Cavetile_wall_')[1];
+                        
+                        if (suffix === '2L') {
+                            obj.setTexture('Yellow_dirt_L');
+                        } else if (suffix && suffix.startsWith('T')) {
+                            obj.setTexture('Yellow_dirt_T'); // 包含顶部的也换成草皮
+                        } else {
+                            // 其余普通的实心墙面，随机爆发亮闪闪的黄水晶矿
+                            let crystalVariations = ['Yellow_dirt_5LC1', 'Yellow_dirt_5LC2', 'Yellow_dirt_5LC3'];
+                            let choice = crystalVariations[Phaser.Math.Between(0, crystalVariations.length - 1)];
+                            obj.setTexture(choice);
+                        }
+                    } 
+                    // 🧱 3. 核心修复：如果是任何背景层方块 (通过检查贴图名字是否包含 bg 或 bg_block 强制抓取)
+                    else if (key === 'bg_block' || key.toLowerCase().includes('bg') || obj._isBackgroundBlock) {
+                        if (this.textures.exists('Yellow_bg')) {
+                            obj.setTexture('Yellow_bg');
+                            obj.setTint(0x777777); // 给予稍微暗淡的弱光 Tint，完美保留前后视差空间层级
+                        }
+                    }
+                }
+            });
+
+            // 圣光文本提示飘出
+            let activeText = this.add.text(cp.x, cp.y - cp.displayHeight/2 - 20, "SAFE ZONE BOUNDARY ESTABLISHED", {
+                fontSize: '15px',
+                fill: '#ffd86a',
+                fontStyle: 'bold',
+                fontFamily: 'monospace',
+                stroke: '#000000',
+                strokeThickness: 4
+            }).setOrigin(0.5).setDepth(100);
+
+            this.tweens.add({
+                targets: activeText,
+                y: '-=40',
+                alpha: 0,
+                duration: 1800,
+                ease: 'Quad.easeOut',
+                onComplete: () => activeText.destroy()
+            });
+        }
+
+        // 圣光温泉持续回血机制
+        const inHealRange = dist <= 160; 
         if (cp.activated && inHealRange) {
             const now = this.time.now;
             if (!this._checkpointHealNextAt) this._checkpointHealNextAt = now + 1000;

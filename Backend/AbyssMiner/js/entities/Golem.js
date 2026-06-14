@@ -22,8 +22,8 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(false);
         this.setDepth(10);
 
-        this.hp = 200;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul, 自动在此基础上翻)
-        this.maxHp = 200;
+        this.hp = 2;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul, 自动在此基础上翻)
+        this.maxHp = 2;
         // 双手 HP (各 80 — (用户) Easy 基准 100→80), 死亡标记
         this._handLHp = 80;
         this._handRHp = 80;
@@ -650,8 +650,8 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                 if (hand.setTint) hand.setTint(0x666666);
             }
         });
-        // Boss 主体扣 80 HP + 触发独立红闪 (via takeDamage 走标准流程)
-        this.takeDamage(80);
+        // (用户) Boss 主体扣【当前剩余血量的 30%】+ 独立红闪 (原写死 80; 走 takeDamage 标准流程)
+        this.takeDamage(this.hp * 0.3);
     }
 
     die() {

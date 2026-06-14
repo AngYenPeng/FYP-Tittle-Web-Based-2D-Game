@@ -152,7 +152,7 @@ class SafeZone2Scene extends MainGameScene {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
-        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._chests = [];   // (用户修复) _chests 重进图必清: Phaser 复用场景实例, 不清则上轮旧 chest(sprite 已销毁)残留, update 跑到它 → _open 对死 sprite setTexture 宕机
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false; this._chests = []; this._crystalNpcs = [];   // (用户修复) _chests 重进图必清: Phaser 复用场景实例, 不清则上轮旧 chest(sprite 已销毁)残留, update 跑到它 → _open 对死 sprite setTexture 宕机
         this._sz2BossFightStarted = false; this._sz2BossWallsBuilt = false; this._sz2WasInZone2 = false; this._sz2MerchantRiseTriggered = false;
         this._bossIntroStarted = false; this._inBossIntro = false; this._bossIntroDialogDone = false; this._bossIntroTakeoffDone = false; this._bossIntroFinished = false;
         this._crystalNpcRewardGiven = false; this._crystalNpcDialogState = 0; this.sz2CnpcRewardPlotDone = false;
@@ -699,7 +699,7 @@ class SafeZone2Scene extends MainGameScene {
             if (this.healthSystem.refresh) this.healthSystem.refresh();
         }
         // 健康侦测仪 flag + 激活腐蚀度条
-        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector'))) && !data._isSaveLoad) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入时重置为未购买 (商店重新可买)
+        if ((data.hasHealthDetector || (this.registry && this.registry.get('hasHealthDetector')))) {   // (用户) detector: 前进传送(SecretDoor)时保留; 读档载入也恢复 (商店重新可买)
             this._hasHealthDetector = true;
             if (this.diseaseSystem && this.diseaseSystem.setBarVisible) {
                 this.diseaseSystem.setBarVisible(true);

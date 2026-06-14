@@ -126,7 +126,7 @@ class TitleScene extends Phaser.Scene {
             { label: 'SAFEZONE6',   action: () => this._devJump('SafeZone6Scene') },
             { label: 'OPTIONS',     action: () => this._openOptions() },
             { label: 'ACHIEVEMENTS', action: () => { if (typeof AchievementSystem !== 'undefined') AchievementSystem.showPanel(this); } },   // (用户) 成就直达
-            { label: 'RECORDS',     action: () => this._openRecords() },   // (用户) 通关记录
+            { label: 'CLEAR HISTORY',     action: () => this._openRecords() },   // (用户) 通关记录
             { label: 'CREDITS',     action: () => this._openCredits() },
             { label: 'QUIT',        action: () => { alert('Thanks for playing!'); } }
         ];
@@ -435,7 +435,7 @@ class TitleScene extends Phaser.Scene {
         // (用户) 点面板外空地不再关闭 — 仅 \u2715 可关 (dim 保持 interactive 吞点击)
         const bg = this.add.rectangle(0, 0, PW, PH, 0x0b0b12, 0.97).setStrokeStyle(2, 0x806020).setInteractive();   // 吞内部点击
         const inner = this.add.rectangle(0, 0, PW - 10, PH - 10, 0x000000, 0).setStrokeStyle(1, 0xffcc44, 0.3);
-        const title = this.add.text(0, -PH / 2 + 34, '\u2605 RECORDS \u2605', {
+        const title = this.add.text(0, -PH / 2 + 34, '\u2605 CLEAR HISTORY \u2605', {
             fontSize: '30px', color: '#ffd86a', fontFamily: '"VT323", monospace', stroke: '#000', strokeThickness: 4
         }).setOrigin(0.5);
         const divider = this.add.rectangle(0, -PH / 2 + 58, PW - 60, 2, 0x806020, 1);
@@ -451,7 +451,7 @@ class TitleScene extends Phaser.Scene {
         try { recs = JSON.parse(localStorage.getItem('abyssMinerClearRecords') || '[]'); } catch (e) {}
 
         if (!recs.length) {
-            const empty = this.add.text(0, 16, 'No records yet.\nClear the game to write history!', {
+            const empty = this.add.text(0, 16, 'No clears yet.\nClear the game to write history!', {
                 fontSize: '22px', color: '#9aa0b0', fontFamily: '"VT323", monospace', align: 'center', lineSpacing: 8
             }).setOrigin(0.5);
             panel.add(empty);
@@ -516,15 +516,18 @@ class TitleScene extends Phaser.Scene {
                 }).setOrigin(0, 0.5);
                 // (用户) 难度标签着色 — 与选难度页同色
                 const _dc = { easy: '#88ff88', normal: '#ffee88', hard: '#ffaa66', extreme: '#ff6666' }[String(r.difficulty || '').toLowerCase()] || '#dddddd';
-                const diffT = this.add.text(main.x + main.width, ry - 11, '[' + String(r.difficulty || '').toUpperCase() + ']', {
-                    fontSize: '20px', color: _dc, fontFamily: '"VT323", monospace', resolution: 2
-                }).setOrigin(0, 0.5);
-                list.add(diffT);
                 const sub = this.add.text(-(PW - 70) / 2 + 64, ry + 12,
                     fmtDate(r.at) + '    Deaths ' + (r.deaths | 0) + (typeof r.timeMs === 'number' ? '    Time ' + _fmtT(r.timeMs) : ''), {
                     fontSize: '16px', color: '#9aa0b0', fontFamily: '"VT323", monospace', resolution: 2
                 }).setOrigin(0, 0.5);
                 list.add([card, bar, gT, main, sub]);
+                // (用户) 难度标签: 显示在 CLEARED 右边 + 按难度着色; 必须在 card 之后加否则被卡片背景挡住; 旧记录无 difficulty 字段则不画 (免空 [])
+                if (r.difficulty) {
+                    const diffT = this.add.text(main.x + main.width, ry - 11, '[' + String(r.difficulty).toUpperCase() + ']', {
+                        fontSize: '20px', color: _dc, fontFamily: '"VT323", monospace', resolution: 2
+                    }).setOrigin(0, 0.5);
+                    list.add(diffT);
+                }
                 const cxr = (PW - 70) / 2 - 92;
                 const _recTex = this.textures.exists('YCrystal') ? 'YCrystal' : (this.textures.exists('Crystal') ? 'Crystal' : null);
                 if (_recTex) list.add(this.add.image(cxr, ry + 2, _recTex).setDisplaySize(20, 20));   // (用户) 水晶贴图净下移 2px
@@ -581,7 +584,7 @@ class TitleScene extends Phaser.Scene {
         styleTabs();
 
         // 底部说明
-        const note = this.add.text(0, PH / 2 - 20, 'Only the latest 30 runs are recorded.', {
+        const note = this.add.text(0, PH / 2 - 20, 'Only the latest 30 clears are recorded.', {
             fontSize: '16px', color: '#8a8a99', fontFamily: '"VT323", monospace', resolution: 2
         }).setOrigin(0.5);
         panel.add(note);
@@ -832,7 +835,7 @@ class TitleScene extends Phaser.Scene {
         panel.add([bg, title]);
         const defs = [
             { mode: 'easy',    label: 'EASY',    desc: 'The intended experience.',                         color: '#88ff88' },
-            { mode: 'normal',  label: 'NORMAL',  desc: '3 hearts \u00b7 tougher foes \u00b7 faster corrosion.',     color: '#ffee88' },
+            { mode: 'normal',  label: 'NORMAL',  desc: '3 hearts \u00b7 tougher foes \u00b7 faster radiation.',     color: '#ffee88' },
             { mode: 'hard',    label: 'HARD',    desc: '1 heart \u00b7 brutal foes \u00b7 pricier shop.',           color: '#ffaa66' },
             { mode: 'extreme', label: 'EXTREME', desc: '1 heart \u00b7 deadliest foes \u00b7 shrines no longer heal.', color: '#ff6666' }
         ];
@@ -928,7 +931,7 @@ class TitleScene extends Phaser.Scene {
         try { this.registry.set('pickaxeUpgraded', !!data.pickaxeUpgraded); } catch (e) {}
         try { this.registry.set('hasPetSpider', !!data.hasPetSpider); } catch (e) {}   // (用户) 宠物随档恢复
         try { this.registry.set('runDeaths', data.runDeaths || 0); } catch (e) {}   // (用户成就) 死亡计数随档
-        try { this.registry.set('hasHealthDetector', false); } catch (e) {}   // (用户) detector 仅当前 run — 读档清 registry, 否则刚加的 registry 兜底会让它读档后前进一图又"复活"; 前进传送时由 registry 保留, 商店重买重新置 true
+        try { this.registry.set('hasHealthDetector', !!data.hasHealthDetector); } catch (e) {}   // (用户) detector 随档持久: 读档按存档 hasHealthDetector 恢复 registry (前进传送 + 读档都保留, 不再清)
         // (用户) Tutorial 阶段的档 → 从开局图文故事 (StartIntro) 重新开始, 不直接跳进剧情半途
         const _tut = (data.scene === 'TutorialScene');
         // (用户) 标记"读档载入" → 场景里 detector 等"仅当前 run"道具读档时重置, 前进传送(SecretDoor)时保留. 浅拷贝避免污染存档本体

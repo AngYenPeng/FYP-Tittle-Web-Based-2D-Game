@@ -596,7 +596,7 @@ class BatBoss {
     _dropStalactites(p) {
         if (typeof Stalactite === 'undefined') return;   // 没有 Stalactite 类就跳过
         const count = this._phase2 ? Phaser.Math.Between(15, 22) : Phaser.Math.Between(10, 17);   // (用户) 加量
-        Stalactite.rain(this.scene, {
+        const batch = Stalactite.rain(this.scene, {
             count: count,
             ceilingY: this.ceilingTop + 16,   // 生成点往下移 16 (一个 block 高) → 落在钟乳石 block 本体最下方边
             groundY: this.groundY,
@@ -606,9 +606,62 @@ class BatBoss {
             telegraph: 700,          // 咆哮结束后立刻出红色弹道提示
             damage: this.STAL_DMG
         });
+        // (用户) 二阶段: 首批落下后触发"无规律追加掉落" (一阶段不触发)
+        if (this._phase2 && Array.isArray(batch) && batch.length) this._startIrregularStalactites(batch);
     }
 
     // ───────── 受伤 / 死亡 ─────────
+    // (用户) 二阶段: 首批钟乳石落下后 3 秒内, 按首批每颗的 x 独立"无规律"追加掉落
+    //   每颗每 0.2s roll 一次 (10% 成功), 每颗最多成功 3 次就停; 3s 后整体停 roll.
+    //   成功的进队列, 串行逐颗生成 (一颗生成后隔 GAP=200ms 再下一颗), 直到队列清空 (= 所有成功次数全生成完).
+    _startIrregularStalactites(batch) {
+        const s = this.scene;
+        if (!s) return;
+        this._stopIrregularStalactites();   // 防上一波残留叠加
+        const xs = batch.map(b => b.x);
+        const success = xs.map(() => 0);     // 每颗已成功次数 (上限 3)
+        const dropOpts = {
+            mode: 'falling',
+            ceilingY: this.ceilingTop + 16,
+            groundY: this.groundY,
+            telegraph: 700,
+            damage: this.STAL_DMG
+        };
+        const queue = [];
+        const GAP = 200;   // (用户可调) 串行生成间隔 (生成时间) — 一颗生成后隔这么久再生成下一颗
+        const pump = () => {
+            if (this.dead || !this.scene) { this._irrSpawning = false; return; }
+            if (queue.length === 0) { this._irrSpawning = false; return; }
+            this._irrSpawning = true;
+            const x = queue.shift();
+            try { if (typeof Stalactite !== 'undefined') new Stalactite(this.scene, x, dropOpts); } catch (e) {}
+            this._irrSpawnEvt = this.scene.time.delayedCall(GAP, pump);
+        };
+        const TICKS = Math.ceil(3000 / 200);   // 15 次 = 3 秒
+        this._irrSpawning = false;
+        this._irrRollEvt = s.time.addEvent({
+            delay: 200,
+            repeat: TICKS - 1,
+            callback: () => {
+                if (this.dead || !this.scene) { this._stopIrregularStalactites(); return; }
+                for (let i = 0; i < xs.length; i++) {
+                    if (success[i] >= 3) continue;          // 每颗最多 3 次
+                    if (Math.random() < 0.10) {             // 10% 成功
+                        success[i]++;
+                        queue.push(xs[i]);
+                        if (!this._irrSpawning) pump();      // 没在生成就立刻启动串行生成
+                    }
+                }
+            }
+        });
+    }
+
+    _stopIrregularStalactites() {
+        if (this._irrRollEvt)  { try { this._irrRollEvt.remove(false); }  catch (e) {} this._irrRollEvt = null; }
+        if (this._irrSpawnEvt) { try { this._irrSpawnEvt.remove(false); } catch (e) {} this._irrSpawnEvt = null; }
+        this._irrSpawning = false;
+    }
+
     // 清掉所有技能残留贴图 (风环冲击波 / dash 红光 / 咆哮黄圈) — 玩家死亡时调用, 防止技能贴图冻结残留
     _clearSkillFx() {
         if (this._rings) {
@@ -620,6 +673,7 @@ class BatBoss {
         if (this._chargeFx) { try { this._chargeFx.destroy(); } catch (e) {} this._chargeFx = null; }
         if (this._roarFx)   { try { this._roarFx.destroy(); }   catch (e) {} this._roarFx = null; }
         if (this.scene) this.scene._windKnockVx = 0;
+        this._stopIrregularStalactites();   // (用户) 清掉二阶段无规律追加掉落的 roll/生成计时器
     }
 
     takeDamage(dmg) {

@@ -46,8 +46,8 @@ class MainGameScene extends Phaser.Scene {
         // (用户) 清掉上一轮残留的显示对象/数组缓存 — lazy 守卫 (if (!this.x)) 第二轮判真跳过重建,
         // 拿已销毁对象继续用 = 重进崩溃; 数组里囤的死对象同理
         this.ropeGraphics = null; this._gridCoordText = null;
-        this._pickExtraWalls = null; this._thorns = null;
-        this._crystalOres = null; this._deathFragments = null;
+        this._pickExtraWalls = null; this._thorns = null; this._hints = null;   // (用户修复) _hints 漏清: 旧骷髅 hint 对象(hasInteracted=true)残留数组, update 遍历旧的在前 → firstTime=false → 重进图骷髅对话播'重看'不刷新; 跟 _yCrystalOres 同款
+        this._crystalOres = null; this._yCrystalOres = null; this._deathFragments = null;   // (用户修复) _yCrystalOres 之前漏清: 旧黄水晶包装(destroyed=false)残留数组 → 重进打一下连旧块一起 emit → 多掉; 跟 _crystalOres 一样每次进图清空
         this._currentCamBoundsKey = null;   // (用户) 重进场景必须清 — 否则 _updateChunkCamera 以为边界没变, 跳过 setBounds, 新摄像机永远无界
         this._cpSnapDone = null;   // (用户) checkpoint 快照集合 — 每次 create 重置 (每个 checkpoint 每局首次进圈记一次)
         this._achDiedHere = false; this._achNestBroken = false;   // (用户成就) 区内死亡/巢破坏标记每局重置
@@ -234,6 +234,8 @@ class MainGameScene extends Phaser.Scene {
         this.load.spritesheet('HeartBreak', 'assets/images/HeartBreak.png', { frameWidth: 32, frameHeight: 32 });   // (用户) 352×32 / 11 帧 死亡爱心碎裂
         this.load.image('Thorns', 'assets/images/Thorns.png');                      // (用户) 荆棘 32×32 (Thorns.js 已 exists 检查)
         this.load.spritesheet('Thorns_move', 'assets/images/Thorns_move.png', { frameWidth: 32, frameHeight: 32 });   // (用户) 荆棘被碰动画 320×32/10帧
+        this.load.image('Ythorns', 'assets/images/Ythorns.png');                    // (用户) 净化荆棘皮肤 (蝙蝠扩散后 Thorns→Ythorns)
+        this.load.spritesheet('Ythorns_move', 'assets/images/Ythorns_move.png', { frameWidth: 32, frameHeight: 32 });   // (用户) 净化荆棘动画
         this.load.image('BatNest', 'assets/images/Bat_nest.png');                   // (用户) 蝙蝠巢 60×24 (BatNest.js 用原生尺寸, 血条/打击随 displaySize 自适应)
         this.load.spritesheet('Bat_boss_fly', 'assets/images/Bat_boss_fly.png', { frameWidth: 144, frameHeight: 112 });    // (用户) 1008×112 / 7 帧
         this.load.spritesheet('Bat_boss_dash', 'assets/images/Bat_boss_dash.png', { frameWidth: 144, frameHeight: 112 });  // (用户) 1008×112 / 7 帧
