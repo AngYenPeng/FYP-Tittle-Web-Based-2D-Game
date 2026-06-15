@@ -1174,7 +1174,7 @@ class SafeZone1Scene extends MainGameScene {
         if (!this.dialogSystem) return;
         this.dialogSystem.showSequence([
             { speaker: 'Whisker', text: 'Alright then... You can find me near the shrine if you need anything.' },
-            { speaker: 'Whisker', text: "It's... ah, a long story. Just come find me when you want to buy something." }
+            { speaker: 'Whisker', text: "Just come find me when you want to buy something." }
         ], () => this._endSZ1MerchantCutscene());
     }
 
@@ -1185,7 +1185,7 @@ class SafeZone1Scene extends MainGameScene {
         }
         this.dialogSystem.showSequence([
             { speaker: 'Whisker', text: 'You can find me near the shrine if you need anything.' },
-            { speaker: 'Whisker', text: "It's... ah, a long story. Just come find me when you want to buy something." }
+            { speaker: 'Whisker', text: "Just come find me when you want to buy something." }
         ], () => this._endSZ1MerchantCutscene());
     }
 
@@ -2305,7 +2305,12 @@ class SafeZone1Scene extends MainGameScene {
                                 {
                                     label: 'Yes',
                                     action: () => {
-                                        const lines = [{ speaker: '???', text: '"We should not have been so greedy..."' }];
+                                        const lines = [
+                                            { speaker: '???', text: '"We should not have been so greedy..."' },
+                                            { speaker: '???', text: '"This isn\'t what we told for..."' },
+                                            { speaker: '???', text: '"We were not sign up for this..."' },
+                                            { speaker: '???', text: '"What\'s more is the way up is now... broken..."' }
+                                        ];
                                         if (!this._sz1Hint2_keyGiven) {
                                             this._sz1Hint2_keyGiven = true;
                                             lines.push({ speaker: '???', text: 'Something is tucked inside the book... *Mysterious Key +1*' });
@@ -2338,10 +2343,15 @@ class SafeZone1Scene extends MainGameScene {
                 yOffset: 15,
                 onInteract: () => {
                     if (this.dialogSystem) {
-                        this.dialogSystem.show({
-                            speaker: '???',
-                            text: 'Stay away... from the blue crystal...'
-                        });
+                        if (this.dialogSystem.showSequence) {
+                            this.dialogSystem.showSequence([
+                                { speaker: '???', text: 'The more I hoarded, the more the nausea kicked in..' },
+                                { speaker: '???', text: 'I feel sluggish...' },
+                                { speaker: '???', text: 'Stay away... from the blue crystal...' }
+                            ]);
+                        } else {
+                            this.dialogSystem.show({ speaker: '???', text: 'Stay away... from the blue crystal...' });
+                        }
                     }
                 }
             });
@@ -2352,7 +2362,7 @@ class SafeZone1Scene extends MainGameScene {
                     if (this.dialogSystem) {
                         this.dialogSystem.show({
                             speaker: '???',
-                            text: 'A message left by someone who came before:\n"This should not exist, but should be destroyed..."'
+                            text: 'A message left by someone who came before:\n"This place should not exist, but should be destroyed..."'
                         });
                     }
                 }

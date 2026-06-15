@@ -21,7 +21,7 @@ const AchievementSystem = {
         { id: 'sz1_hidden',    title: 'Memento Mori',             desc: "Find the hidden pioneer's remains" },
         { id: 'sz2_surgical',  title: 'Surgical Precision',       desc: "Sever both of the Golem's hands before finishing it" },
         { id: 'sz25_allcry',   title: 'Fortune Favors the Bold',  desc: 'Mine every crystal in one deathless run while the mob tide hunts you' },
-        { id: 'sz3_toy',       title: 'Lost and Found',           desc: 'Find the lost toy and return it to its owner' },
+        { id: 'sz3_toy',       title: 'Lost and Found... Or Not', desc: 'Find the lost toy and return it to its "owner"' },
         { id: 'sz4_headwind',  title: 'Against the Wind',         desc: 'Defeat the Bat Boss without breaking a single nest' },
         { id: 'one_life',      title: 'Untouchable',              desc: 'Beat the entire game without a single death' },
         { id: 'rock_bottom',   title: 'How Did It Come to This?', desc: 'Reach 100% radiation with exactly 1 HP remaining' },
@@ -35,6 +35,21 @@ const AchievementSystem = {
     _load() { try { return JSON.parse(localStorage.getItem('abyssMinerAchievements') || '{}'); } catch (e) { return {}; } },
     _save(d) { try { localStorage.setItem('abyssMinerAchievements', JSON.stringify(d)); } catch (e) {} },
     isUnlocked(id) { return !!this._load()[id]; },
+
+    /** (用户修复) 历史补登: 扫已存通关记录(abyssMinerClearRecords), 按每条 difficulty 把对应 clear 成就静默标记(不弹横幅). 修复"接线前已通关的难度不算"; 进标题调用一次, 幂等. 旧记录无 difficulty 字段者跳过. */
+    backfillClears() {
+        try {
+            const recs = JSON.parse(localStorage.getItem('abyssMinerClearRecords') || '[]');
+            if (!Array.isArray(recs) || !recs.length) return;
+            const d = this._load(); let changed = false;
+            recs.forEach(r => {
+                const m = (r && r.difficulty) ? String(r.difficulty).toLowerCase() : '';
+                const id = 'clear_' + m;
+                if (m && this.DEFS.some(a => a.id === id) && !d[id]) { d[id] = Date.now(); changed = true; }
+            });
+            if (changed) this._save(d);
+        } catch (e) {}
+    },
 
     /** 解锁 (重复调用安全): 写存储 + 弹横幅 */
     unlock(scene, id) {

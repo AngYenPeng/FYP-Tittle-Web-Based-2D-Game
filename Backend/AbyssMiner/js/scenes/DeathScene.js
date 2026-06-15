@@ -75,6 +75,7 @@ class DeathScene extends Phaser.Scene {
         this.input.on('pointerdown', _advanceOrComplete);
         this.input.keyboard.on('keydown-SPACE', _advanceOrComplete);
         this.input.keyboard.on('keydown-ENTER', _advanceOrComplete);
+        this.events.once('shutdown', () => this._stopDeathTypeSound());   // (用户) 场景切走/跳过 → 停打字声, 防循环跟到 TitleScene
 
         this._showCurrentLine();
         this.cameras.main.fadeIn(800, 0, 0, 0);
@@ -96,6 +97,7 @@ class DeathScene extends Phaser.Scene {
         this._typingIdx = 0;
         this._typingActive = true;
         this._subtitle.setText('');
+        this._startDeathTypeSound();   // (用户) 开始逐字 → 循环播打字声
         this._typingEvent = this.time.addEvent({
             delay: 70, loop: true,
             callback: () => {
@@ -118,6 +120,21 @@ class DeathScene extends Phaser.Scene {
 
     _stopTypewriter() {
         if (this._typingEvent) { this._typingEvent.remove(); this._typingEvent = null; }
+        this._stopDeathTypeSound();   // (用户) 打字停 → 停打字声 (打完/跳过/切行都经过这里)
+    }
+
+    /** (用户) 死亡 cutscene 打字声: 逐字循环, 打完/跳过/切走即停 — 防中途跳过音效无限循环 */
+    _startDeathTypeSound() {
+        try {
+            if (!this.sound || !this.cache.audio.exists('DialogSound')) return;
+            this._stopDeathTypeSound();
+            const vol = (typeof AudioSystem !== 'undefined') ? AudioSystem.sfxVolume : 0.6;
+            this._deathTypeSnd = this.sound.add('DialogSound', { loop: true, volume: vol });
+            this._deathTypeSnd.play();
+        } catch (e) {}
+    }
+    _stopDeathTypeSound() {
+        try { if (this._deathTypeSnd) { this._deathTypeSnd.stop(); this._deathTypeSnd.destroy(); this._deathTypeSnd = null; } } catch (e) {}
     }
 
     _nextLine() {

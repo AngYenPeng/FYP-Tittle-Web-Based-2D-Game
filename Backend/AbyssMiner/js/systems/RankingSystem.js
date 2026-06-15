@@ -52,6 +52,12 @@ class RankingSystem {
             if (recs.length > 30) recs.length = 30;   // 只留最近 30 场
             localStorage.setItem('abyssMinerClearRecords', JSON.stringify(recs));
             if (window.AbyssDiff && AbyssDiff.markCleared) AbyssDiff.markCleared();   // (用户) 通关旗: 解锁 Extreme + 首通时排队碎屏演出
+            // (用户) 通关成就: 解锁当前难度首次通关 (clear_easy/normal/hard/extreme) + 全程无死亡 (one_life).
+            //   真正通关点 = 进 z6 暗门触发本结算 (原 SpiderQueenBoss.die 已废弃不跑). unlock 对已解锁幂等 → 只首通弹 toast.
+            if (typeof AchievementSystem !== 'undefined' && AchievementSystem.unlock) {
+                AchievementSystem.unlock(s, 'clear_' + diffMode);
+                if (deaths === 0) AchievementSystem.unlock(s, 'one_life');
+            }
             // (用户) 通关: 当前存档标记 GAME CLEAR (槽位金色显示, 不可继续), 记录内容与文凭一致
             if (typeof SaveSystem !== 'undefined' && SaveSystem.getCurrentSlot) {
                 const _slot = SaveSystem.getCurrentSlot();
@@ -74,16 +80,16 @@ class RankingSystem {
         // (用户) 结局旁白 — 与 intro 同声部 (第二人称短句), 坠入↔爬出首尾呼应
         this._endSlides = [
             { image: 'Ending1', lines: [
-                "Your hand breaks the surface — cold air. Real air.",
-                "After the dark below, even the grey sky feels blinding."
+                "Your hand reaches the surface and feels the cold breeze.",
+                "After the adventuring in the abyss, even the dim sky feels blinding."
             ] },
             { image: 'Ending2', lines: [
-                "The city still glows on the horizon, like nothing ever happened.",
+                "The city still thriving on the horizon, like nothing ever happened.",
                 "At your feet, a bag of crystals... and a truth too heavy to sell.",
                 "You're not the same person who climbed down."
             ] },
             { image: 'Ending3', lines: [
-                "Behind you, the mine stands silent at last.",
+                "Behind you, the uncovered secrets of the mine.",
                 "Only one set of footprints leads away from it — yours."
             ] }
         ];
@@ -116,11 +122,12 @@ class RankingSystem {
         this._endImg = img; this._endSub = sub;
 
         // 打字机
-        const stopType = () => { if (this._endTypeEv) { this._endTypeEv.remove(); this._endTypeEv = null; } };
+        const stopType = () => { if (this._endTypeEv) { this._endTypeEv.remove(); this._endTypeEv = null; } try { if (this._endTypeSnd) { this._endTypeSnd.stop(); this._endTypeSnd.destroy(); this._endTypeSnd = null; } } catch (e) {} };   // (用户) 含停打字声 (打完/跳过/切行/finish 全经过这里)
         const startType = (full) => {
             stopType();
             this._endTypeFull = full; this._endTypeIdx = 0; this._endTyping = true;
             sub.setText('');
+            try { if (s.sound && s.cache.audio.exists('DialogSound')) { const vol = (typeof AudioSystem !== 'undefined') ? AudioSystem.sfxVolume : 0.6; this._endTypeSnd = s.sound.add('DialogSound', { loop: true, volume: vol }); this._endTypeSnd.play(); } } catch (e) {}   // (用户) 开始逐字 → 循环播打字声
             this._endTypeEv = s.time.addEvent({ delay: 70, loop: true, callback: () => {
                 this._endTypeIdx++;
                 sub.setText(this._endTypeFull.substring(0, this._endTypeIdx));
@@ -170,6 +177,7 @@ class RankingSystem {
         const onSpace = () => advance(), onEnter = () => advance();
         s.input.keyboard.on('keydown-SPACE', onSpace);
         s.input.keyboard.on('keydown-ENTER', onEnter);
+        s.events.once('shutdown', () => { try { if (this._endTypeSnd) { this._endTypeSnd.stop(); this._endTypeSnd.destroy(); this._endTypeSnd = null; } } catch (e) {} });   // (用户) 场景切走 → 停打字声兜底, 防循环音效跟到下个场景
 
         let done = false;
         const finish = () => {

@@ -20,7 +20,7 @@ class SafeZone3Scene extends MainGameScene {
         // (用户) 实体数组每次进图清空 — CrystalNpc/Chest 是包装对象, 退场时 sprite 被销毁但包装残留在数组里, 读档时 update 迭代到死精灵 → 崩溃
         this._crystalNpcs = []; this._chests = [];
         // (修复) 通关后开新档剧情全跳过: 这些剧情/对话/任务/传送标志没在 init 清, 复用实例残留 true
-        this._sz3ElderTalked = false; this._sz3ElfTalked = false; this._sz3HasToy = false; this._amberTalkedOnce = false; this._sz3EncouragedOnce = false;   // (用户修复) Amber 升级任务的初次对白(自我介绍+要10颗)漏重置 → 存档退出重进残留 true → 跳过开场直接问'有没有10颗'; 跟着重置. 已升级时 _pickaxeUpgraded 早分支先拦截不会重播开场
+        this._sz3ElderTalked = false; this._sz3ElfTalked = false; this._sz3HasToy = false; this._sz3ToyGiven = false; this._amberTalkedOnce = false; this._sz3EncouragedOnce = false; this._sz3SoloCount = 0;   // (用户修复) Amber 升级任务的初次对白(自我介绍+要10颗)漏重置 → 存档退出重进残留 true → 跳过开场直接问'有没有10颗'; 跟着重置. 已升级时 _pickaxeUpgraded 早分支先拦截不会重播开场. (用户) _sz3ToyGiven 同样漏重置 → 交了玩具后重进 NPC 永远 happy; 加入重置 → 任务每次重进可重做 (NPC 回哭 + 玩具重新可拿)
         this._sisterTweensPaused = false; this._sz3BgmCleanHooked = false; this._teleportingToSafeZone4 = false; this._platformGuideUnlocked = false;
         // (用户修复) 漏重置的剧情旗标: 重进图(读档/死亡/通关)要恢复原状, 否则商人不再钻出 + 水晶NPC对话不刷新
         this._sz3MerchantSpawned = false; this._moleEmergeDone = false; this._sz3CrystTalkedOnce = false;
@@ -996,14 +996,14 @@ class SafeZone3Scene extends MainGameScene {
                 s._sz3FadeOutVignette();
                 // 妹妹 2 句对话
                 s.dialogSystem.showSequence([
-                    { speaker: '???', text: 'Sis, something fell from the sky again!' },
-                    { speaker: '???', text: "A shooting star? If we wish on it, will our wish come true?!" }
+                    { speaker: '???', text: 'Sis, something fell from the sky!' },
+                    { speaker: '???', text: "A shooting star? If we wish on it, will our dream come true ?!" }
                 ], () => {
                     // 妹妹完, 进姐姐
                     s._sz3IntroPhase = 3;
                     s.dialogSystem.showSequence([
-                        { speaker: '???', text: "I don't think so. Look — it's got arms and legs." },
-                        { speaker: '???', text: "It's just a wild monkey!" }
+                        { speaker: '???', text: "I don't think it's one, look it's got arms and legs." },
+                        { speaker: '???', text: "It's probably a wild monkey." }
                     ], () => {
                         // 姐姐说完"猴子", 主角动画从 frame 13 继续播到结束
                         s._sz3IntroPhase = 4;
@@ -1052,8 +1052,8 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         // 两人同时尖叫
         s.dialogSystem.showSequence([
-            { speaker: '???', text: 'AAAH!!! IT MOVED!!! THE DEAD THING MOVED!!!' },
-            { speaker: '???', text: 'RUN!!!' }
+            { speaker: '???', text: 'Gyaah!! It moved! The wild monkey moved !!' },
+            { speaker: '???', text: 'Run!!' }
         ], () => {
             // 跑路 — 神像 col=-59, 妹妹跑到 col=-64, 姐姐 col=-62
             s._sz3IntroPhase = 6;
@@ -1129,16 +1129,16 @@ class SafeZone3Scene extends MainGameScene {
         // 同时启动对话 (5 句叙述 + 1 句选择, 跑期间播)
         s.time.delayedCall(300, () => {
             s.dialogSystem.showSequence([
-                { speaker: '???', text: 'Easy, little ones. This is a human.' },
-                { speaker: '???', text: "It's been a long time since a human ever stepped foot here." },
+                { speaker: '???', text: 'Easy Little ones, this here is a human.' },
+                { speaker: '???', text: "It has been a long time since a human stepped foot onto here." },
                 { speaker: '???', text: 'Welcome, unexpected guest.' },
-                { speaker: 'Cryst', text: 'My name is Cryst. This is the Crystal Ville.' },
-                { speaker: 'Cryst', text: "I don't know how you got here — but you're hurt, and you'll need help." }
+                { speaker: 'Cryst', text: 'My name is Cryst, and the place u land here is Crystal Ville.' },
+                { speaker: 'Cryst', text: "I don't know how you got here but you seem injured, lets tend your wounds first" }
             ], () => {
                 s._sz3IntroPhase = 8;
                 s.dialogSystem.show({
                     speaker: 'Cryst',
-                    text: 'Will you let me tend to your wounds?',
+                    text: 'Will you let me tend your wounds?',
                     choices: [
                         { label: 'Yes', action: () => s._sz3CrystHealPath() },
                         { label: 'May I ask you a few things first?', action: () => s._sz3CrystQuestionPath() }
@@ -1153,10 +1153,10 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s._sz3LeadToGuardian([
-            { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must have seem strange to you." },
-            { speaker: 'Cryst', text: 'But first — let me bring you to our Guardian Crystal. It is what keeps us alive.' },
+            { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must have seems strange to you." },
+            { speaker: 'Cryst', text: "This is our shrine, Guardian Crystal. It's what keeps us safe from the strange ooze from the blue crystals." },
             { speaker: 'Cryst', text: 'Does the pain ease, even a little?' },
-            { speaker: 'You', text: "Yes... a little. I do have questions, though. Would you answer them?" }
+            { speaker: 'You', text: "Yes, I'm feeling much better now and I have questions to ask. Would you answer them?" }
         ]);
     }
 
@@ -1169,10 +1169,10 @@ class SafeZone3Scene extends MainGameScene {
             { speaker: 'Cryst', text: 'But as our guest, let me bring you to the Guardian Crystal first.' }
         ], () => {
             s._sz3LeadToGuardian([
-                { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must seem strange to you." },
-                { speaker: 'Cryst', text: 'This is our Guardian Crystal — what keeps us alive.' },
+                { speaker: 'Cryst', text: "I can tell you mean no harm. Our kind must have seems strange to you." },
+                { speaker: 'Cryst', text: "This is our shrine, Guardian Crystal. It's what keeps us safe from the strange ooze from the blue crystals." },
                 { speaker: 'Cryst', text: 'Does the pain ease, even a little?' },
-                { speaker: 'You', text: "Yes... a little. And yes — I have questions. Would you answer them?" }
+                { speaker: 'You', text: "Yes, I'm feeling much better now and I have questions to ask. Would you answer them?" }
             ]);
         });
     }
@@ -1232,7 +1232,7 @@ class SafeZone3Scene extends MainGameScene {
         // 走的一瞬间就开始说 leadLines, 完了进 Q&A
         s.dialogSystem.showSequence(leadLines, () => {
             s.dialogSystem.showSequence([
-                { speaker: 'Cryst', text: "Of course, my friend. Ask, and I'll hold nothing back." }
+                { speaker: 'Cryst', text: "Of course human. Ask away, I'll hold nothing back." }
             ], () => s._sz3ShowQuestionMenu());
         });
     }
@@ -1244,7 +1244,7 @@ class SafeZone3Scene extends MainGameScene {
             speaker: 'Cryst',
             text: 'What would you like to know?',
             choices: [
-                { label: "Shouldn't crystals be blue? Why are these yellow?", action: () => s._sz3Q1() },
+                { label: "The crystals I've seen are blue? Why are these yellow?", action: () => s._sz3Q1() },
                 { label: 'How do you know I mean no harm?', action: () => s._sz3Q2() },
                 { label: 'What are these statues? Why do they feel soothing?', action: () => s._sz3Q3() },
                 { label: 'I have no more questions.', action: () => s._sz3QDone() }
@@ -1256,11 +1256,14 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s.dialogSystem.showSequence([
-            { speaker: 'Cryst', text: 'They should be yellow. The blue ones are corrupted, don\'t stay long exposure of it.' },
-            { speaker: 'Cryst', text: 'It spreads through living things, sinking into their flesh, hollowing them out until only a walking husk remains.' },
-            { speaker: 'Cryst', text: 'Once infected, there is but one cure: slay the mother that birthed it. A dreadful thing.' },
+            { speaker: 'Cryst', text: "It's Originally yellow. The blue ones are corrupted,  don't stay long exposure of it." },
+            { speaker: 'Cryst', text: "The blue ones.... it's caused by your kind." },
+            { speaker: 'Cryst', text: 'The crystals spread through living things, sinking into their flesh, hollowing them out until only a walking husk remains.' },
+            { speaker: 'Cryst', text: 'All of these sourced by a singular beast, how dreadful...' },
+            { speaker: 'Cryst', text: 'Rumor says that all of these nightmare could end if we slay the beast' },
+            { speaker: 'Cryst', text: "And yet... none of us has the guts to..." },
             { speaker: 'You', text: 'Where can I find it?' },
-            { speaker: 'Cryst', text: "I cannot say for certain. But walk deep enough into the mines, and you may encounter it." }
+            { speaker: 'Cryst', text: "I cannot say for certain, but deep inside the ruins, you may encounter it." }
         ], () => s._sz3ShowQuestionMenu());
     }
 
@@ -1268,11 +1271,13 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         s.dialogSystem.close();
         s.dialogSystem.showSequence([
-            { speaker: 'Cryst', text: "Simple. You carry no raw meat." },
-            { speaker: 'You', text: 'What does raw meat have to do with it?' },
-            { speaker: 'Cryst', text: 'The corruption was no accident — it was farmed. Long ago, humans broke in and took our home.' },
-            { speaker: 'Cryst', text: 'They brought raw meat by the load, fed it to the beast in the depths, and harvested the blue crystals it made.' },
-            { speaker: 'Cryst', text: "For reasons I never learned... they stopped coming, a long time ago." }
+            { speaker: 'Cryst', text: 'Simple, unlike the others, you carry no meat.' },
+            { speaker: 'You', text: '.... meat?' },
+            { speaker: 'Cryst', text: "The corruption wasn't a natural cause... It was by you humans..." },
+            { speaker: 'Cryst', text: 'They brought meats mixed with weird substances and fed it to the rumored beast in the depth' },
+            { speaker: 'Cryst', text: 'Just to harvest the blue crystals it produces...' },
+            { speaker: 'Cryst', text: 'I never learn their purpose, but they slowly but surely being less and less active' },
+            { speaker: 'Cryst', text: 'Their own actions has bitten them back.' }
         ], () => s._sz3ShowQuestionMenu());
     }
 
@@ -1308,7 +1313,7 @@ class SafeZone3Scene extends MainGameScene {
             speaker: 'Cryst',
             text: 'Is there anything you wish to ask?',
             choices: [
-                { label: "Shouldn't crystals be blue? Why are these yellow?", action: () => s._sz3Q1() },
+                { label: "The crystals I've seen are blue? Why are these yellow?", action: () => s._sz3Q1() },
                 { label: 'How do you know I mean no harm?', action: () => s._sz3Q2() },
                 { label: 'What are these statues? Why do they feel soothing?', action: () => s._sz3Q3() },
                 { label: 'Nothing for now.', action: () => s.dialogSystem.close() }
@@ -1448,12 +1453,14 @@ class SafeZone3Scene extends MainGameScene {
         if (s.dialogSystem && s.dialogSystem.isOpen) return;
         if (s._sz3EncouragedOnce) {
             s.dialogSystem.showSequence([
-                { speaker: '???', text: "Keep going! You can do it!" }
+                { speaker: '???', text: "Hey, maybe you're our hope..." }
             ], () => s.dialogSystem.close());
         } else {
             s._sz3EncouragedOnce = true;
             s.dialogSystem.showSequence([
-                { speaker: '???', text: "Oh? A brave adventurer? Keep at it — I believe in you. Maybe you're our hope..." }
+                { speaker: '???', text: "You want to proceed to the ruins? That's what I call courage." },
+                { speaker: '???', text: "Shame that I cant go with your adventure. It's my duty and honor to guard the village, my only place to call home." },
+                { speaker: '???', text: "Hey, maybe you're our hope..." }
             ], () => s.dialogSystem.close());
         }
     }
@@ -1474,8 +1481,10 @@ class SafeZone3Scene extends MainGameScene {
         if (!s._amberTalkedOnce) {
             s._amberTalkedOnce = true;
             s.dialogSystem.showSequence([
-                { speaker: 'Amber', text: "Oh? A new adventurer? My name is Amber." },
-                { speaker: 'Amber', text: "Could you collect 10 yellow crystals for me? I'll upgrade your pickaxe so it actually feels like a weapon." }
+                { speaker: 'Amber', text: "Colour me suprise! A human! Whoops, I how could I forget my manners. My name is Amber, A local blacksmith." },
+                { speaker: 'Amber', text: "I see that you're holding two sturdy pickaxes there." },
+                { speaker: 'Amber', text: "I could make them even better, like an actual weapon and for traversing" },
+                { speaker: 'Amber', text: "For a newcomer, I'll make a discount. Just 10 Yellow crystals, what do you say?" }
             ], () => s.dialogSystem.close());
             return;
         }
@@ -1483,7 +1492,7 @@ class SafeZone3Scene extends MainGameScene {
         // 第二次起 — yes/no 问任务进度
         s.dialogSystem.show({
             speaker: 'Amber',
-            text: 'Do you have 10 yellow crystals?',
+            text: "For a newcomer, I'll make a discount. Just 10 Yellow crystals, what do you say?",
             choices: [
                 { label: 'Yes', action: () => s._sz3AmberCheckYellowCrystals() },
                 { label: 'No',  action: () => s._sz3AmberNotYet() }
@@ -1823,7 +1832,7 @@ class SafeZone3Scene extends MainGameScene {
                 { speaker: '???', text: 'Hello... human?' },
                 { speaker: 'You', text: "Hello, you two. Good to meet you — what are your names?" },
                 { speaker: 'Mica', text: 'My name is Mica.' },
-                { speaker: 'Mira', text: "Um... I'm Mira. Sorry we mistook you for a mob earlier..." }
+                { speaker: 'Mira', text: "Um.. I'm Mira. Sorry we mistook you as a wild monkey earlier." }
             ], () => {
                 s.dialogSystem.show({
                     speaker: 'You',
@@ -2149,9 +2158,9 @@ class SafeZone3Scene extends MainGameScene {
         const s = this;
         if (!s.dialogSystem) { s._endSZ3MerchantCutscene(); return; }
         s.dialogSystem.showSequence([
-            { speaker: 'Whisker', text: 'A human in the Crystal City? Now I have seen everything.' },
-            { speaker: 'Whisker', text: "Stick around, friend. I carry wares you won't find anywhere else." },
-            { speaker: 'Whisker', text: 'Come trade whenever you are ready.' }
+            { speaker: 'Whisker', text: "A human in the Crystal Ville? Now I'm witnessing wonder" },
+            { speaker: 'Whisker', text: "But I wonder if that wonder would save the village? Heh." },
+            { speaker: 'Whisker', text: "I'm still in for trade if you ever need to." }
         ], () => s._endSZ3MerchantCutscene());
     }
 
@@ -4381,14 +4390,21 @@ class SafeZone3Scene extends MainGameScene {
         if (typeof Corpse !== 'undefined' && typeof Hint !== 'undefined') {
             const _skel = [
                 { col: -87, row: 80, variant: 'corpse3', lines: [
-                    { speaker: 'You', text: "A huge skeleton... terrifying even in death. It clutches a book of last words." }
+                    { speaker: 'You', text: "A huge skeleton... terrifying in death. It clutches a book of last words." },
+                    { speaker: 'Last Words', text: '"Once I start working down here, I knew what I\'m doing isn\'t right"' },
+                    { speaker: 'Last Words', text: '"But I\'ll do it for what it\'s worth, that\'s what the past me said"' },
+                    { speaker: 'Last Words', text: '"Feeding it radiated meat, just to get a quick cash grab"' },
+                    { speaker: 'Last Words', text: '"And now their feeding onto us...."' },
+                    { speaker: 'Last Words', text: '"All these radiation is corrupting my mind I could hardly think and write... I\'ll take a rest"' }
                 ] },
                 { col: -27, row: 88, dy: 0.5, variant: 'corpse1', toy: true, lines: [   // (用户) dy=0.5 格 = 视觉下移 16px
                     { speaker: 'You', text: "A long-dead skeleton, hands still gripping a toy, refusing to let go." },
                     { speaker: 'You', text: '*Toy +1*' }
                 ] },
                 { col: -70, row: 116, variant: 'corpse2', lines: [
-                    { speaker: 'Last Words', text: '"I hate them... they just abandoned us, threw us away..."' }
+                    { speaker: 'Last Words', text: '"We were being duped.... Just as things went bad, they just abandoned us."' },
+                    { speaker: 'Last Words', text: '"There\'s nothing left but nasty creatures and those crystals..."' },
+                    { speaker: 'Last Words', text: '"Which all caused by us..."' }
                 ] }
             ];
             _skel.forEach(sp => {

@@ -197,7 +197,7 @@ class SafeZone4Scene extends MainGameScene {
         // 接收上一个场景传来的状态（由 SecretDoor 传入）
         this._inheritedData = data || {};
         // (用户) 每次进图=全新第一次: 清掉上次残留的瞬态剧情/锁/染色 (Phaser 复用场景实例, 不清会串场: 墙皮残留 + 剧情被跳过把玩家永久锁死)
-        this._cinematicLock = false; this._yellowDirtSpread = null; this._activeCheckpoint = null; this._hasHealthDetector = false;
+        this._cinematicLock = false; this._yellowDirtSpread = null; this._sz4GreenSwapped = false; this._activeCheckpoint = null; this._hasHealthDetector = false;
         this._sz4CutsceneStarted = false; this._sz4CutsceneActive = false; this._sz4CutsceneDone = false; this._sz4BossActive = false;
         this._batBossDeathStarted = false; this._batBossCrashing = false; this._batBossLanded = false;
         // (修复) 通关后开新档剧情全跳过: boss 状态/指南/镜头守卫标志没在 init 清, 复用实例残留 true → boss 当成已死, intro/战斗全跳过
@@ -210,8 +210,11 @@ class SafeZone4Scene extends MainGameScene {
         if (typeof super.preload === 'function') super.preload();
         // (用户) 背景图层 — SZ4 三层
         this.load.image('sz4_bg_L1', 'assets/images/sz4_bg_L1.png');
+        this.load.image('sz4_bg_YL1', 'assets/images/sz4_bg_YL1.png');   // (用户) sz4_bg_L1 绿色版 — BatBoss 死亡消失瞬间 L1→YL1
         this.load.image('sz4_bg_L2', 'assets/images/sz4_bg_L2.png');
+        this.load.image('sz4_bg_YL2', 'assets/images/sz4_bg_YL2.png');   // (用户) L2 绿版
         this.load.image('sz4_bg_L3', 'assets/images/sz4_bg_L3.png');
+        this.load.image('sz4_bg_YL3', 'assets/images/sz4_bg_YL3.png');   // (用户) L3 绿版
     }
 
     create() {
@@ -1493,8 +1496,11 @@ class SafeZone4Scene extends MainGameScene {
         if (!s.dialogSystem) { s._endSz4TraderScene(); return; }
         s.dialogSystem.showSequence([
             { speaker: 'Whisker', text: "You've come a long way, friend. The end of this road is just ahead." },
-            { speaker: 'Whisker', text: "Beyond here waits the thing that poisoned this mine: its last and greatest threat. Bring it down, and these caverns will heal. The crystals, the creatures, all of it set right." },
-            { speaker: 'Whisker', text: "I'll keep my stall right here. Stock up, steady yourself, then go and end this. I'm rooting for you, friend." }
+            { speaker: 'Whisker', text: "I took a peek and I'm certain it's the rumored beast." },
+            { speaker: 'Whisker', text: "The last and greatest threat, a living doom. Bring it down and it'll end all of this nightmare" },
+            { speaker: 'Whisker', text: "The caverns, the crystals, the creatures, they'll be purified. The crystal folks, wouldn't need to live in fears anymore." },
+            { speaker: 'Whisker', text: "I can't do the fighting with you, I'm a wandering trader remember?" },
+            { speaker: 'Whisker', text: "Stock your potions up, then go and end this once and for all. I'm rooting for ya, friend." }
         ], () => s._endSz4TraderScene());
     }
 
@@ -1867,12 +1873,12 @@ class SafeZone4Scene extends MainGameScene {
             if (boss.sprite.body) { try { boss.sprite.body.setVelocity(0, 0); boss.sprite.body.setAllowGravity(false); } catch (e) {} }
             if (this.anims.exists('bat_boss_dead')) {
                 boss.sprite.play('bat_boss_dead');
-                boss.sprite.once('animationcomplete-bat_boss_dead', () => { try { boss.sprite.destroy(); } catch (e) {} });
-                this.time.delayedCall(3200, () => { try { if (boss.sprite && boss.sprite.active) boss.sprite.destroy(); } catch (e) {} });   // 兜底
+                boss.sprite.once('animationcomplete-bat_boss_dead', () => { this._sz4BossDisappearFx(); try { boss.sprite.destroy(); } catch (e) {} });
+                this.time.delayedCall(3200, () => { this._sz4BossDisappearFx(); try { if (boss.sprite && boss.sprite.active) boss.sprite.destroy(); } catch (e) {} });   // 兜底
             } else {
                 this.tweens.add({
                     targets: boss.sprite, alpha: 0, duration: 1200, delay: 400,
-                    onComplete: () => { try { boss.sprite.destroy(); } catch (e) {} }
+                    onComplete: () => { this._sz4BossDisappearFx(); try { boss.sprite.destroy(); } catch (e) {} }
                 });
             }
         }
@@ -1880,6 +1886,28 @@ class SafeZone4Scene extends MainGameScene {
         this._sz4SpreadDeathCrystals(lx, ly);
         // (用户) 落地点为中心扩散黄土皮肤, 染满【整张地图】(allMap, 含区1镜头) — 不存盘, 重进/死亡/通关场景重建自动还原
         this._yellowDirtSpread = { cx: lx, cy: ly, radius: 0, maxRadius: null, active: true, allMap: true };
+    }
+
+    // (用户) BatBoss 死亡动画(bat_boss_dead)播完消失的瞬间触发: 全屏白闪 0.2s + 背景 sz4_bg_L1 → sz4_bg_YL1 (绿).
+    //   白屏 depth 999998 (准星 999999 之下, 压住其余一切). 一次性 (_sz4GreenSwapped 守卫).
+    //   不存盘: 重进/死亡/通关 scene create 用回 sz4_bg_L1, init 重置 _sz4GreenSwapped → 重打 boss 可再触发.
+    _sz4BossDisappearFx() {
+        if (this._sz4GreenSwapped) return;
+        this._sz4GreenSwapped = true;
+        // 背景三层一起换绿 (L1/L2/L3 → YL1/YL2/YL3); 缺图则跳过对应换图 (白闪照常)
+        if (this.bgL1 && this.bgL1.setTexture && this.textures.exists('sz4_bg_YL1')) this.bgL1.setTexture('sz4_bg_YL1');
+        if (this.bgL2 && this.bgL2.setTexture && this.textures.exists('sz4_bg_YL2')) this.bgL2.setTexture('sz4_bg_YL2');
+        if (this.bgL3 && this.bgL3.setTexture && this.textures.exists('sz4_bg_YL3')) this.bgL3.setTexture('sz4_bg_YL3');
+        // (用户) 全屏白屏: 保持 0.5s, 然后 1s 缓慢淡出恢复可见
+        const cam = this.cameras.main;
+        const flash = this.add.rectangle(cam.width / 2, cam.height / 2, cam.width + 200, cam.height + 200, 0xffffff)
+            .setScrollFactor(0).setDepth(999998);
+        this.time.delayedCall(500, () => {
+            this.tweens.add({
+                targets: flash, alpha: 0, duration: 1000, ease: 'Sine.easeInOut',
+                onComplete: () => { try { flash.destroy(); } catch (e) {} }
+            });
+        });
     }
 
     // (用户) 掉 1 颗黄水晶货币 pickup — 完全照搬 SZ3 凋落物: 横移 + 360°旋转 + 上抛后按重力公式时长下落 (慢); 复用磁吸 → addYellowCrystal

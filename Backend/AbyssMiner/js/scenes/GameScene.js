@@ -890,6 +890,45 @@ class MainGameScene extends Phaser.Scene {
         }
     }
 
+    // (用户) 挂墙时玩家是幽灵态 (checkCollision.none=true) → 物理 overlap 不触发 → 手动判定怪物攻击.
+    //   命中只扣血 (走伤害 spec + iframe + 红闪), 不击退、不收钩、不改重力 → 玩家继续挂墙.
+    _hangHurtCheck() {
+        if (!this.isHanging || this.isDead || this.isPlayerStunned || this.isPlayerInvincible) return;
+        if (!this.player || !this.player.body || !this.healthSystem) return;
+        const pb = this.player.body;
+        const groups = [this.spiders, this.bungeeSpiders, this.bats, this.slimes, this.miniSlimes, this.beetles, this.earthworms, this.mimicOres, this.cowardMimics];
+        for (let g = 0; g < groups.length; g++) {
+            const grp = groups[g];
+            if (!grp || typeof grp.getChildren !== 'function') continue;
+            const arr = grp.getChildren();
+            for (let i = 0; i < arr.length; i++) {
+                const m = arr[i];
+                if (!m || !m.body || (m.hp !== undefined && m.hp <= 0)) continue;
+                if (!(m.canDamagePlayer && m.canDamagePlayer())) continue;
+                const mb = m.body;
+                // 包围盒相交 (自己算, 绕过 checkCollision.none)
+                if (pb.right > mb.left && pb.left < mb.right && pb.bottom > mb.top && pb.top < mb.bottom) {
+                    this._hangHurtApply(m);
+                    if (m.onHitPlayer) m.onHitPlayer();
+                    return;   // 一帧最多扣一次
+                }
+            }
+        }
+    }
+
+    // 挂墙受击: 走标准伤害量 + 副作用 + iframe/红闪, 但不击退、不脱钩
+    _hangHurtApply(monster) {
+        const spec = this._getMobDamageSpec(monster);
+        const _dmul = (window.AbyssDiff ? AbyssDiff.get().dmgMul : 1);
+        const wasEffective = this.healthSystem.takeDamage(Math.floor(spec.hp * _dmul));
+        if (wasEffective && this.diseaseSystem) {
+            if (spec.corrosionInstant) this.diseaseSystem.addCorrosion(spec.corrosionInstant);
+            if (spec.corrosionDoT)     this.diseaseSystem.addCorrosionDoT(spec.corrosionDoT[0], spec.corrosionDoT[1]);
+            if (spec.hpDoT)            this.diseaseSystem.addHpDoT(Math.floor(spec.hpDoT[0] * _dmul), spec.hpDoT[1]);
+            if (spec.tempSlow)         this.diseaseSystem.addTempSlow(spec.tempSlow[0], spec.tempSlow[1]);
+        }
+    }
+
     handleCrystalExplosion(cx, cy, radius) {
         // (用户) 白圈范围指示已移除 — 爆炸动画表本身已精确覆盖伤害半径
 

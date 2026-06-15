@@ -1329,9 +1329,9 @@ class SafeZone2Scene extends MainGameScene {
             return;
         }
         this.dialogSystem.showSequence([
-            { speaker: 'Whisker', text: 'Long time no see, kid.' },
-            { speaker: 'Whisker', text: "Glad to see you're still alive." },
-            { speaker: 'Whisker', text: 'Come trade with me if you need anything.' }
+            { speaker: 'Whisker', text: "Can't say I'm surprised that you defeated it." },
+            { speaker: 'Whisker', text: "Not after that you survived from the long fall." },
+            { speaker: 'Whisker', text: "Anyways, glad you're in one piece. Trade me if you need anything." }
         ], () => this._endSZ2MerchantCutscene());
     }
 
@@ -1541,7 +1541,7 @@ class SafeZone2Scene extends MainGameScene {
                         }
                     }
                 },
-                { speaker: 'Stone Guardian', text: "You have trespassed... in my domain..." },
+                { speaker: 'Stone Guardian', text: "You have trespassed... into my domain!" },
                 { speaker: 'Stone Guardian', text: "You should not... be here..." },
                 {
                     speaker: 'Stone Guardian',
@@ -3021,9 +3021,11 @@ class SafeZone2Scene extends MainGameScene {
                     if (s._crystalNpcDialogState === 0) {
                         // 第一次对话
                         s.dialogSystem.showSequence([
-                            { speaker: 'Crystal Folk', text: "I never thought... I'd meet a living soul again..." },
-                            { speaker: 'Crystal Folk', text: "I'm not feeling well... I can hardly move..." },
-                            { speaker: 'Crystal Folk', text: 'Can you find the remains of my four friends? I have something for you in return...' }
+                            { speaker: 'Crystal Folk', text: "You came from the direction where the golem is at, which means...." },
+                            { speaker: 'Crystal Folk', text: "Its been a nuisance to us crystal folks, the only way for us is to leave it alone..." },
+                            { speaker: 'Crystal Folk', text: "Right now I'm not feeling well, I could barely move..." },
+                            { speaker: 'Crystal Folk', text: "I've been separated from my friends... four of them. Could you help me find them?" },
+                            { speaker: 'Crystal Folk', text: "Thank you... I'll give you something in return." }
                         ]);
                         s._crystalNpcDialogState = 1;
                     } else if (found >= 4 && !s._crystalNpcRewardGiven) {
@@ -3031,21 +3033,26 @@ class SafeZone2Scene extends MainGameScene {
                         s._crystalNpcRewardGiven = true;
                         s.sz2CnpcRewardPlotDone = true;   // (用户) 持久化 — 读档后不再重发钥匙
                         s.dialogSystem.showSequence([
-                            { speaker: 'Crystal Folk', text: 'You found them all... I had hoped, but I dared not believe...' },
-                            { speaker: 'Crystal Folk', text: 'A scholar... a sentinel... a wanderer... and a parent who never let go.' },
-                            { speaker: 'Crystal Folk', text: 'Their relics — keep them, please. They are why our story did not vanish.' },
-                            { speaker: 'Crystal Folk', text: 'And take this — it was meant for the one who would remember us.' },
-                            { speaker: 'You',          text: '*Mysterious Key +1*' },
-                            { speaker: 'Crystal Folk', text: 'I\'m so tired now... let me rest...' }
+                            { speaker: 'Crystal Folk', text: "These are... I see...." },
+                            { speaker: 'Crystal Folk', text: "A scholar... a sentinel... a wanderer.... and a youngin" },
+                            { speaker: 'Crystal Folk', text: "Their relics, I'll keep them dearly...." },
+                            { speaker: 'Crystal Folk', text: "May them rest in piece..." },
+                            { speaker: 'Crystal Folk', text: "And here take this key, it's for the locked door at south" },
+                            { speaker: 'Crystal Folk', text: "I thank you once again...." },
+                            { speaker: 'You',          text: '*Golden key +1*' },
+                            { speaker: 'Crystal Folk', text: "I'm still tired... do let me rest." }
                         ]);
                         if (s.inventorySystem && s.inventorySystem.addItem) {
                             s.inventorySystem.addItem('key', 1);
                         }
                     } else if (s._crystalNpcRewardGiven) {
-                        s.dialogSystem.show({ speaker: 'Crystal Folk', text: "I'm so tired now... let me rest..." });
+                        s.dialogSystem.show({ speaker: 'Crystal Folk', text: "I'm still tired... do let me rest." });
                     } else {
                         // 重复对话 (没找完 4 个)
-                        s.dialogSystem.show({ speaker: 'Crystal Folk', text: 'Can you find the remains of my four friends? I have something for you in return...' });
+                        s.dialogSystem.showSequence([
+                            { speaker: 'Crystal Folk', text: "I've been separated from my friends... four of them. Could you help me find them?" },
+                            { speaker: 'Crystal Folk', text: "Thank you... I'll give you something in return." }
+                        ]);
                     }
                 }
             });

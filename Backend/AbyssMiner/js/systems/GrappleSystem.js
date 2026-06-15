@@ -124,6 +124,7 @@ class GrappleSystem {
 
     update() {
         const s = this.scene;
+        if (s.isHanging && s._hangHurtCheck) s._hangHurtCheck();   // (用户) 挂墙幽灵态 overlap 不触发 → 手动判怪伤害 (扣血但不击退/不脱钩)
         if (!s.isGrappling || !s.activeGrapplePick) return;
 
         let pPick = s.activeGrapplePick;

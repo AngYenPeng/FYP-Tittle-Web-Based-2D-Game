@@ -62,8 +62,8 @@ class StartIntroScene extends Phaser.Scene {
             {
                 image: 'Intro4',
                 lines: [
-                    "One wrong step on rotten wood...",
-                    "...and the floor remembered nothing of those who walked on it, letting you swallow by the abyss"
+                    "One wrong step on the rotten floor...",
+                    "...and it remembered nothing of those who walked on it, letting you swallow by the abyss"
                 ]
             }
         ];
@@ -159,6 +159,7 @@ class StartIntroScene extends Phaser.Scene {
         });
         this.input.keyboard.on('keydown-SPACE', _advanceOrComplete);
         this.input.keyboard.on('keydown-ENTER', _advanceOrComplete);
+        this.events.once('shutdown', () => this._stopIntroTypeSound());   // (用户) 场景切走/跳过 → 停打字声, 防循环音效跟到下个场景
 
         // 渲染第一行 + 淡入
         this._showCurrentLine();
@@ -185,6 +186,7 @@ class StartIntroScene extends Phaser.Scene {
         this._typingIdx = 0;
         this._typingActive = true;
         this._subtitle.setText('');
+        this._startIntroTypeSound();   // (用户) 开始逐字 → 循环播打字声
         // 每个字 70ms — Undertale 标准的一半速度 (用户要求慢一倍)
         this._typingEvent = this.time.addEvent({
             delay: 70,
@@ -214,6 +216,21 @@ class StartIntroScene extends Phaser.Scene {
             this._typingEvent.remove();
             this._typingEvent = null;
         }
+        this._stopIntroTypeSound();   // (用户) 打字停 → 停打字声 (打完/跳过/切行都经过这里)
+    }
+
+    /** (用户) intro 打字声: 逐字循环, 打完/跳过/切走即停 — 防中途跳过音效无限循环 */
+    _startIntroTypeSound() {
+        try {
+            if (!this.sound || !this.cache.audio.exists('DialogSound')) return;
+            this._stopIntroTypeSound();
+            const vol = (typeof AudioSystem !== 'undefined') ? AudioSystem.sfxVolume : 0.6;
+            this._introTypeSnd = this.sound.add('DialogSound', { loop: true, volume: vol });
+            this._introTypeSnd.play();
+        } catch (e) {}
+    }
+    _stopIntroTypeSound() {
+        try { if (this._introTypeSnd) { this._introTypeSnd.stop(); this._introTypeSnd.destroy(); this._introTypeSnd = null; } } catch (e) {}
     }
 
     _nextLine() {

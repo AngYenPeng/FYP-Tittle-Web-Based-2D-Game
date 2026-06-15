@@ -22,8 +22,8 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
         this.body.setAllowGravity(false);
         this.setDepth(10);
 
-        this.hp = 2;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul, 自动在此基础上翻)
-        this.maxHp = 2;
+        this.hp = 200;      // (用户) Easy 基准 300→200 (难度倍率走全局输出÷hpMul, 自动在此基础上翻)
+        this.maxHp = 200;
         // 双手 HP (各 80 — (用户) Easy 基准 100→80), 死亡标记
         this._handLHp = 80;
         this._handRHp = 80;
@@ -318,7 +318,7 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
                 this._beetlesSpawnedThisVulnerable = 0;
                 this._lastBeetleSpawnT = this.scene.time.now;
                 this._setBodyState('mouth_open');  // 钉在 frame 7 (vulnerable 期间)
-                this.setTint(this._phase2 ? 0xffaa66 : 0xaaff66);  // 变浅亮表示可受伤
+                if (this._phase2) this.setTint(0xffaa66); else this.clearTint();   // (用户) phase1 不再上绿色, 落地保持原色 (phase2 橙色保留)  // 变浅亮表示可受伤
             }
             return;
         }
@@ -584,7 +584,7 @@ class Golem extends Phaser.Physics.Arcade.Sprite {
             if (this.hp > 0) {
                 if (this.state === 'vulnerable' || this.state === 'descending') {
                     // descending/vulnerable 用变亮色 (但 ascending 已经离开 vulnerable, 用普通 phase tint)
-                    this.setTint(this._phase2 ? 0xffaa66 : 0xaaff66);
+                    if (this._phase2) this.setTint(0xffaa66); else this.clearTint();   // (用户) phase1 不再上绿色, 落地保持原色 (phase2 橙色保留)
                 } else if (this._phase2) {
                     this.setTint(0xcc4444);
                 } else {

@@ -26,6 +26,7 @@ class TitleScene extends Phaser.Scene {
         this.settingsSystem = null;   // (用户修复) 旧实例的显示对象随上轮场景销毁, 复用会 open 无效且卡死 _modalOpen → options/credits 全哑
         if (this.cameras && this.cameras.main) this.cameras.main.resetFX();
         if (typeof AudioSystem !== 'undefined') AudioSystem.bgm(this, 'bgm_TitleScene');  // BGM
+        if (typeof AchievementSystem !== 'undefined' && typeof AchievementSystem.backfillClears === 'function') AchievementSystem.backfillClears();   // (用户修复) 补登接线前已通关难度的 clear 成就 (防御: 旧缓存版 AchievementSystem 无此方法 → 跳过不崩)
         // 等 VT323 字体加载好再渲染（避免 fallback 字体显示尺寸不一致）
         if (document.fonts && document.fonts.load) {
             // 触发加载
@@ -57,7 +58,7 @@ class TitleScene extends Phaser.Scene {
         }
 
         // 装饰：随机闪烁的小水晶点
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 90; i++) {
             let star = this.add.circle(
                 Phaser.Math.Between(0, W),
                 Phaser.Math.Between(0, H),
@@ -88,16 +89,16 @@ class TitleScene extends Phaser.Scene {
             if (!this.anims.exists('title_anim')) {
                 this.anims.create({ key: 'title_anim', frames: this.anims.generateFrameNumbers('Title', { start: 0, end: 13 }), frameRate: 10, repeat: 0 });   // (用户) 单次播放
             }
-            title = this.add.sprite(W / 2, H * 0.30, 'Title').setScale(0.5);
+            title = this.add.sprite(W / 2, H * 0.23 + 40, 'Title').setScale(0.68);
             // (用户) 循环节奏: 播一遍 → 停在末帧 10 秒 → 重播, 无限循环
             title.on('animationcomplete-title_anim', () => {
                 this.time.delayedCall(3000, () => { if (title.active && title.scene) title.play('title_anim'); });
             });
             title.play('title_anim');
         } else {
-            title = this.add.text(W / 2, H * 0.30, 'ABYSS MINER', {
-                fontSize: '88px', color: '#ffffff', fontFamily: '"VT323", monospace',
-                stroke: '#3344aa', strokeThickness: 6
+            title = this.add.text(W / 2, H * 0.23 + 40, 'ABYSS MINER', {
+                fontSize: '120px', color: '#ffffff', fontFamily: '"VT323", monospace',
+                stroke: '#3344aa', strokeThickness: 8
             }).setOrigin(0.5);
         }
         // 标题缓慢呼吸
@@ -106,13 +107,14 @@ class TitleScene extends Phaser.Scene {
             duration: 2200, yoyo: true, repeat: -1
         });
 
-        // 副标题
-        this.add.text(W / 2, H * 0.40, 'A Grappling Adventure', {
-            fontSize: '28px',
-            color: '#aaaaaa',
+        // 副标题  (用户: 文字待换成 poster 标语)
+        const subtitle = this.add.text(W / 2, H * 0.42 - 32, 'A Grappling Adventure', {
+            fontSize: '34px',
+            color: '#9fb0e0',
             fontFamily: '"VT323", monospace',
             fontStyle: 'italic'
         }).setOrigin(0.5);
+        if (subtitle.setLetterSpacing) subtitle.setLetterSpacing(3);
 
         // === 菜单按钮 ===
         const menuItems = [
@@ -123,23 +125,65 @@ class TitleScene extends Phaser.Scene {
             { label: 'CREDITS',     action: () => this._openCredits() },
             { label: 'QUIT',        action: () => { alert('Thanks for playing!'); } }
         ];
-        const baseY = H * 0.44;
-        const itemSpacing = 42;
+        const baseY = H * 0.51 - 32;
+        const itemSpacing = 60;
+        const BTN_W = 360, BTN_H = 48, P = 4, DEPTH = 3;
 
         menuItems.forEach((mi, idx) => {
-            let y = baseY + idx * itemSpacing;
-            let txt = this.add.text(W / 2, y, mi.label, {
-                fontSize: '26px',
-                color: '#aaaaaa',
-                fontFamily: '"VT323", monospace'
+            const y = baseY + idx * itemSpacing;
+            const left = W / 2 - BTN_W / 2, faceTop = y - BTN_H / 2;
+            const g = this.add.graphics();
+            const txt = this.add.text(W / 2, y, mi.label, {
+                fontSize: '30px', color: '#cdd6f2', fontFamily: '"VT323", monospace'
             }).setOrigin(0.5);
-            // hitArea 用宽松一点的范围，origin 0.5 时局部范围(-w/2, -h/2, w, h)
-            // 但 Phaser hitTest 用 (pointerX - obj.x + displayOriginX) 计算，所以 hitArea 起点应该是 (0, 0)
-            let w = txt.width, h = txt.height;
-            txt.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, h), Phaser.Geom.Rectangle.Contains);
-            txt.on('pointerover', () => txt.setColor('#ffff00'));
-            txt.on('pointerout',  () => txt.setColor('#aaaaaa'));
-            txt.on('pointerdown', () => { if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select'); mi.action(); });
+            let pressed = false;
+            // 像素风晶体按钮: 竖向渐变主体 + 阶梯反光 + 像素斜角(白线上+左连通到角) + 轻投影; 按下下沉、斜角反相
+            const render = (hover, down) => {
+                const oy = down ? DEPTH : 0;
+                const fx = left, fy = faceTop + oy;
+                g.clear();
+                // 轻投影 (下+右, 偏移) — 比之前细且淡, 抬起感不抢戏
+                if (!down) {
+                    g.fillStyle(0x080d18, 1);
+                    g.fillRect(fx + DEPTH, faceTop + BTN_H, BTN_W, DEPTH);
+                    g.fillRect(fx + BTN_W, faceTop + DEPTH, DEPTH, BTN_H);
+                }
+                // 主体 — 晶体竖向渐变 (顶亮→下半暗影; t^1.6 缓动使变暗集中在中下方 = 恢复下方 shadow)
+                const cT = hover ? 0x274d70 : 0x214260;
+                const cB = hover ? 0x122a40 : 0x0c1a28;
+                const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+                const rows = BTN_H / P;
+                for (let r = 0; r < rows; r++) {
+                    const t = Math.pow(r / (rows - 1), 1.6);
+                    const col = (lerp((cT >> 16) & 255, (cB >> 16) & 255, t) << 16)
+                              | (lerp((cT >> 8) & 255, (cB >> 8) & 255, t) << 8)
+                              |  lerp(cT & 255, cB & 255, t);
+                    g.fillStyle(col, 1);
+                    g.fillRect(fx, fy + r * P, BTN_W, P);
+                }
+                // 阶梯像素反光 — 两条斜向青条, 贯穿全高 (右上→左下, 不再半截就停)
+                g.fillStyle(0x86d6ea, hover ? 0.55 : 0.30);
+                for (let i = 0; i < rows; i++) g.fillRect(fx + P * (12 - i), fy + i * P, P * 2, P);
+                g.fillStyle(0x86d6ea, hover ? 0.30 : 0.15);
+                for (let i = 0; i < rows; i++) g.fillRect(fx + P * (19 - i), fy + i * P, P, P);
+                // 像素斜角 — 先画暗(下+右), 再画亮(上+左) → 白线压顶层、连通到角(左白线连到左下角不被暗边切断); 按下反相
+                const dark = down ? (hover ? 0x6fc6e0 : 0x335a72) : 0x0c1a29;
+                const lite = down ? 0x0c1a29 : (hover ? 0x6fc6e0 : 0x335a72);
+                g.fillStyle(dark, 1);
+                g.fillRect(fx, fy + BTN_H - P, BTN_W, P);   // 下
+                g.fillRect(fx + BTN_W - P, fy, P, BTN_H);   // 右
+                g.fillStyle(lite, 1);
+                g.fillRect(fx, fy, BTN_W, P);               // 上 (盖右上角)
+                g.fillRect(fx, fy, P, BTN_H);               // 左 (盖左下角 → 连下去)
+                txt.y = y + oy;
+                txt.setColor(hover ? '#dffaff' : '#9ec0d0');
+            };
+            render(false, false);
+            const zone = this.add.zone(W / 2, y + DEPTH / 2, BTN_W + DEPTH, BTN_H + DEPTH).setOrigin(0.5).setInteractive();
+            zone.on('pointerover', () => render(true, pressed));
+            zone.on('pointerout',  () => { pressed = false; render(false, false); });
+            zone.on('pointerdown', () => { pressed = true; render(true, true); if (typeof AudioSystem !== 'undefined') AudioSystem.sfx(this, 'Select'); });
+            zone.on('pointerup',   () => { if (!pressed) return; pressed = false; render(true, false); mi.action(); });
         });
 
         // (用户) 开局加载层撤除 — Title 此刻已渲染
@@ -455,7 +499,7 @@ class TitleScene extends Phaser.Scene {
         // (用户) 三种排序: 最新 / 水晶最多 / 用时最短
         const TABS = [
             { key: 'latest',   label: 'LATEST' },
-            { key: 'crystals', label: 'CRYSTALS' },
+            { key: 'crystals', label: 'RICHEST' },
             { key: 'fastest',  label: 'FASTEST' }
         ];
         const sortRecs = mode => {
