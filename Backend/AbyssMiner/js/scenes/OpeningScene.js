@@ -56,7 +56,6 @@ class OpeningScene extends Phaser.Scene {
         // (用户修复) frameTotal 含 1 个 __BASE 帧(整张图当一帧) → 实际精灵帧数 = frameTotal - 1
         const a1 = Math.max(0, ft1 - 1);
         const a2 = Math.max(0, ft2 - 1);
-        console.log('[Opening] Big_title1 帧数 =', a1, '/ Big_title2 帧数 =', a2, '(frameTotal', ft1, '/', ft2, ', 已减 __BASE) — 合计', a1 + a2, '帧');
         // 诊断: 单张仍过宽则贴图上传会失败(空白)
         try {
             ['Big_title1', 'Big_title2'].forEach((k) => {
