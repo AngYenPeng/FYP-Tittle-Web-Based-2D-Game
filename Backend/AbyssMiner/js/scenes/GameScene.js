@@ -1449,8 +1449,8 @@ class MainGameScene extends Phaser.Scene {
         // (用户) 光影黑雾更新 (T2/T3 经 super.update 也走这里; 之前基类完全没有这行 → T2/T3/主矿洞永远不画)
         if (this.fogSystem && this.player) this.fogSystem.update(this.player.x, this.player.y);
 
-        // R 键切换网格显示
-        if (this.keyR && Phaser.Input.Keyboard.JustDown(this.keyR)) {
+        // R 键切换网格显示 — (用户) 临时关闭网格/坐标; 恢复: 删掉下行条件里的 "false && "
+        if (false && this.keyR && Phaser.Input.Keyboard.JustDown(this.keyR)) {
             if (this._gridGraphics) {
                 this._gridGraphics.setVisible(!this._gridGraphics.visible);
             }

@@ -252,6 +252,8 @@ class CreativeSystem {
     }
 
     open() {
+        // (用户) 临时关闭创造模式入口 (HUD 按钮 + 隐藏组合键都被挡); 恢复: 把下面 true 改 false
+        if (true) return;
         if (this.isOpen) return;
         this.isOpen = true;
         this.panel.setVisible(true);

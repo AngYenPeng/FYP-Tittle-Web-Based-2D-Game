@@ -14,7 +14,7 @@ class ShopSystem {
             { id: 'life_potion',     name: 'Life Syringe',    price: 15, desc: 'Hearts +1',                      tex: 'potion_life_img' },   // (用户) 图为红液针筒 → 改名
             { id: 'health_potion',   name: 'Health Pills',    price: 10, desc: '-50% Radiation + 30s immunity',  tex: 'potion_health_img' },   // (用户) 图为药瓶+药丸 → 改名 (服用音效本就是 EatPills)
             { id: 'health_detector', name: 'Health Detector', price: 10, desc: 'Shows radiation bar (limit 1)',  tex: 'health_detector_img' },   // (用户) Adds → Shows
-            { id: 'pet_egg',         name: 'Mysterious Egg',  price: 399, desc: '???',                            tex: 'Egg' }   // (用户) 专属蛋图 32×32
+            { id: 'pet_egg',         name: 'Mysterious Egg',  price: 99, desc: '???',                            tex: 'Egg' }   // (用户) 专属蛋图 32×32
             // 黄钥匙不卖 — tutorial 任务专用, 平常掉落/任务奖励获得
         ];
         // (用户) 难度: hard/extreme 不卖加爱心药水, 其余 3 件价格 ×priceMul

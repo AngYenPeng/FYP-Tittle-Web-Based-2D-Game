@@ -1405,6 +1405,7 @@ class SafeZone1Scene extends MainGameScene {
         airBg(60, 6, 89, 6);
         airBg(60, 7, 73, 7); airBg(77, 7, 85, 7); airBg(89, 7, 89, 7);
         airBg(60, 8, 61, 8); airBg(65, 8, 73, 8); airBg(77, 8, 89, 8);
+        airRange(64, 8, 64, 8);   // (用户) 删掉 (64,8) 这格 cavetile, 让玩家能穿过
         airBg(60, 9, 61, 9); airBg(65, 9, 89, 9);
         airBg(59, 10, 82, 10); airBg(86, 10, 89, 10);
         airBg(58, 11, 82, 11); airBg(86, 11, 89, 11);
