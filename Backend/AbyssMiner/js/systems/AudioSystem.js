@@ -285,7 +285,7 @@ AudioSystem.MANIFEST = {
     'Achievement':  'UI/Achievement.mp3',   // (用户) 获得成就时播 1 次
     'BigTitle':     'UI/BigTitle.wav',       // (用户) 登录后 BigTitle 动画播放时播 1 次
     // Miner
-    'CrouchWalking':    'Miner/Crouchwalking.wav',
+    'CrouchWalking':    'Miner/CrouchWalking.wav',
     'JumpLanding':      'Miner/JumpLanding.wav',
     'JumpUp':           'Miner/JumpUp.wav',
     'MinerHurt':        'Miner/MinerHurt.wav',
